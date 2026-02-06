@@ -113,7 +113,7 @@ impl FileService {
             ResourceType::Other => "bin",
         };
 
-        let file_name = format!("{}.{}.{}", resource_id, extension, "bin");
+        let file_name = format!("{}.{}", resource_id, extension);
         let upload_dir = Self::get_resource_upload_path();
         let file_path = Path::new(&upload_dir).join(&file_name);
 
@@ -162,14 +162,45 @@ impl FileService {
             .map_err(|e| FileError::FileSystemError(format!("读取文件失败: {}", e)))
     }
 
-    /// 获取文件 MIME 类型
+    /// 获取文件 MIME 类型（通过文件路径）
     pub fn get_mime_type(file_path: &str) -> String {
-        let extension = Path::new(file_path)
-            .extension()
-            .and_then(|ext| ext.to_str())
-            .map(|ext| ext.to_lowercase());
+        // 处理 .ext.bin 格式的文件名（如 xxx.pdf.bin）
+        let path = Path::new(file_path);
+        let file_stem = path.file_stem().and_then(|s| s.to_str());
 
-        match extension.as_deref() {
+        // 如果文件名包含多个扩展名，尝试获取真实的扩展名
+        let extension = if let Some(stem) = file_stem {
+            // 检查是否还有子扩展名（如 xxx.pdf.bin 中的 .pdf）
+            let stem_path = Path::new(stem);
+            stem_path.extension().and_then(|ext| ext.to_str())
+        } else {
+            path.extension().and_then(|ext| ext.to_str())
+        };
+
+        Self::mime_type_from_extension(extension)
+    }
+
+    /// 根据资源类型获取 MIME 类型
+    pub fn get_mime_type_by_type(resource_type: &str) -> String {
+        let resource_type_lower = resource_type.to_lowercase();
+        match resource_type_lower.as_str() {
+            "web_markdown" | "md" | "markdown" => "text/markdown",
+            "ppt" => "application/vnd.ms-powerpoint",
+            "pptx" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "doc" => "application/msword",
+            "docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "pdf" => "application/pdf",
+            "txt" => "text/plain",
+            "jpeg" | "jpg" => "image/jpeg",
+            "png" => "image/png",
+            "zip" => "application/zip",
+            _ => "application/octet-stream",
+        }
+        .to_string()
+    }
+
+    fn mime_type_from_extension(extension: Option<&str>) -> String {
+        match extension.map(|e| e.to_lowercase()).as_deref() {
             Some("md") => "text/markdown",
             Some("ppt") => "application/vnd.ms-powerpoint",
             Some("pptx") => "application/vnd.openxmlformats-officedocument.presentationml.presentation",

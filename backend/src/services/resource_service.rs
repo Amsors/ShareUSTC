@@ -46,6 +46,12 @@ impl From<super::file_service::FileError> for ResourceError {
     }
 }
 
+impl From<sqlx::Error> for ResourceError {
+    fn from(err: sqlx::Error) -> Self {
+        ResourceError::DatabaseError(err.to_string())
+    }
+}
+
 pub struct ResourceService;
 
 impl ResourceService {
@@ -607,7 +613,7 @@ impl ResourceService {
         Ok(())
     }
 
-    /// 获取资源文件路径
+    /// 获取资源文件路径（检查审核状态，用于下载）
     pub async fn get_resource_file_path(
         pool: &PgPool,
         resource_id: Uuid,
@@ -620,6 +626,23 @@ impl ResourceService {
         .await
         .map_err(|e| ResourceError::DatabaseError(e.to_string()))?
         .ok_or_else(|| ResourceError::NotFound(format!("资源 {} 不存在或未通过审核", resource_id)))?;
+
+        Ok(row)
+    }
+
+    /// 获取资源文件路径（不检查审核状态，用于预览）
+    pub async fn get_resource_file_path_for_preview(
+        pool: &PgPool,
+        resource_id: Uuid,
+    ) -> Result<(String, String), ResourceError> {
+        let row: (String, String) = sqlx::query_as(
+            "SELECT file_path, resource_type FROM resources WHERE id = $1"
+        )
+        .bind(resource_id)
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?
+        .ok_or_else(|| ResourceError::NotFound(format!("资源 {} 不存在", resource_id)))?;
 
         Ok(row)
     }

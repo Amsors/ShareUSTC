@@ -77,9 +77,10 @@ request.interceptors.response.use(
             // 刷新失败，清除登录状态并提示
             authStore.clearAuth();
             ElMessage.error('登录已失效，请重新登录');
-            // 如果不在登录页面，跳转到登录
+            // 如果不在登录页面，强制跳转到登录（使用硬跳转确保状态完全重置）
             if (router.currentRoute.value.path !== '/login') {
-              router.push('/login');
+              // 使用 window.location.href 强制刷新，确保所有组件状态重置
+              window.location.href = '/login';
             }
           }
           break;

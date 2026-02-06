@@ -111,8 +111,11 @@ export const deleteResource = async (resourceId: string): Promise<void> => {
  */
 export const downloadResource = async (resourceId: string, fileName?: string): Promise<void> => {
   try {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+    // 确保 baseUrl 不以 /api 结尾
+    const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
     const response = await fetch(
-      `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/resources/${resourceId}/download`,
+      `${cleanBaseUrl}/api/resources/${resourceId}/download`,
       {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`
@@ -156,5 +159,38 @@ export const downloadResource = async (resourceId: string, fileName?: string): P
  * @returns 预览URL
  */
 export const getResourcePreviewUrl = (resourceId: string): string => {
-  return `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/resources/${resourceId}/download`;
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+  const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
+  return `${cleanBaseUrl}/api/resources/${resourceId}/download`;
+};
+
+/**
+ * 获取资源文件内容（用于预览）
+ * @param resourceId 资源ID
+ * @returns Blob 文件内容
+ */
+export const getResourceContent = async (resourceId: string): Promise<Blob> => {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+  // 确保 baseUrl 不以 /api 结尾，避免重复
+  const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
+  const response = await fetch(
+    `${cleanBaseUrl}/api/resources/${resourceId}/content`,
+    {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`
+      }
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error('获取资源内容失败');
+  }
+
+  // 获取响应的 Content-Type
+  const contentType = response.headers.get('content-type') || 'application/octet-stream';
+  console.log('[getResourceContent] Content-Type:', contentType);
+
+  const blob = await response.blob();
+  // 创建带有正确 MIME 类型的 Blob
+  return new Blob([blob], { type: contentType });
 };

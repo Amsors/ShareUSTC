@@ -6,9 +6,10 @@ use uuid::Uuid;
 use crate::db::AppState;
 use crate::models::{
     resource::*,
+    CreateRatingRequest, CreateCommentRequest, CommentListQuery,
     CurrentUser,
 };
-use crate::services::ResourceService;
+use crate::services::{ResourceService, RatingService, LikeService, CommentService};
 
 /// 上传资源
 #[post("/resources")]
@@ -341,7 +342,8 @@ pub async fn download_resource(
                     .await;
 
                     // 设置 Content-Type 和 Content-Disposition
-                    let content_type = crate::services::FileService::get_mime_type(&file_path);
+                    // 使用 resource_type 获取 MIME 类型，因为它更准确
+                    let content_type = crate::services::FileService::get_mime_type_by_type(&resource_type);
                     let filename = std::path::Path::new(&file_path)
                         .file_name()
                         .and_then(|n| n.to_str())
@@ -380,17 +382,282 @@ pub async fn download_resource(
     }
 }
 
+/// 获取资源文件内容（用于预览）
+#[get("/resources/{resource_id}/content")]
+pub async fn get_resource_content(
+    state: web::Data<AppState>,
+    path: web::Path<Uuid>,
+) -> impl Responder {
+    let resource_id = path.into_inner();
+
+    // 获取资源文件路径（预览不检查审核状态）
+    match ResourceService::get_resource_file_path_for_preview(&state.pool, resource_id).await {
+        Ok((file_path, resource_type)) => {
+            // 读取文件
+            match crate::services::FileService::read_resource_file(&file_path).await {
+                Ok(file_content) => {
+                    // 获取 MIME 类型 - 优先使用 resource_type，因为它更准确
+                    let content_type = crate::services::FileService::get_mime_type_by_type(&resource_type);
+
+                    log::debug!("预览资源 {}: 文件路径={}, 类型={}, MIME={}",
+                        resource_id, file_path, resource_type, content_type);
+
+                    // 返回文件内容（inline 显示，不是下载）
+                    HttpResponse::Ok()
+                        .content_type(content_type)
+                        .insert_header(("Cache-Control", "public, max-age=3600"))
+                        .body(file_content)
+                }
+                Err(e) => {
+                    log::warn!("读取资源文件失败: {}", e);
+                    HttpResponse::Ok().json(serde_json::json!({
+                        "code": 500,
+                        "message": "文件读取失败",
+                        "data": null
+                    }))
+                }
+            }
+        }
+        Err(e) => {
+            log::warn!("获取资源文件路径失败: {}", e);
+            let (code, message) = match e {
+                crate::services::ResourceError::NotFound(msg) => (404, msg),
+                _ => (500, "获取资源失败".to_string()),
+            };
+            HttpResponse::Ok().json(serde_json::json!({
+                "code": code,
+                "message": message,
+                "data": null
+            }))
+        }
+    }
+}
+
 /// 配置公开资源路由（不需要认证）
 pub fn config_public(cfg: &mut web::ServiceConfig) {
     cfg.service(get_resource_list)
         .service(search_resources)
         .service(get_resource_detail)
-        .service(download_resource);
+        .service(download_resource)
+        .service(get_resource_content)
+        .service(get_like_status)  // 获取点赞状态（支持未登录用户）
+        .service(get_comments);    // 获取评论列表（公开）
+}
+
+/// 提交评分
+#[post("/resources/{resource_id}/rate")]
+pub async fn rate_resource(
+    state: web::Data<AppState>,
+    user: web::ReqData<CurrentUser>,
+    path: web::Path<Uuid>,
+    request: web::Json<CreateRatingRequest>,
+) -> impl Responder {
+    let resource_id = path.into_inner();
+
+    match RatingService::create_or_update_rating(&state.pool, resource_id, user.id, request.into_inner()).await {
+        Ok(rating) => HttpResponse::Ok().json(serde_json::json!({
+            "code": 200,
+            "message": "评分成功",
+            "data": rating
+        })),
+        Err(e) => {
+            log::warn!("评分失败: {}", e);
+            HttpResponse::Ok().json(serde_json::json!({
+                "code": 400,
+                "message": "评分失败",
+                "data": null
+            }))
+        }
+    }
+}
+
+/// 获取当前用户的评分
+#[get("/resources/{resource_id}/rate")]
+pub async fn get_my_rating(
+    state: web::Data<AppState>,
+    user: web::ReqData<CurrentUser>,
+    path: web::Path<Uuid>,
+) -> impl Responder {
+    let resource_id = path.into_inner();
+
+    match RatingService::get_user_rating(&state.pool, resource_id, user.id).await {
+        Ok(rating) => HttpResponse::Ok().json(serde_json::json!({
+            "code": 200,
+            "message": "获取成功",
+            "data": rating
+        })),
+        Err(e) => {
+            log::warn!("获取评分失败: {}", e);
+            HttpResponse::Ok().json(serde_json::json!({
+                "code": 500,
+                "message": "获取失败",
+                "data": null
+            }))
+        }
+    }
+}
+
+/// 删除评分
+#[delete("/resources/{resource_id}/rate")]
+pub async fn delete_rating(
+    state: web::Data<AppState>,
+    user: web::ReqData<CurrentUser>,
+    path: web::Path<Uuid>,
+) -> impl Responder {
+    let resource_id = path.into_inner();
+
+    match RatingService::delete_rating(&state.pool, resource_id, user.id).await {
+        Ok(_) => HttpResponse::Ok().json(serde_json::json!({
+            "code": 200,
+            "message": "删除成功",
+            "data": null
+        })),
+        Err(e) => {
+            log::warn!("删除评分失败: {}", e);
+            HttpResponse::Ok().json(serde_json::json!({
+                "code": 500,
+                "message": "删除失败",
+                "data": null
+            }))
+        }
+    }
+}
+
+/// 点赞/取消点赞
+#[post("/resources/{resource_id}/like")]
+pub async fn toggle_like(
+    state: web::Data<AppState>,
+    user: web::ReqData<CurrentUser>,
+    path: web::Path<Uuid>,
+) -> impl Responder {
+    let resource_id = path.into_inner();
+
+    match LikeService::toggle_like(&state.pool, resource_id, user.id).await {
+        Ok(result) => HttpResponse::Ok().json(serde_json::json!({
+            "code": 200,
+            "message": result.message,
+            "data": result
+        })),
+        Err(e) => {
+            log::warn!("点赞操作失败: {}", e);
+            HttpResponse::Ok().json(serde_json::json!({
+                "code": 500,
+                "message": "操作失败",
+                "data": null
+            }))
+        }
+    }
+}
+
+/// 获取点赞状态
+#[get("/resources/{resource_id}/like")]
+pub async fn get_like_status(
+    state: web::Data<AppState>,
+    user: Option<web::ReqData<CurrentUser>>,
+    path: web::Path<Uuid>,
+) -> impl Responder {
+    let resource_id = path.into_inner();
+
+    // 如果有用户登录，检查该用户的点赞状态；否则返回未点赞
+    let (is_liked, like_count) = if let Some(user) = user {
+        match LikeService::check_like_status(&state.pool, resource_id, user.id).await {
+            Ok(status) => (status.is_liked, status.like_count),
+            Err(e) => {
+                log::warn!("获取点赞状态失败: {}", e);
+                (false, 0)
+            }
+        }
+    } else {
+        // 未登录用户，获取点赞数但不显示已点赞
+        match LikeService::get_like_count(&state.pool, resource_id).await {
+            Ok(count) => (false, count),
+            Err(e) => {
+                log::warn!("获取点赞数失败: {}", e);
+                (false, 0)
+            }
+        }
+    };
+
+    HttpResponse::Ok().json(serde_json::json!({
+        "code": 200,
+        "message": "获取成功",
+        "data": {
+            "is_liked": is_liked,
+            "like_count": like_count
+        }
+    }))
+}
+
+/// 获取评论列表（公开接口，不需要登录）
+#[get("/resources/{resource_id}/comments")]
+pub async fn get_comments(
+    state: web::Data<AppState>,
+    path: web::Path<Uuid>,
+    query: web::Query<CommentListQuery>,
+) -> impl Responder {
+    let resource_id = path.into_inner();
+
+    match CommentService::get_comments(&state.pool, resource_id, query.into_inner()).await {
+        Ok(comments) => HttpResponse::Ok().json(serde_json::json!({
+            "code": 200,
+            "message": "获取成功",
+            "data": comments
+        })),
+        Err(e) => {
+            log::warn!("获取评论失败: {}", e);
+            let message = match e {
+                crate::services::ResourceError::NotFound(msg) => msg,
+                _ => "获取评论失败".to_string(),
+            };
+            HttpResponse::Ok().json(serde_json::json!({
+                "code": 500,
+                "message": message,
+                "data": null
+            }))
+        }
+    }
+}
+
+/// 发表评论
+#[post("/resources/{resource_id}/comments")]
+pub async fn create_comment(
+    state: web::Data<AppState>,
+    user: web::ReqData<CurrentUser>,
+    path: web::Path<Uuid>,
+    request: web::Json<CreateCommentRequest>,
+) -> impl Responder {
+    let resource_id = path.into_inner();
+
+    match CommentService::create_comment(&state.pool, resource_id, user.id, request.into_inner()).await {
+        Ok(comment) => HttpResponse::Ok().json(serde_json::json!({
+            "code": 200,
+            "message": "评论成功",
+            "data": comment
+        })),
+        Err(e) => {
+            log::warn!("评论失败: {}", e);
+            let (code, message) = match e {
+                crate::services::ResourceError::ValidationError(msg) => (400, msg),
+                crate::services::ResourceError::NotFound(msg) => (404, msg),
+                _ => (500, "评论失败".to_string()),
+            };
+            HttpResponse::Ok().json(serde_json::json!({
+                "code": code,
+                "message": message,
+                "data": null
+            }))
+        }
+    }
 }
 
 /// 配置资源路由（需要认证）
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(upload_resource)
         .service(delete_resource)
-        .service(get_my_resources);
+        .service(get_my_resources)
+        .service(rate_resource)
+        .service(get_my_rating)
+        .service(delete_rating)
+        .service(toggle_like)
+        .service(create_comment);
 }

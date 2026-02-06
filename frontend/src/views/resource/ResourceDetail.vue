@@ -49,10 +49,7 @@
                 下载资源
               </el-button>
 
-              <el-button size="large" @click="handleLike">
-                <el-icon><Star /></el-icon>
-                收藏
-              </el-button>
+              <LikeButton :resource-id="resourceId" />
 
               <el-button size="large" v-if="canDelete" type="danger" @click="handleDelete">
                 <el-icon><Delete /></el-icon>
@@ -92,20 +89,12 @@
               </template>
 
               <div class="preview-content">
-                <div v-if="isPreviewable" class="preview-placeholder">
-                  <el-icon class="preview-icon"><Document /></el-icon>
-                  <p>预览功能开发中</p>
-                  <el-button type="primary" @click="handleDownload">
-                    下载查看
-                  </el-button>
-                </div>
-                <div v-else class="no-preview">
-                  <el-icon class="preview-icon"><Document /></el-icon>
-                  <p>该类型文件暂不支持预览</p>
-                  <el-button type="primary" @click="handleDownload">
-                    下载查看
-                  </el-button>
-                </div>
+                <!-- 使用 PreviewSwitch 组件显示预览 -->
+                <PreviewSwitch
+                  :resource-id="resourceId"
+                  :resource-type="resource.resourceType"
+                  :resource-title="resource.title"
+                />
               </div>
             </el-card>
 
@@ -115,6 +104,11 @@
                 <span>资源描述</span>
               </template>
               <div class="description-content">{{ resource.description }}</div>
+            </el-card>
+
+            <!-- 评论区域 -->
+            <el-card class="comments-card" shadow="never">
+              <CommentSection :resource-id="resourceId" />
             </el-card>
           </el-col>
 
@@ -197,11 +191,13 @@ import {
   Download,
   Star,
   Delete,
-  View,
-  Document
+  View
 } from '@element-plus/icons-vue';
 import { getResourceDetail, downloadResource, deleteResource } from '../../api/resource';
 import { useAuthStore } from '../../stores/auth';
+import PreviewSwitch from '../../components/preview/PreviewSwitch.vue';
+import LikeButton from '../../components/interaction/LikeButton.vue';
+import CommentSection from '../../components/interaction/CommentSection.vue';
 import {
   ResourceTypeLabels,
   ResourceCategoryLabels,
@@ -225,12 +221,6 @@ const resourceId = computed(() => route.params.id as string);
 const canDelete = computed(() => {
   if (!resource.value || !authStore.user) return false;
   return resource.value.uploaderId === authStore.user.id || authStore.user.role === 'admin';
-});
-
-const isPreviewable = computed(() => {
-  if (!resource.value) return false;
-  const previewableTypes = ['pdf', 'txt', 'web_markdown', 'jpeg', 'jpg', 'png'];
-  return previewableTypes.includes(resource.value.resourceType);
 });
 
 // 获取资源类型标签类型
@@ -300,11 +290,6 @@ const handleDownload = async () => {
   } finally {
     downloading.value = false;
   }
-};
-
-// 收藏资源
-const handleLike = () => {
-  ElMessage.info('收藏功能开发中');
 };
 
 // 删除资源
@@ -449,7 +434,8 @@ onMounted(() => {
 .description-card,
 .tags-card,
 .info-card,
-.rating-card {
+.rating-card,
+.comments-card {
   margin-bottom: 24px;
 }
 

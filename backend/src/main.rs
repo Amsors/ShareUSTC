@@ -202,6 +202,7 @@ async fn main() -> std::io::Result<()> {
                     .configure(api::auth::config)
                     .configure(api::user::config)
                     .configure(api::image_host::config)
+                    .configure(api::comment::config)          // 评论路由
                     .configure(api::resource::config)          // 需要认证的资源路由（先注册）
                     .configure(api::resource::config_public)  // 公开资源路由（后注册）
             )
