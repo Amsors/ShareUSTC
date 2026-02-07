@@ -127,6 +127,7 @@ pub struct Claims {
     pub sub: String,        // 用户ID
     pub username: String,   // 用户名
     pub role: String,       // 角色
+    pub is_verified: bool,  // 是否实名认证
     pub exp: i64,           // 过期时间
     pub iat: i64,           // 签发时间
     pub token_type: String, // token 类型: access | refresh
@@ -138,6 +139,7 @@ pub struct CurrentUser {
     pub id: Uuid,
     pub username: String,
     pub role: UserRole,
+    pub is_verified: bool,
 }
 
 impl RegisterRequest {

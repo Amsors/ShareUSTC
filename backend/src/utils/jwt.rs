@@ -14,6 +14,7 @@ const REFRESH_TOKEN_EXPIRE_DAYS: i64 = 7;
 /// * `user_id` - 用户ID
 /// * `username` - 用户名
 /// * `role` - 用户角色
+/// * `is_verified` - 是否实名认证
 /// * `secret` - JWT密钥
 ///
 /// # Returns
@@ -23,6 +24,7 @@ pub fn generate_access_token(
     user_id: Uuid,
     username: String,
     role: UserRole,
+    is_verified: bool,
     secret: &str,
 ) -> Result<String, String> {
     let now = Utc::now();
@@ -32,6 +34,7 @@ pub fn generate_access_token(
         sub: user_id.to_string(),
         username,
         role: role.to_string(),
+        is_verified,
         exp: exp.timestamp(),
         iat: now.timestamp(),
         token_type: "access".to_string(),
@@ -51,6 +54,7 @@ pub fn generate_access_token(
 /// * `user_id` - 用户ID
 /// * `username` - 用户名
 /// * `role` - 用户角色
+/// * `is_verified` - 是否实名认证
 /// * `secret` - JWT密钥
 ///
 /// # Returns
@@ -60,6 +64,7 @@ pub fn generate_refresh_token(
     user_id: Uuid,
     username: String,
     role: UserRole,
+    is_verified: bool,
     secret: &str,
 ) -> Result<String, String> {
     let now = Utc::now();
@@ -69,6 +74,7 @@ pub fn generate_refresh_token(
         sub: user_id.to_string(),
         username,
         role: role.to_string(),
+        is_verified,
         exp: exp.timestamp(),
         iat: now.timestamp(),
         token_type: "refresh".to_string(),
@@ -138,6 +144,7 @@ pub fn extract_current_user(claims: Claims) -> Result<CurrentUser, String> {
         id: user_id,
         username: claims.username,
         role,
+        is_verified: claims.is_verified,
     })
 }
 
@@ -166,7 +173,7 @@ mod tests {
         let role = UserRole::User;
 
         let token =
-            generate_access_token(user_id, username.clone(), role.clone(), TEST_SECRET)
+            generate_access_token(user_id, username.clone(), role.clone(), false, TEST_SECRET)
                 .expect("生成Token失败");
 
         // 验证Token
@@ -175,6 +182,7 @@ mod tests {
         assert_eq!(claims.sub, user_id.to_string());
         assert_eq!(claims.username, username);
         assert_eq!(claims.role, "user");
+        assert_eq!(claims.is_verified, false);
         assert_eq!(claims.token_type, "access");
     }
 
@@ -185,7 +193,7 @@ mod tests {
         let role = UserRole::User;
 
         let token =
-            generate_refresh_token(user_id, username.clone(), role.clone(), TEST_SECRET)
+            generate_refresh_token(user_id, username.clone(), role.clone(), false, TEST_SECRET)
                 .expect("生成Token失败");
 
         // 验证Token
@@ -204,7 +212,7 @@ mod tests {
 
         // 生成Access Token
         let access_token =
-            generate_access_token(user_id, username, role, TEST_SECRET).expect("生成Token失败");
+            generate_access_token(user_id, username, role, false, TEST_SECRET).expect("生成Token失败");
 
         // 尝试用refresh类型验证access token
         let result = verify_token(&access_token, TEST_SECRET, Some("refresh"));
@@ -225,6 +233,7 @@ mod tests {
             sub: user_id.to_string(),
             username: "testuser".to_string(),
             role: "admin".to_string(),
+            is_verified: true,
             exp: Utc::now().timestamp() + 3600,
             iat: Utc::now().timestamp(),
             token_type: "access".to_string(),
@@ -235,5 +244,6 @@ mod tests {
         assert_eq!(current_user.id, user_id);
         assert_eq!(current_user.username, "testuser");
         assert_eq!(current_user.role, UserRole::Admin);
+        assert_eq!(current_user.is_verified, true);
     }
 }

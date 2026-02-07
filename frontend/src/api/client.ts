@@ -13,6 +13,11 @@ export const apiClient = axios.create({
 // 请求拦截器
 apiClient.interceptors.request.use(
   (config) => {
+    // 从 localStorage 获取 token
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
     return config;
   },

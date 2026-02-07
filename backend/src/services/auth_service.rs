@@ -68,7 +68,13 @@ impl AuthService {
 
         // 创建用户
         let user_id = Uuid::new_v4();
-        let role = "user";
+        // 检查用户名是否匹配ADMIN_USERNAME环境变量，如果是则赋予admin角色
+        let admin_username = std::env::var("ADMIN_USERNAME").unwrap_or_default();
+        let role = if req.username == admin_username && !admin_username.is_empty() {
+            "admin"
+        } else {
+            "user"
+        };
 
         sqlx::query(
             r#"
@@ -85,13 +91,22 @@ impl AuthService {
         .await
         .map_err(|e| AuthError::DatabaseError(format!("创建用户失败: {}", e)))?;
 
-        log::info!("用户注册成功: {}", req.username);
+        log::info!("用户注册成功: {}, 角色: {}", req.username, role);
+
+        // 解析角色用于Token生成
+        let user_role = match role {
+            "admin" => UserRole::Admin,
+            "verified" => UserRole::Verified,
+            "user" => UserRole::User,
+            _ => UserRole::Guest,
+        };
 
         // 生成 Token
         let access_token = generate_access_token(
             user_id,
             req.username.clone(),
-            UserRole::User,
+            user_role.clone(),
+            false, // 新注册用户默认未实名认证
             jwt_secret,
         )
         .map_err(|e| AuthError::TokenInvalid(e))?;
@@ -99,7 +114,8 @@ impl AuthService {
         let refresh_token = generate_refresh_token(
             user_id,
             req.username.clone(),
-            UserRole::User,
+            user_role,
+            false,
             jwt_secret,
         )
         .map_err(|e| AuthError::TokenInvalid(e))?;
@@ -158,11 +174,14 @@ impl AuthService {
             ));
         }
 
-        log::info!("用户登录成功: {}", req.username);
+        log::info!("用户登录成功: {}, 角色: {}", req.username, user.role);
 
         // 解析角色
         let role = match user.role.as_str() {
-            "admin" => UserRole::Admin,
+            "admin" => {
+                log::info!("用户 {} 以管理员身份登录", req.username);
+                UserRole::Admin
+            }
             "verified" => UserRole::Verified,
             "user" => UserRole::User,
             _ => UserRole::Guest,
@@ -173,6 +192,7 @@ impl AuthService {
             user.id,
             user.username.clone(),
             role.clone(),
+            user.is_verified,
             jwt_secret,
         )
         .map_err(|e| AuthError::TokenInvalid(e))?;
@@ -181,6 +201,7 @@ impl AuthService {
             user.id,
             user.username.clone(),
             role.clone(),
+            user.is_verified,
             jwt_secret,
         )
         .map_err(|e| AuthError::TokenInvalid(e))?;
@@ -232,6 +253,7 @@ impl AuthService {
             user_id,
             claims.username.clone(),
             role.clone(),
+            claims.is_verified,
             jwt_secret,
         )
         .map_err(|e| AuthError::TokenInvalid(e))?;
@@ -240,6 +262,7 @@ impl AuthService {
             user_id,
             claims.username,
             role,
+            claims.is_verified,
             jwt_secret,
         )
         .map_err(|e| AuthError::TokenInvalid(e))?;

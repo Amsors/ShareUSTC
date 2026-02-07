@@ -49,7 +49,7 @@
                 下载资源
               </el-button>
 
-              <LikeButton :resource-id="resourceId" />
+              <LikeButton v-if="authStore.isAuthenticated" :resource-id="resourceId" @update="onLikeUpdate" />
 
               <el-button size="large" v-if="canDelete" type="danger" @click="handleDelete">
                 <el-icon><Delete /></el-icon>
@@ -254,6 +254,13 @@ const formatTime = (time: string) => {
     return `${Math.floor(diff / (24 * 60 * 60 * 1000))}天前`;
   }
   return date.toLocaleDateString('zh-CN');
+};
+
+// 收藏状态更新处理
+const onLikeUpdate = (_isLiked: boolean, count: number) => {
+  if (resource.value) {
+    resource.value.stats.likes = count;
+  }
 };
 
 // 格式化日期

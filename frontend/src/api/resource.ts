@@ -161,7 +161,7 @@ export const downloadResource = async (resourceId: string, fileName?: string): P
 export const getResourcePreviewUrl = (resourceId: string): string => {
   const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
   const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
-  return `${cleanBaseUrl}/api/resources/${resourceId}/download`;
+  return `${cleanBaseUrl}/api/resources/${resourceId}/content`;
 };
 
 /**

@@ -1,6 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 
+// 导入管理后台组件
+import AdminLayout from '../layouts/AdminLayout.vue';
+import AdminDashboard from '../views/admin/Dashboard.vue';
+import UserManagement from '../views/admin/UserManagement.vue';
+import ResourceAudit from '../views/admin/ResourceAudit.vue';
+import CommentManagement from '../views/admin/CommentManagement.vue';
+
 // 路由配置
 const routes = [
   {
@@ -75,6 +82,40 @@ const routes = [
     component: () => import('../views/resource/ResourceDetail.vue'),
     meta: { public: true }
   },
+  {
+    path: '/notifications',
+    name: 'NotificationCenter',
+    component: () => import('../views/notification/NotificationCenter.vue'),
+    meta: { requiresAuth: true }
+  },
+  // 管理员路由
+  {
+    path: '/admin',
+    component: AdminLayout,
+    meta: { requiresAuth: true, requiresAdmin: true },
+    children: [
+      {
+        path: '',
+        name: 'AdminDashboard',
+        component: AdminDashboard
+      },
+      {
+        path: 'users',
+        name: 'UserManagement',
+        component: UserManagement
+      },
+      {
+        path: 'resources',
+        name: 'ResourceAudit',
+        component: ResourceAudit
+      },
+      {
+        path: 'comments',
+        name: 'CommentManagement',
+        component: CommentManagement
+      }
+    ]
+  },
   // 404 页面
   {
     path: '/:pathMatch(.*)*',
@@ -93,10 +134,23 @@ const router = createRouter({
 router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore();
   const isAuthenticated = authStore.isAuthenticated;
+  const isAdmin = authStore.isAdmin;
+  const user = authStore.user;
 
-  console.log(`[Router] Navigating to: ${to.path}, Authenticated: ${isAuthenticated}`);
+  console.log(`[Router] Navigating to: ${to.path}`);
+  console.log(`[Router] Authenticated: ${isAuthenticated}, IsAdmin: ${isAdmin}`);
+  console.log(`[Router] User:`, user);
 
-  // 1. 检查是否需要认证
+  // 1. 检查是否需要管理员权限
+  if (to.meta.requiresAdmin) {
+    console.log(`[Router] Route requires admin, isAdmin=${isAdmin}`);
+    if (!isAdmin) {
+      console.log('[Router] Admin required but user is not admin, redirecting to home');
+      return next('/');
+    }
+  }
+
+  // 2. 检查是否需要认证
   if (to.meta.requiresAuth && !isAuthenticated) {
     console.log('[Router] Auth required, redirecting to login');
     return next({
@@ -105,13 +159,14 @@ router.beforeEach((to, _from, next) => {
     });
   }
 
-  // 2. 检查是否只允许未登录用户访问（如登录页、注册页）
+  // 3. 检查是否只允许未登录用户访问（如登录页、注册页）
   if (to.meta.guestOnly && isAuthenticated) {
     console.log('[Router] Already authenticated, redirecting to home');
     return next('/');
   }
 
-  // 3. 允许访问
+  console.log('[Router] Allowing access to:', to.path);
+  // 4. 允许访问
   next();
 });
 

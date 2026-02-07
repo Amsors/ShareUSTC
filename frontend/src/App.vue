@@ -1,6 +1,11 @@
 <template>
   <router-view />
+  <PriorityModal />
 </template>
+
+<script setup lang="ts">
+import PriorityModal from './components/notification/PriorityModal.vue';
+</script>
 
 <style>
 * {

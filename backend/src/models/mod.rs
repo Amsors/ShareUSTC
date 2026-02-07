@@ -6,6 +6,7 @@ pub mod resource;
 pub mod rating;
 pub mod like;
 pub mod comment;
+pub mod notification;
 
 // 模型导出供其他模块使用
 #[allow(unused_imports)]
@@ -20,3 +21,5 @@ pub use like::*;
 pub use rating::*;
 #[allow(unused_imports)]
 pub use image::*;
+#[allow(unused_imports)]
+pub use notification::*;

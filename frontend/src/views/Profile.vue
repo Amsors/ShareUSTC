@@ -30,8 +30,8 @@
         <div class="user-card">
           <el-avatar :size="80" :icon="UserFilled" class="user-avatar" />
           <h3 class="username">{{ authStore.user?.username }}</h3>
-          <el-tag :type="authStore.isVerified ? 'success' : 'info'" size="small">
-            {{ authStore.isVerified ? '已认证用户' : '普通用户' }}
+          <el-tag :type="getUserTagType()" size="small">
+            {{ getUserTagText() }}
           </el-tag>
         </div>
 
@@ -540,6 +540,20 @@ watch(activeMenu, (newVal) => {
 const formatDate = (dateString?: string) => {
   if (!dateString) return '-';
   return new Date(dateString).toLocaleDateString('zh-CN');
+};
+
+// 获取用户标签类型
+const getUserTagType = () => {
+  if (authStore.isAdmin) return 'danger';
+  if (authStore.isVerified) return 'success';
+  return 'info';
+};
+
+// 获取用户标签文本
+const getUserTagText = () => {
+  if (authStore.isAdmin) return '管理员';
+  if (authStore.isVerified) return '已认证用户';
+  return '普通用户';
 };
 
 // 菜单选择

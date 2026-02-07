@@ -32,7 +32,7 @@ export const useAuthStore = defineStore('auth', () => {
   // Getters
   const isAuthenticated = computed(() => !!accessToken.value && !!user.value);
   const isAdmin = computed(() => user.value?.role === UserRole.Admin);
-  const isVerified = computed(() => user.value?.role === UserRole.Verified || user.value?.role === UserRole.Admin);
+  const isVerified = computed(() => user.value?.isVerified || false);
 
   // Actions
 

@@ -11,12 +11,17 @@ pub async fn get_current_user(
     state: web::Data<AppState>,
     user: web::ReqData<CurrentUser>,
 ) -> impl Responder {
+    log::info!("获取当前用户信息: user_id={}, username={}, role={}", user.id, user.username, user.role.to_string());
+
     match UserService::get_current_user(&state.pool, user.id).await {
-        Ok(user_info) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "获取成功",
-            "data": user_info
-        })),
+        Ok(user_info) => {
+            log::info!("返回用户信息: username={}, role={}", user_info.username, user_info.role);
+            HttpResponse::Ok().json(serde_json::json!({
+                "code": 200,
+                "message": "获取成功",
+                "data": user_info
+            }))
+        }
         Err(e) => {
             log::warn!("获取当前用户失败: {}", e);
             let (code, message) = match e {
@@ -80,10 +85,8 @@ pub async fn verify_user(
     user: web::ReqData<CurrentUser>,
     req: web::Json<VerificationRequest>,
 ) -> impl Responder {
-    // 检查是否为注册用户（只有非实名用户可以认证）
-    if user.role == crate::models::UserRole::Verified
-        || user.role == crate::models::UserRole::Admin
-    {
+    // 检查是否已经完成实名认证（通过 is_verified 字段判断）
+    if user.is_verified {
         return HttpResponse::Ok().json(serde_json::json!({
             "code": 400,
             "message": "用户已完成实名认证",
@@ -93,11 +96,18 @@ pub async fn verify_user(
 
     match UserService::verify_user(&state.pool, user.id, req.into_inner()).await {
         Ok(user_info) => {
-            // 实名认证成功，生成新的 Token（角色已更新为 verified）
+            // 实名认证成功，生成新的 Token（保持原有角色）
+            let user_role = match user_info.role.as_str() {
+                "admin" => UserRole::Admin,
+                "verified" => UserRole::Verified,
+                "user" => UserRole::User,
+                _ => UserRole::Guest,
+            };
             let access_token = match generate_access_token(
                 user_info.id,
                 user_info.username.clone(),
-                UserRole::Verified,
+                user_role.clone(),
+                user_info.is_verified,
                 &state.jwt_secret,
             ) {
                 Ok(token) => token,
@@ -114,7 +124,8 @@ pub async fn verify_user(
             let refresh_token = match generate_refresh_token(
                 user_info.id,
                 user_info.username.clone(),
-                UserRole::Verified,
+                user_role,
+                user_info.is_verified,
                 &state.jwt_secret,
             ) {
                 Ok(token) => token,

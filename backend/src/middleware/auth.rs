@@ -155,49 +155,71 @@ where
 
             // 检查是否是公开路径
             let is_public = public_paths.iter().any(|rule| rule.matches(&path, &method));
-            if is_public {
-                log::debug!("公开路径，跳过认证: {} {}", method, path);
-                return service.call(req).await;
-            }
 
-            // 从请求头中提取Authorization
+            // 从请求头中提取Authorization（公开路径也可能有认证信息）
             let auth_header = req
                 .headers()
                 .get(header::AUTHORIZATION)
                 .and_then(|h| h.to_str().ok());
 
-            let token = match auth_header {
-                Some(header) if header.starts_with("Bearer ") => {
-                    header.trim_start_matches("Bearer ").to_string()
-                }
-                _ => {
-                    log::debug!("请求缺少Authorization头");
-                    return Err(ErrorUnauthorized("缺少认证信息"));
-                }
-            };
+            // 如果不是公开路径，必须有认证信息
+            if !is_public && auth_header.is_none() {
+                log::debug!("非公开路径缺少Authorization头: {} {}", method, path);
+                return Err(ErrorUnauthorized("缺少认证信息"));
+            }
 
-            // 验证Token
-            match verify_token(&token, &jwt_secret, Some("access")) {
-                Ok(claims) => {
-                    match extract_current_user(claims) {
-                        Ok(current_user) => {
-                            log::debug!("用户认证成功: {}", current_user.username);
-                            // 将用户信息存入请求扩展
-                            req.extensions_mut().insert(current_user);
-                            // 继续处理请求
-                            service.call(req).await
+            // 如果有认证信息，尝试验证（无论是否是公开路径）
+            if let Some(header) = auth_header {
+                if header.starts_with("Bearer ") {
+                    let token = header.trim_start_matches("Bearer ").to_string();
+
+                    // 验证Token
+                    match verify_token(&token, &jwt_secret, Some("access")) {
+                        Ok(claims) => {
+                            match extract_current_user(claims) {
+                                Ok(current_user) => {
+                                    log::info!("用户认证成功: {}, 角色: {:?}", current_user.username, current_user.role);
+                                    // 将用户信息存入请求扩展
+                                    req.extensions_mut().insert(current_user);
+                                }
+                                Err(e) => {
+                                    log::warn!("提取用户信息失败: {}", e);
+                                    // 非公开路径需要返回错误
+                                    if !is_public {
+                                        return Err(ErrorUnauthorized("无效的认证信息"));
+                                    }
+                                }
+                            }
                         }
                         Err(e) => {
-                            log::warn!("提取用户信息失败: {}", e);
-                            Err(ErrorUnauthorized("无效的认证信息"))
+                            log::warn!("Token验证失败: {}", e);
+                            // 非公开路径需要返回错误
+                            if !is_public {
+                                return Err(ErrorUnauthorized("认证已过期或无效"));
+                            }
                         }
                     }
-                }
-                Err(e) => {
-                    log::warn!("Token验证失败: {}", e);
-                    Err(ErrorUnauthorized("认证已过期或无效"))
+                } else if !is_public {
+                    log::debug!("无效的Authorization头格式");
+                    return Err(ErrorUnauthorized("无效的认证信息格式"));
                 }
             }
+
+            // 对于公开路径，无论认证成功与否都继续处理
+            // 对于非公开路径，如果执行到这里说明认证成功
+            if is_public {
+                log::debug!("公开路径，继续处理: {} {}", method, path);
+                return service.call(req).await;
+            }
+
+            // 非公开路径，检查是否成功提取了用户信息
+            if req.extensions().get::<CurrentUser>().is_none() {
+                log::debug!("非公开路径认证失败: {} {}", method, path);
+                return Err(ErrorUnauthorized("需要登录"));
+            }
+
+            // 继续处理请求
+            service.call(req).await
         })
     }
 }

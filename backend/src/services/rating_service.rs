@@ -4,6 +4,7 @@ use uuid::Uuid;
 use crate::models::{
     CreateRatingRequest, Rating, RatingResponse, RatingSummary,
 };
+use crate::services::NotificationService;
 
 pub struct RatingService;
 
@@ -48,7 +49,50 @@ impl RatingService {
         // 更新资源统计
         Self::update_resource_stats(pool, resource_id).await?;
 
+        // 发送通知给资源上传者（如果不是评分自己的资源）
+        Self::notify_uploader_on_rating(pool, resource_id, user_id).await;
+
         Ok(rating.into())
+    }
+
+    /// 评分时通知资源上传者
+    async fn notify_uploader_on_rating(
+        pool: &PgPool,
+        resource_id: Uuid,
+        rater_id: Uuid,
+    ) {
+        // 获取资源上传者信息和评分者用户名
+        let resource_result = sqlx::query_as::<_, (Uuid, String, Option<Uuid>)>(
+            "SELECT uploader_id, title, author_id FROM resources WHERE id = $1"
+        )
+        .bind(resource_id)
+        .fetch_optional(pool)
+        .await;
+
+        let rater_result = sqlx::query_scalar::<_, String>(
+            "SELECT username FROM users WHERE id = $1"
+        )
+        .bind(rater_id)
+        .fetch_optional(pool)
+        .await;
+
+        if let (Ok(Some((uploader_id, resource_title, author_id))), Ok(Some(rater_name))) = (resource_result, rater_result) {
+            // 优先通知作者（如果存在），否则通知上传者
+            let notify_user_id = author_id.unwrap_or(uploader_id);
+
+            // 不给自己发通知
+            if notify_user_id != rater_id {
+                if let Err(e) = NotificationService::create_rating_notification(
+                    pool,
+                    resource_id,
+                    &resource_title,
+                    notify_user_id,
+                    &rater_name,
+                ).await {
+                    log::warn!("[RatingService] 发送评分通知失败: {}", e);
+                }
+            }
+        }
     }
 
     /// 获取用户对资源的评分

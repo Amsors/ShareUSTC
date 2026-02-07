@@ -1,5 +1,5 @@
 use actix_multipart::Multipart;
-use actix_web::{delete, get, post, web, HttpResponse, Responder};
+use actix_web::{delete, get, post, web, HttpRequest, HttpResponse, Responder};
 use futures_util::StreamExt;
 use uuid::Uuid;
 
@@ -237,6 +237,9 @@ pub async fn get_resource_detail(
 ) -> impl Responder {
     let resource_id = path.into_inner();
 
+    // 增加浏览量
+    let _ = ResourceService::increment_views(&state.pool, resource_id).await;
+
     match ResourceService::get_resource_detail(&state.pool, resource_id).await {
         Ok(response) => HttpResponse::Ok().json(serde_json::json!({
             "code": 200,
@@ -322,6 +325,7 @@ pub async fn download_resource(
     state: web::Data<AppState>,
     user: Option<web::ReqData<CurrentUser>>,
     path: web::Path<Uuid>,
+    req: HttpRequest,
 ) -> impl Responder {
     let resource_id = path.into_inner();
 
@@ -336,14 +340,19 @@ pub async fn download_resource(
 
                     // 记录下载日志
                     let user_id = user.as_ref().map(|u| u.id);
-                    let ip_address = "0.0.0.0".to_string(); // TODO: 获取真实 IP
+
+                    // 获取真实 IP 地址
+                    let ip_address = req
+                        .peer_addr()
+                        .map(|addr| addr.ip().to_string())
+                        .unwrap_or_else(|| "0.0.0.0".to_string());
 
                     let _ = sqlx::query(
                         "INSERT INTO download_logs (resource_id, user_id, ip_address) VALUES ($1, $2, $3::inet)"
                     )
                     .bind(resource_id)
                     .bind(user_id)
-                    .bind(ip_address)
+                    .bind(&ip_address)
                     .execute(&state.pool)
                     .await;
 
@@ -539,11 +548,19 @@ pub async fn toggle_like(
     let resource_id = path.into_inner();
 
     match LikeService::toggle_like(&state.pool, resource_id, user.id).await {
-        Ok(result) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": result.message,
-            "data": result
-        })),
+        Ok(result) => {
+            // 转换为 camelCase 的响应结构
+            let response_data = crate::models::LikeToggleResponse {
+                is_liked: result.is_liked,
+                like_count: result.like_count,
+                message: result.message.clone(),
+            };
+            HttpResponse::Ok().json(serde_json::json!({
+                "code": 200,
+                "message": result.message,
+                "data": response_data
+            }))
+        }
         Err(e) => {
             log::warn!("点赞操作失败: {}", e);
             HttpResponse::Ok().json(serde_json::json!({
@@ -584,13 +601,16 @@ pub async fn get_like_status(
         }
     };
 
+    // 使用 LikeStatusResponse 结构体，确保字段名使用 camelCase
+    let response_data = crate::models::LikeStatusResponse {
+        is_liked,
+        like_count,
+    };
+
     HttpResponse::Ok().json(serde_json::json!({
         "code": 200,
         "message": "获取成功",
-        "data": {
-            "is_liked": is_liked,
-            "like_count": like_count
-        }
+        "data": response_data
     }))
 }
 

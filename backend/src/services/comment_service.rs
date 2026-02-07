@@ -4,7 +4,7 @@ use uuid::Uuid;
 use crate::models::{
     Comment, CommentListQuery, CommentListResponse, CommentResponse, CreateCommentRequest,
 };
-use crate::services::ResourceError;
+use crate::services::{NotificationService, ResourceError};
 
 pub struct CommentService;
 
@@ -63,6 +63,9 @@ impl CommentService {
 
         log::debug!("[CommentService] 评论创建完成: comment_id={}, user_name={}", comment.id, user_name);
 
+        // 发送通知给资源上传者（如果不是评论自己的资源）
+        Self::notify_uploader_on_comment(pool, resource_id, user_id, &user_name).await;
+
         Ok(CommentResponse {
             id: comment.id,
             resource_id: comment.resource_id,
@@ -72,6 +75,40 @@ impl CommentService {
             content: comment.content,
             created_at: comment.created_at.format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string(),
         })
+    }
+
+    /// 评论时通知资源上传者
+    async fn notify_uploader_on_comment(
+        pool: &PgPool,
+        resource_id: Uuid,
+        commenter_id: Uuid,
+        commenter_name: &str,
+    ) {
+        // 获取资源上传者信息
+        let result = sqlx::query_as::<_, (Uuid, String, Option<Uuid>)>(
+            "SELECT uploader_id, title, author_id FROM resources WHERE id = $1"
+        )
+        .bind(resource_id)
+        .fetch_optional(pool)
+        .await;
+
+        if let Ok(Some((uploader_id, resource_title, author_id))) = result {
+            // 优先通知作者（如果存在），否则通知上传者
+            let notify_user_id = author_id.unwrap_or(uploader_id);
+
+            // 不给自己发通知
+            if notify_user_id != commenter_id {
+                if let Err(e) = NotificationService::create_comment_notification(
+                    pool,
+                    resource_id,
+                    &resource_title,
+                    notify_user_id,
+                    commenter_name,
+                ).await {
+                    log::warn!("[CommentService] 发送评论通知失败: {}", e);
+                }
+            }
+        }
     }
 
     /// 获取评论列表

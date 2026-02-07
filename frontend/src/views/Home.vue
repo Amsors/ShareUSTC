@@ -12,6 +12,8 @@
           <router-link to="/upload">上传</router-link>
           <router-link to="/image-host">图床</router-link>
           <router-link to="/profile">个人中心</router-link>
+          <NotificationBell />
+          <router-link v-if="authStore.isAdmin" to="/admin" class="admin-link">管理后台</router-link>
           <el-dropdown @command="handleCommand">
             <span class="user-info">
               {{ authStore.user?.username }}
@@ -19,6 +21,9 @@
             </span>
             <template #dropdown>
               <el-dropdown-menu>
+                <el-dropdown-item v-if="authStore.isAdmin" command="admin">
+                  <el-icon><Setting /></el-icon> 管理后台
+                </el-dropdown-item>
                 <el-dropdown-item command="profile">个人中心</el-dropdown-item>
                 <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
               </el-dropdown-menu>
@@ -50,8 +55,8 @@
       <div class="test-section" v-if="authStore.isAuthenticated">
         <h2>欢迎回来，{{ authStore.user?.username }}！</h2>
         <p>您已成功登录 ShareUSTC</p>
-        <el-tag :type="authStore.isVerified ? 'success' : 'info'">
-          {{ authStore.isVerified ? '已认证用户' : '普通用户' }}
+        <el-tag :type="authStore.isAdmin ? 'danger' : (authStore.isVerified ? 'success' : 'info')">
+          {{ authStore.isAdmin ? '管理员' : (authStore.isVerified ? '已认证用户' : '普通用户') }}
         </el-tag>
       </div>
 
@@ -91,8 +96,9 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
-import { ArrowDown, Document, Search, ChatDotRound } from '@element-plus/icons-vue';
+import { ArrowDown, Document, Search, ChatDotRound, Setting } from '@element-plus/icons-vue';
 import { ElMessageBox } from 'element-plus';
+import NotificationBell from '../components/notification/NotificationBell.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -124,6 +130,8 @@ const handleCommand = async (command: string) => {
     }
   } else if (command === 'profile') {
     router.push('/profile');
+  } else if (command === 'admin') {
+    router.push('/admin');
   }
 };
 </script>
@@ -183,6 +191,17 @@ const handleCommand = async (command: string) => {
 
 .register-btn:hover {
   background-color: #66b1ff;
+}
+
+.admin-link {
+  background-color: #f56c6c;
+  color: #fff !important;
+  padding: 8px 16px;
+  border-radius: 4px;
+}
+
+.admin-link:hover {
+  background-color: #f78989;
 }
 
 .user-info {

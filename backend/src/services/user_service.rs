@@ -208,12 +208,11 @@ impl UserService {
             "grade": req.grade,
         });
 
-        // 更新用户为实名状态
+        // 更新用户为实名状态（保持原有角色，只更新 is_verified）
         let updated_user: User = sqlx::query_as::<_, User>(
             r#"
             UPDATE users
-            SET role = 'verified',
-                is_verified = true,
+            SET is_verified = true,
                 real_info = $1,
                 updated_at = NOW()
             WHERE id = $2 AND is_active = true
