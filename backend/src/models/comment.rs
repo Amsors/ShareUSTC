@@ -39,6 +39,7 @@ pub struct CommentResponse {
 
 /// 评论列表查询
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CommentListQuery {
     pub page: Option<i64>,
     pub per_page: Option<i64>,

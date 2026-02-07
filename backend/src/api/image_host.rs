@@ -4,7 +4,6 @@ use futures_util::StreamExt;
 use uuid::Uuid;
 
 use crate::db::AppState;
-use crate::middleware::auth::JwtAuth;
 use crate::models::CurrentUser;
 use crate::services::{ImageError, ImageService};
 

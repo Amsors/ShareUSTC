@@ -26,6 +26,7 @@ pub struct CreateRatingRequest {
 
 /// 评分响应
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RatingResponse {
     pub id: Uuid,
     pub resource_id: Uuid,
@@ -50,8 +51,10 @@ impl From<Rating> for RatingResponse {
     }
 }
 
-/// 评分汇总
+/// 评分汇总（预留接口）
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub struct RatingSummary {
     pub avg_difficulty: Option<f64>,
     pub avg_quality: Option<f64>,

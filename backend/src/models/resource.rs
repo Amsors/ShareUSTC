@@ -86,7 +86,8 @@ impl ResourceType {
         ]
     }
 
-    /// 检查是否支持预览
+    /// 检查是否支持预览（预留接口）
+    #[allow(dead_code)]
     pub fn is_previewable(&self) -> bool {
         matches!(
             self,
@@ -99,7 +100,8 @@ impl ResourceType {
         )
     }
 
-    /// 获取 MIME 类型
+    /// 获取 MIME 类型（预留接口）
+    #[allow(dead_code)]
     pub fn mime_type(&self) -> &'static str {
         match self {
             ResourceType::WebMarkdown => "text/markdown",
@@ -231,6 +233,8 @@ pub struct ResourceStats {
 pub struct UploadResourceRequest {
     pub title: String,
     pub course_name: Option<String>,
+    // 前端传入的资源类型，后端实际从文件扩展名推断（保留用于API兼容性）
+    #[allow(dead_code)]
     pub resource_type: ResourceType,
     pub category: ResourceCategory,
     pub tags: Option<Vec<String>>,

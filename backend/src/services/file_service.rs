@@ -162,7 +162,8 @@ impl FileService {
             .map_err(|e| FileError::FileSystemError(format!("读取文件失败: {}", e)))
     }
 
-    /// 获取文件 MIME 类型（通过文件路径）
+    /// 获取文件 MIME 类型（通过文件路径）（预留接口）
+    #[allow(dead_code)]
     pub fn get_mime_type(file_path: &str) -> String {
         // 处理 .ext.bin 格式的文件名（如 xxx.pdf.bin）
         let path = Path::new(file_path);

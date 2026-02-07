@@ -11,6 +11,7 @@ pub enum UserError {
     UserExists(String),
     DatabaseError(String),
     ValidationError(String),
+    #[allow(dead_code)]
     Forbidden(String),
 }
 

@@ -1,6 +1,8 @@
 use std::env;
 
+/// 应用配置结构体（预留，供后续集中配置管理使用）
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 pub struct Config {
     pub database_url: String,
     pub jwt_secret: String,
@@ -10,6 +12,8 @@ pub struct Config {
 }
 
 impl Config {
+    /// 从环境变量加载配置（预留接口）
+    #[allow(dead_code)]
     pub fn from_env() -> Self {
         Self {
             database_url: env::var("DATABASE_URL")

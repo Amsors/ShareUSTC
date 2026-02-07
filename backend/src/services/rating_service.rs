@@ -88,7 +88,8 @@ impl RatingService {
         Ok(())
     }
 
-    /// 获取评分汇总
+    /// 获取评分汇总（预留接口）
+    #[allow(dead_code)]
     pub async fn get_rating_summary(
         pool: &PgPool,
         resource_id: Uuid,

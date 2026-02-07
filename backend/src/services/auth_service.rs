@@ -11,6 +11,7 @@ use uuid::Uuid;
 pub enum AuthError {
     InvalidCredentials(String),
     UserExists(String),
+    #[allow(dead_code)]
     UserNotFound(String),
     TokenInvalid(String),
     DatabaseError(String),

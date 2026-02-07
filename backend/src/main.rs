@@ -192,7 +192,7 @@ async fn main() -> std::io::Result<()> {
                     .supports_credentials()
                     .max_age(3600)
             )
-            .wrap(Logger::new("%a %t \"%r\" %s %b \"%{Referer}i\" \"%{User-Agent}i\" %T")
+            .wrap(Logger::new("%a %r %s %b %Dms")
                 .log_target("backend::access"))
             // API 路由（统一使用 /api 前缀，通过中间件控制认证）
             // 注意：config 必须在 config_public 之前注册，否则 /resources/my 会被 /resources/{id} 匹配

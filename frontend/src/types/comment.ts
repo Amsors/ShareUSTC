@@ -23,5 +23,5 @@ export interface CommentListResponse {
 
 export interface CommentListQuery {
   page?: number;
-  per_page?: number;
+  perPage?: number;
 }

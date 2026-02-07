@@ -80,7 +80,8 @@ impl JwtAuth {
         }
     }
 
-    /// 添加公开路径（不需要认证）- 向后兼容
+    /// 添加公开路径（不需要认证）- 向后兼容（预留接口）
+    #[allow(dead_code)]
     pub fn with_public_paths(mut self, paths: Vec<String>) -> Self {
         self.public_paths = paths
             .into_iter()
@@ -95,7 +96,8 @@ impl JwtAuth {
         self
     }
 
-    /// 检查路径是否是公开路径
+    /// 检查路径是否是公开路径（预留接口）
+    #[allow(dead_code)]
     fn is_public_path(&self, path: &str, method: &Method) -> bool {
         self.public_paths.iter().any(|rule| rule.matches(path, method))
     }
@@ -200,23 +202,27 @@ where
     }
 }
 
-/// 从请求中提取当前用户
+/// 从请求中提取当前用户（预留接口）
+#[allow(dead_code)]
 pub fn get_current_user(req: &ServiceRequest) -> Option<CurrentUser> {
     req.extensions().get::<CurrentUser>().cloned()
 }
 
-/// 角色检查中间件工厂
+/// 角色检查中间件工厂（预留接口）
+#[allow(dead_code)]
 pub struct RequireRole {
     role: String,
 }
 
 impl RequireRole {
+    #[allow(dead_code)]
     pub fn admin() -> Self {
         Self {
             role: "admin".to_string(),
         }
     }
 
+    #[allow(dead_code)]
     pub fn verified() -> Self {
         Self {
             role: "verified".to_string(),
@@ -224,7 +230,8 @@ impl RequireRole {
     }
 }
 
-/// 需要认证的处理函数包装器
+/// 需要认证的处理函数包装器（预留接口）
+#[allow(dead_code)]
 pub async fn auth_required<F, Fut>(
     req: ServiceRequest,
     f: F,

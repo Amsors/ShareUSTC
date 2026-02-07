@@ -659,7 +659,8 @@ impl ResourceService {
         Ok(())
     }
 
-    /// 增加访问次数
+    /// 增加访问次数（预留接口）
+    #[allow(dead_code)]
     pub async fn increment_views(
         pool: &PgPool,
         resource_id: Uuid,

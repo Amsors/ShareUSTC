@@ -2,7 +2,9 @@ use crate::models::resource::AiAuditResult;
 
 #[derive(Debug)]
 pub enum AiError {
+    #[allow(dead_code)]
     ApiError(String),
+    #[allow(dead_code)]
     TimeoutError(String),
 }
 
@@ -42,9 +44,10 @@ impl AiService {
         })
     }
 
-    /// 审核评论内容
+    /// 审核评论内容（预留接口）
     ///
     /// 当前阶段：默认返回通过
+    #[allow(dead_code)]
     pub async fn audit_comment(_content: &str) -> Result<AiAuditResult, AiError> {
         // TODO: 接入真实 AI 评论审核服务
         // 当前阶段默认返回通过
@@ -58,9 +61,10 @@ impl AiService {
         })
     }
 
-    /// 推荐资源
+    /// 推荐资源（预留接口）
     ///
     /// 当前阶段：返回空列表
+    #[allow(dead_code)]
     pub async fn recommend_resources(
         _user_id: uuid::Uuid,
         _course_name: Option<&str>,
@@ -74,9 +78,10 @@ impl AiService {
         Ok(vec![])
     }
 
-    /// 获取 AI 不通过原因（用于人工审核参考）
+    /// 获取 AI 不通过原因（用于人工审核参考）（预留接口）
     ///
     /// 当前阶段：返回固定文本
+    #[allow(dead_code)]
     pub fn get_rejection_reason(_file_data: Option<&[u8]>) -> String {
         // TODO: 接入真实 AI 原因分析
         // 当前阶段返回通用原因

@@ -1,5 +1,5 @@
 use chrono::NaiveDateTime;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use sqlx::FromRow;
 use uuid::Uuid;
 
@@ -14,12 +14,6 @@ pub struct Image {
     pub file_size: Option<i32>,
     pub mime_type: Option<String>,
     pub created_at: NaiveDateTime,
-}
-
-/// 图片上传请求 DTO
-#[derive(Debug, Deserialize)]
-pub struct UploadImageRequest {
-    pub description: Option<String>,
 }
 
 /// 图片上传响应 DTO

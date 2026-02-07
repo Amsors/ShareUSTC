@@ -69,7 +69,7 @@ const loadComments = async () => {
   try {
     const result = await getComments(props.resourceId, {
       page: page.value,
-      per_page: perPage.value
+      perPage: perPage.value
     });
     comments.value = result.comments;
     total.value = result.total;

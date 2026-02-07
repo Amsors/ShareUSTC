@@ -141,12 +141,14 @@ pub fn extract_current_user(claims: Claims) -> Result<CurrentUser, String> {
     })
 }
 
-/// 获取 Access Token 有效期（秒）
+/// 获取 Access Token 有效期（秒）（预留接口）
+#[allow(dead_code)]
 pub fn get_access_token_expire_seconds() -> i64 {
     ACCESS_TOKEN_EXPIRE_MINUTES * 60
 }
 
-/// 获取 Refresh Token 有效期（秒）
+/// 获取 Refresh Token 有效期（秒）（预留接口）
+#[allow(dead_code)]
 pub fn get_refresh_token_expire_seconds() -> i64 {
     REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
 }

@@ -2,4 +2,6 @@
 
 pub mod auth;
 
-pub use auth::*;
+// JwtAuth 和 PublicPathRule 在主程序中使用
+pub use auth::JwtAuth;
+pub use auth::PublicPathRule;
