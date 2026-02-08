@@ -21,7 +21,7 @@ sudo apt install npm
 ## 安装rust
 
 ```bash
-sudo apt rustup pkg-config
+sudo apt install rustup pkg-config
 ```
 
 重启终端以加载环境变量，然后安装rust：
@@ -58,8 +58,8 @@ CREATE DATABASE shareustc
     WITH 
     OWNER = shareustc_app
     ENCODING = 'UTF8'
-    LC_COLLATE = 'en_US.UTF-8'
-    LC_CTYPE = 'en_US.UTF-8'
+    LC_COLLATE = 'C.UTF-8'
+    LC_CTYPE = 'C.UTF-8'
     TEMPLATE = template0;
 
 -- 授予权限
