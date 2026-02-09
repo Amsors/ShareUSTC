@@ -10,8 +10,8 @@ mod utils;
 mod services;
 mod middleware;
 mod db;
-mod repositories;
 
+use config::Config;
 use db::AppState;
 use middleware::{JwtAuth, PublicPathRule};
 
@@ -96,35 +96,29 @@ async fn main() -> std::io::Result<()> {
     // 加载环境变量
     dotenvy::dotenv().ok();
 
-    // 初始化日志系统
-    if std::env::var("RUST_LOG").is_err() {
-        std::env::set_var("RUST_LOG", "backend=debug,actix_web=info,sqlx=warn");
-    }
-    env_logger::init();
+    // 加载配置
+    let config = Config::from_env();
 
-    // 读取配置
-    let host = std::env::var("SERVER_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
-    let port = std::env::var("SERVER_PORT").unwrap_or_else(|_| "8080".to_string());
-    let server_addr = format!("{}:{}", host, port);
-    let jwt_secret = std::env::var("JWT_SECRET").unwrap_or_else(|_| "your-secret-key".to_string());
+    // 初始化日志系统
+    env_logger::Builder::from_env(
+        env_logger::Env::default().default_filter_or(&config.log_level)
+    ).init();
+
+    // 构建服务器地址
+    let server_addr = format!("{}:{}", config.server_host, config.server_port);
 
     // 确保上传目录存在
-    let image_upload_dir = std::env::var("IMAGE_UPLOAD_PATH")
-        .unwrap_or_else(|_| "./uploads/images".to_string());
-    std::fs::create_dir_all(&image_upload_dir).unwrap_or_else(|e| {
+    std::fs::create_dir_all(&config.image_upload_path).unwrap_or_else(|e| {
         log::warn!("创建图片上传目录失败: {}", e);
     });
-
-    let resource_upload_dir = std::env::var("RESOURCE_UPLOAD_PATH")
-        .unwrap_or_else(|_| "./uploads/resources".to_string());
-    std::fs::create_dir_all(&resource_upload_dir).unwrap_or_else(|e| {
+    std::fs::create_dir_all(&config.resource_upload_path).unwrap_or_else(|e| {
         log::warn!("创建资源上传目录失败: {}", e);
     });
 
     log::info!("Starting ShareUSTC backend server...");
     log::info!("Server address: http://{}", server_addr);
-    log::info!("Image upload directory: {}", image_upload_dir);
-    log::info!("Resource upload directory: {}", resource_upload_dir);
+    log::info!("Image upload directory: {}", config.image_upload_path);
+    log::info!("Resource upload directory: {}", config.resource_upload_path);
 
     // 创建数据库连接池
     let pool = match db::create_pool_from_env().await {
@@ -141,7 +135,7 @@ async fn main() -> std::io::Result<()> {
     };
 
     // 创建应用状态
-    let app_state = web::Data::new(AppState::new(pool, jwt_secret.clone()));
+    let app_state = web::Data::new(AppState::new(pool, config.jwt_secret.clone()));
 
     log::info!("Server starting at http://{}", server_addr);
     log::debug!("Debug logging enabled");
@@ -168,6 +162,9 @@ async fn main() -> std::io::Result<()> {
     log::debug!("  DEL  /api/resources/{{id}} - 删除资源");
     log::debug!("  GET  /api/health        - 健康检查");
     log::debug!("  GET  /api/hello         - 测试接口");
+
+    // 克隆配置数据用于闭包
+    let jwt_secret = config.jwt_secret.clone();
 
     HttpServer::new(move || {
         // 配置公开路径规则

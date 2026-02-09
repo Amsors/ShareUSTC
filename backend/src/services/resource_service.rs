@@ -226,6 +226,7 @@ impl ResourceService {
     }
 
     /// 获取资源列表
+    /// 使用 QueryBuilder 构建动态查询，避免字符串拼接
     pub async fn get_resource_list(
         pool: &PgPool,
         query: &ResourceListQuery,
@@ -233,32 +234,6 @@ impl ResourceService {
         let page = query.get_page();
         let per_page = query.get_per_page();
         let offset = (page - 1) * per_page;
-
-        // 构建查询条件
-        let mut conditions = vec!["r.audit_status = 'approved'".to_string()];
-        let mut filter_params: Vec<String> = vec![];
-
-        // 处理资源类型筛选（支持合并类型）
-        if let Some(ref resource_type) = query.resource_type {
-            let type_condition = match resource_type.as_str() {
-                "ppt" => "(r.resource_type = 'ppt' OR r.resource_type = 'pptx')".to_string(),
-                "image" => "(r.resource_type = 'jpeg' OR r.resource_type = 'jpg' OR r.resource_type = 'png')".to_string(),
-                "doc" => "(r.resource_type = 'doc' OR r.resource_type = 'docx')".to_string(),
-                _ => {
-                    let param_idx = filter_params.len() + 1;
-                    filter_params.push(resource_type.clone());
-                    format!("r.resource_type = ${}", param_idx)
-                }
-            };
-            conditions.push(type_condition);
-        }
-
-        if let Some(ref category) = query.category {
-            conditions.push(format!("r.category = ${}", filter_params.len() + 1));
-            filter_params.push(category.clone());
-        }
-
-        let where_clause = conditions.join(" AND ");
 
         // 构建排序
         let sort_by = match query.sort_by.as_deref() {
@@ -273,24 +248,28 @@ impl ResourceService {
             _ => "DESC",
         };
 
-        // 获取总数 - 需要绑定过滤参数
-        let count_query = format!(
-            "SELECT COUNT(*) FROM resources r WHERE {}",
-            where_clause
+        // 使用 QueryBuilder 构建 COUNT 查询
+        let mut count_builder = sqlx::QueryBuilder::new(
+            "SELECT COUNT(*) FROM resources r WHERE r.audit_status = 'approved'"
         );
 
-        let mut count_sql = sqlx::query_scalar(&count_query);
-        for param in &filter_params {
-            count_sql = count_sql.bind(param);
+        // 处理资源类型筛选（支持合并类型）
+        Self::add_resource_type_condition(&mut count_builder, query.resource_type.as_deref());
+
+        // 处理分类筛选
+        if let Some(ref category) = query.category {
+            count_builder.push(" AND r.category = ");
+            count_builder.push_bind(category);
         }
 
-        let total: i64 = count_sql
+        let total: i64 = count_builder
+            .build_query_scalar()
             .fetch_one(pool)
             .await
             .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
 
-        // 获取资源列表 - 需要绑定过滤参数 + 分页参数
-        let list_query = format!(
+        // 使用 QueryBuilder 构建列表查询
+        let mut list_builder = sqlx::QueryBuilder::new(
             r#"
             SELECT r.*, rs.views, rs.downloads, rs.likes, rs.avg_difficulty,
                    rs.avg_quality, rs.avg_detail, rs.rating_count,
@@ -298,30 +277,68 @@ impl ResourceService {
             FROM resources r
             LEFT JOIN resource_stats rs ON r.id = rs.resource_id
             LEFT JOIN users u ON r.uploader_id = u.id
-            WHERE {}
-            ORDER BY {} {}
-            LIMIT ${} OFFSET ${}
-            "#,
-            where_clause,
-            sort_by,
-            sort_order,
-            filter_params.len() + 1,
-            filter_params.len() + 2
+            WHERE r.audit_status = 'approved'
+            "#
         );
 
-        let mut list_sql = sqlx::query(&list_query);
-        // 先绑定过滤参数
-        for param in &filter_params {
-            list_sql = list_sql.bind(param);
+        // 处理资源类型筛选
+        Self::add_resource_type_condition(&mut list_builder, query.resource_type.as_deref());
+
+        // 处理分类筛选
+        if let Some(ref category) = query.category {
+            list_builder.push(" AND r.category = ");
+            list_builder.push_bind(category);
         }
-        // 再绑定分页参数
-        let rows = list_sql
-            .bind(per_page as i64)
-            .bind(offset as i64)
+
+        // 添加排序和分页
+        list_builder.push(format!(" ORDER BY {} {}", sort_by, sort_order));
+        list_builder.push(" LIMIT ");
+        list_builder.push_bind(per_page as i64);
+        list_builder.push(" OFFSET ");
+        list_builder.push_bind(offset as i64);
+
+        let rows = list_builder
+            .build()
             .fetch_all(pool)
             .await
             .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
 
+        let resources = Self::map_rows_to_resources(rows)?;
+
+        Ok(ResourceListResponse {
+            resources,
+            total,
+            page,
+            per_page,
+        })
+    }
+
+    /// 辅助方法：添加资源类型筛选条件到 QueryBuilder
+    fn add_resource_type_condition<'a>(
+        builder: &mut sqlx::QueryBuilder<'a, sqlx::Postgres>,
+        resource_type: Option<&'a str>,
+    ) {
+        if let Some(resource_type) = resource_type {
+            match resource_type {
+                "ppt" => {
+                    builder.push(" AND (r.resource_type = 'ppt' OR r.resource_type = 'pptx')");
+                }
+                "image" => {
+                    builder.push(" AND (r.resource_type = 'jpeg' OR r.resource_type = 'jpg' OR r.resource_type = 'png')");
+                }
+                "doc" => {
+                    builder.push(" AND (r.resource_type = 'doc' OR r.resource_type = 'docx')");
+                }
+                _ => {
+                    builder.push(" AND r.resource_type = ");
+                    builder.push_bind(resource_type);
+                }
+            }
+        }
+    }
+
+    /// 辅助方法：将查询结果行映射为 ResourceListItem
+    fn map_rows_to_resources(rows: Vec<sqlx::postgres::PgRow>) -> Result<Vec<ResourceListItem>, ResourceError> {
         let mut resources = Vec::new();
         for row in rows {
             let tags_json: Option<serde_json::Value> = row.try_get("tags").ok();
@@ -350,16 +367,11 @@ impl ResourceService {
                 uploader_name: row.try_get("uploader_name").ok(),
             });
         }
-
-        Ok(ResourceListResponse {
-            resources,
-            total,
-            page,
-            per_page,
-        })
+        Ok(resources)
     }
 
     /// 搜索资源
+    /// 使用 QueryBuilder 构建动态查询，避免字符串拼接
     pub async fn search_resources(
         pool: &PgPool,
         query: &ResourceSearchQuery,
@@ -370,54 +382,32 @@ impl ResourceService {
 
         let search_pattern = format!("%{}%", query.q);
 
-        // 构建查询条件
-        let mut conditions = vec![
-            "r.audit_status = 'approved'".to_string(),
-            "(r.title ILIKE $1 OR r.course_name ILIKE $1)".to_string()
-        ];
-        let mut filter_params: Vec<String> = vec![];
+        // 使用 QueryBuilder 构建 COUNT 查询
+        let mut count_builder = sqlx::QueryBuilder::new(
+            "SELECT COUNT(*) FROM resources r WHERE r.audit_status = 'approved' AND (r.title ILIKE "
+        );
+        count_builder.push_bind(&search_pattern);
+        count_builder.push(" OR r.course_name ILIKE ");
+        count_builder.push_bind(&search_pattern);
+        count_builder.push(")");
 
         // 处理资源类型筛选（支持合并类型）
-        if let Some(ref resource_type) = query.resource_type {
-            let type_condition = match resource_type.as_str() {
-                "ppt" => "(r.resource_type = 'ppt' OR r.resource_type = 'pptx')".to_string(),
-                "image" => "(r.resource_type = 'jpeg' OR r.resource_type = 'jpg' OR r.resource_type = 'png')".to_string(),
-                "doc" => "(r.resource_type = 'doc' OR r.resource_type = 'docx')".to_string(),
-                _ => {
-                    let param_idx = filter_params.len() + 2; // +2 because $1 is search_pattern
-                    filter_params.push(resource_type.clone());
-                    format!("r.resource_type = ${}", param_idx)
-                }
-            };
-            conditions.push(type_condition);
-        }
+        Self::add_resource_type_condition(&mut count_builder, query.resource_type.as_deref());
 
+        // 处理分类筛选
         if let Some(ref category) = query.category {
-            let param_idx = filter_params.len() + 2;
-            filter_params.push(category.clone());
-            conditions.push(format!("r.category = ${}", param_idx));
+            count_builder.push(" AND r.category = ");
+            count_builder.push_bind(category);
         }
 
-        let where_clause = conditions.join(" AND ");
-
-        // 获取总数
-        let count_query = format!(
-            "SELECT COUNT(*) FROM resources r WHERE {}",
-            where_clause
-        );
-
-        let mut count_sql = sqlx::query_scalar(&count_query).bind(&search_pattern);
-        for param in &filter_params {
-            count_sql = count_sql.bind(param);
-        }
-
-        let total: i64 = count_sql
+        let total: i64 = count_builder
+            .build_query_scalar()
             .fetch_one(pool)
             .await
             .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
 
-        // 获取搜索结果
-        let list_query = format!(
+        // 使用 QueryBuilder 构建搜索查询
+        let mut search_builder = sqlx::QueryBuilder::new(
             r#"
             SELECT r.*, rs.views, rs.downloads, rs.likes, rs.avg_difficulty,
                    rs.avg_quality, rs.avg_detail, rs.rating_count,
@@ -425,55 +415,36 @@ impl ResourceService {
             FROM resources r
             LEFT JOIN resource_stats rs ON r.id = rs.resource_id
             LEFT JOIN users u ON r.uploader_id = u.id
-            WHERE {}
-            ORDER BY r.created_at DESC
-            LIMIT ${} OFFSET ${}
-            "#,
-            where_clause,
-            filter_params.len() + 2,
-            filter_params.len() + 3
+            WHERE r.audit_status = 'approved' AND (r.title ILIKE
+            "#
         );
+        search_builder.push_bind(&search_pattern);
+        search_builder.push(" OR r.course_name ILIKE ");
+        search_builder.push_bind(&search_pattern);
+        search_builder.push(")");
 
-        let mut list_sql = sqlx::query(&list_query).bind(&search_pattern);
-        for param in &filter_params {
-            list_sql = list_sql.bind(param);
+        // 处理资源类型筛选
+        Self::add_resource_type_condition(&mut search_builder, query.resource_type.as_deref());
+
+        // 处理分类筛选
+        if let Some(ref category) = query.category {
+            search_builder.push(" AND r.category = ");
+            search_builder.push_bind(category);
         }
 
-        let rows = list_sql
-            .bind(per_page as i64)
-            .bind(offset as i64)
+        // 添加排序和分页
+        search_builder.push(" ORDER BY r.created_at DESC LIMIT ");
+        search_builder.push_bind(per_page as i64);
+        search_builder.push(" OFFSET ");
+        search_builder.push_bind(offset as i64);
+
+        let rows = search_builder
+            .build()
             .fetch_all(pool)
             .await
             .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
 
-        let mut resources = Vec::new();
-        for row in rows {
-            let tags_json: Option<serde_json::Value> = row.try_get("tags").ok();
-            let tags: Option<Vec<String>> = tags_json.and_then(|t| {
-                serde_json::from_value::<Vec<String>>(t).ok()
-            });
-
-            resources.push(ResourceListItem {
-                id: row.try_get("id").map_err(|e| ResourceError::DatabaseError(e.to_string()))?,
-                title: row.try_get("title").map_err(|e| ResourceError::DatabaseError(e.to_string()))?,
-                course_name: row.try_get("course_name").ok(),
-                resource_type: row.try_get("resource_type").map_err(|e| ResourceError::DatabaseError(e.to_string()))?,
-                category: row.try_get("category").map_err(|e| ResourceError::DatabaseError(e.to_string()))?,
-                tags,
-                audit_status: row.try_get("audit_status").map_err(|e| ResourceError::DatabaseError(e.to_string()))?,
-                created_at: row.try_get("created_at").map_err(|e| ResourceError::DatabaseError(e.to_string()))?,
-                stats: ResourceStatsResponse {
-                    views: row.try_get::<i32, _>("views").unwrap_or(0),
-                    downloads: row.try_get::<i32, _>("downloads").unwrap_or(0),
-                    likes: row.try_get::<i32, _>("likes").unwrap_or(0),
-                    avg_difficulty: row.try_get("avg_difficulty").ok(),
-                    avg_quality: row.try_get("avg_quality").ok(),
-                    avg_detail: row.try_get("avg_detail").ok(),
-                    rating_count: row.try_get::<i32, _>("rating_count").unwrap_or(0),
-                },
-                uploader_name: row.try_get("uploader_name").ok(),
-            });
-        }
+        let resources = Self::map_rows_to_resources(rows)?;
 
         Ok(ResourceListResponse {
             resources,
@@ -708,5 +679,29 @@ impl ResourceService {
         .ok_or_else(|| ResourceError::NotFound(format!("资源 {} 不存在", resource_id)))?;
 
         Ok(row)
+    }
+
+    /// 记录下载日志
+    /// 将下载记录写入数据库，用于统计和审计
+    pub async fn record_download(
+        pool: &PgPool,
+        resource_id: Uuid,
+        user_id: Option<Uuid>,
+        ip_address: &str,
+    ) -> Result<(), ResourceError> {
+        sqlx::query(
+            "INSERT INTO download_logs (resource_id, user_id, ip_address) VALUES ($1, $2, $3::inet)"
+        )
+        .bind(resource_id)
+        .bind(user_id)
+        .bind(ip_address)
+        .execute(pool)
+        .await
+        .map_err(|e| {
+            log::warn!("记录下载日志失败: {}", e);
+            ResourceError::DatabaseError(e.to_string())
+        })?;
+
+        Ok(())
     }
 }

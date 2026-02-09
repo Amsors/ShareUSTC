@@ -9,39 +9,30 @@ use crate::services::{
 
 /// 检查用户是否是管理员
 fn check_admin(current_user: &CurrentUser) -> Result<(), AdminError> {
-    if current_user.role.to_string() != "admin" {
+    if !matches!(current_user.role, crate::models::UserRole::Admin) {
         return Err(AdminError::Forbidden("需要管理员权限".to_string()));
     }
     Ok(())
 }
 
-/// 将AdminError转换为HttpResponse
+/// 将AdminError转换为统一格式的HttpResponse
+/// 统一返回 HTTP 200，业务错误码通过 JSON 中的 code 字段传递
 fn handle_admin_error(err: AdminError) -> HttpResponse {
-    match err {
-        AdminError::NotFound(msg) => HttpResponse::NotFound().json(serde_json::json!({
-            "code": 404,
-            "message": msg,
-            "data": null
-        })),
-        AdminError::ValidationError(msg) => HttpResponse::BadRequest().json(serde_json::json!({
-            "code": 400,
-            "message": msg,
-            "data": null
-        })),
-        AdminError::Forbidden(msg) => HttpResponse::Forbidden().json(serde_json::json!({
-            "code": 403,
-            "message": msg,
-            "data": null
-        })),
+    let (code, message) = match err {
+        AdminError::NotFound(msg) => (404, msg),
+        AdminError::ValidationError(msg) => (400, msg),
+        AdminError::Forbidden(msg) => (403, msg),
         AdminError::DatabaseError(msg) => {
             log::error!("数据库错误: {}", msg);
-            HttpResponse::InternalServerError().json(serde_json::json!({
-                "code": 500,
-                "message": "服务器内部错误".to_string(),
-                "data": null
-            }))
+            (500, "服务器内部错误".to_string())
         }
-    }
+    };
+
+    HttpResponse::Ok().json(serde_json::json!({
+        "code": code,
+        "message": message,
+        "data": null
+    }))
 }
 
 /// 获取仪表盘统计数据

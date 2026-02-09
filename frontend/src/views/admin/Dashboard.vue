@@ -148,10 +148,8 @@ const statsCards = computed(() => [
 const fetchStats = async () => {
   loading.value = true;
   try {
-    const response = await adminApi.getDashboardStats();
-    if (response.data.code === 200) {
-      stats.value = response.data.data;
-    }
+    const data = await adminApi.getDashboardStats();
+    stats.value = data;
   } catch (error) {
     ElMessage.error('获取统计数据失败');
   } finally {

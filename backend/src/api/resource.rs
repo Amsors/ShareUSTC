@@ -347,14 +347,13 @@ pub async fn download_resource(
                         .map(|addr| addr.ip().to_string())
                         .unwrap_or_else(|| "0.0.0.0".to_string());
 
-                    let _ = sqlx::query(
-                        "INSERT INTO download_logs (resource_id, user_id, ip_address) VALUES ($1, $2, $3::inet)"
-                    )
-                    .bind(resource_id)
-                    .bind(user_id)
-                    .bind(&ip_address)
-                    .execute(&state.pool)
-                    .await;
+                    // 调用 Service 层记录下载日志
+                    let _ = ResourceService::record_download(
+                        &state.pool,
+                        resource_id,
+                        user_id,
+                        &ip_address
+                    ).await;
 
                     // 设置 Content-Type 和 Content-Disposition
                     // 使用 resource_type 获取 MIME 类型，因为它更准确

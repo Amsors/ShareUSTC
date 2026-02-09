@@ -187,11 +187,9 @@ const formatDate = (date: string) => {
 const fetchUsers = async () => {
   loading.value = true;
   try {
-    const response = await adminApi.getUserList(page.value, perPage.value);
-    if (response.data.code === 200) {
-      users.value = response.data.data.users;
-      total.value = response.data.data.total;
-    }
+    const data = await adminApi.getUserList(page.value, perPage.value);
+    users.value = data.users;
+    total.value = data.total;
   } catch (error) {
     ElMessage.error('获取用户列表失败');
   } finally {

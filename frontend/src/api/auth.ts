@@ -26,8 +26,3 @@ export const refreshToken = (data: RefreshTokenRequest): Promise<TokenResponse> 
 export const logout = (): Promise<void> => {
   return request.post('/auth/logout');
 };
-
-// 获取当前用户信息（需要登录）
-export const getCurrentUser = (): Promise<any> => {
-  return request.get('/users/me');
-};

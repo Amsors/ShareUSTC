@@ -185,12 +185,10 @@ const formatDate = (date: string) => {
 const fetchResources = async () => {
   loading.value = true;
   try {
-    const response = await adminApi.getPendingResources(page.value, perPage.value);
-    if (response.data.code === 200) {
-      resources.value = response.data.data.resources;
-      total.value = response.data.data.total;
-      pendingCount.value = response.data.data.total;
-    }
+    const data = await adminApi.getPendingResources(page.value, perPage.value);
+    resources.value = data.resources;
+    total.value = data.total;
+    pendingCount.value = data.total;
   } catch (error) {
     ElMessage.error('获取待审核资源失败');
   } finally {

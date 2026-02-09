@@ -1,4 +1,4 @@
-import { apiClient as client } from './client';
+import request from './request';
 
 /**
  * 管理员API封装
@@ -6,29 +6,29 @@ import { apiClient as client } from './client';
 
 // 仪表盘统计
 export const getDashboardStats = () => {
-  return client.get('/admin/dashboard');
+  return request.get('/admin/dashboard');
 };
 
 // 用户管理
 export const getUserList = (page: number = 1, perPage: number = 20) => {
-  return client.get('/admin/users', {
+  return request.get('/admin/users', {
     params: { page, perPage }
   });
 };
 
 export const updateUserStatus = (userId: string, isActive: boolean) => {
-  return client.put(`/admin/users/${userId}/status`, { isActive });
+  return request.put(`/admin/users/${userId}/status`, { isActive });
 };
 
 // 资源审核
 export const getPendingResources = (page: number = 1, perPage: number = 20) => {
-  return client.get('/admin/resources/pending', {
+  return request.get('/admin/resources/pending', {
     params: { page, perPage }
   });
 };
 
 export const auditResource = (resourceId: string, status: string, reason?: string) => {
-  return client.put(`/admin/resources/${resourceId}/audit`, {
+  return request.put(`/admin/resources/${resourceId}/audit`, {
     status,
     reason
   });
@@ -44,15 +44,15 @@ export const getCommentList = (
   if (auditStatus) {
     params.auditStatus = auditStatus;
   }
-  return client.get('/admin/comments', { params });
+  return request.get('/admin/comments', { params });
 };
 
 export const deleteComment = (commentId: string) => {
-  return client.delete(`/admin/comments/${commentId}`);
+  return request.delete(`/admin/comments/${commentId}`);
 };
 
 export const auditComment = (commentId: string, status: string) => {
-  return client.put(`/admin/comments/${commentId}/audit`, { status });
+  return request.put(`/admin/comments/${commentId}/audit`, { status });
 };
 
 // 导出API对象

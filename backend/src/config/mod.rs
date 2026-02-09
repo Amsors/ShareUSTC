@@ -1,19 +1,19 @@
 use std::env;
 
-/// 应用配置结构体（预留，供后续集中配置管理使用）
+/// 应用配置结构体
 #[derive(Clone, Debug)]
-#[allow(dead_code)]
 pub struct Config {
     pub database_url: String,
     pub jwt_secret: String,
     pub server_host: String,
     pub server_port: u16,
     pub log_level: String,
+    pub image_upload_path: String,
+    pub resource_upload_path: String,
 }
 
 impl Config {
-    /// 从环境变量加载配置（预留接口）
-    #[allow(dead_code)]
+    /// 从环境变量加载配置
     pub fn from_env() -> Self {
         Self {
             database_url: env::var("DATABASE_URL")
@@ -26,8 +26,12 @@ impl Config {
                 .ok()
                 .and_then(|p| p.parse().ok())
                 .unwrap_or(8080),
-            log_level: env::var("LOG_LEVEL")
-                .unwrap_or_else(|_| "debug".to_string()),
+            log_level: env::var("RUST_LOG")
+                .unwrap_or_else(|_| "backend=debug,actix_web=info,sqlx=warn".to_string()),
+            image_upload_path: env::var("IMAGE_UPLOAD_PATH")
+                .unwrap_or_else(|_| "./uploads/images".to_string()),
+            resource_upload_path: env::var("RESOURCE_UPLOAD_PATH")
+                .unwrap_or_else(|_| "./uploads/resources".to_string()),
         }
     }
 }

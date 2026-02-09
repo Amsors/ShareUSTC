@@ -182,15 +182,13 @@ const formatDate = (date: string) => {
 const fetchComments = async () => {
   loading.value = true;
   try {
-    const response = await adminApi.getCommentList(
+    const data = await adminApi.getCommentList(
       page.value,
       perPage.value,
       filterStatus.value || undefined
     );
-    if (response.data.code === 200) {
-      comments.value = response.data.data.comments;
-      total.value = response.data.data.total;
-    }
+    comments.value = data.comments;
+    total.value = data.total;
   } catch (error) {
     ElMessage.error('获取评论列表失败');
   } finally {
