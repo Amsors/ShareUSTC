@@ -10,11 +10,22 @@ pub struct Config {
     pub log_level: String,
     pub image_upload_path: String,
     pub resource_upload_path: String,
+    pub cors_allowed_origins: Vec<String>,
 }
 
 impl Config {
     /// 从环境变量加载配置
     pub fn from_env() -> Self {
+        // 解析 CORS 允许的域名列表
+        let cors_origins = env::var("CORS_ALLOWED_ORIGINS")
+            .unwrap_or_else(|_| {
+                "http://localhost:5173,http://127.0.0.1:5173".to_string()
+            })
+            .split(',')
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect();
+
         Self {
             database_url: env::var("DATABASE_URL")
                 .unwrap_or_else(|_| "postgres://postgres:postgres@localhost/shareustc".to_string()),
@@ -32,6 +43,7 @@ impl Config {
                 .unwrap_or_else(|_| "./uploads/images".to_string()),
             resource_upload_path: env::var("RESOURCE_UPLOAD_PATH")
                 .unwrap_or_else(|_| "./uploads/resources".to_string()),
+            cors_allowed_origins: cors_origins,
         }
     }
 }

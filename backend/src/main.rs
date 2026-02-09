@@ -165,8 +165,15 @@ async fn main() -> std::io::Result<()> {
 
     // 克隆配置数据用于闭包
     let jwt_secret = config.jwt_secret.clone();
+    let cors_origins = config.cors_allowed_origins.clone();
+
+    // 记录 CORS 配置信息
+    log::info!("CORS allowed origins: {:?}", cors_origins);
 
     HttpServer::new(move || {
+        // 克隆 CORS 域名列表供此 worker 线程使用
+        let cors_origins_worker = cors_origins.clone();
+
         // 配置公开路径规则
         let public_rules = vec![
             // /api/auth 全部公开
@@ -178,17 +185,32 @@ async fn main() -> std::io::Result<()> {
 
         let jwt_auth = JwtAuth::new(jwt_secret.clone()).with_public_rules(public_rules);
 
+        // 构建 CORS 配置
+        let cors = Cors::default()
+            .allowed_methods(vec!["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+            .allowed_headers(vec!["Content-Type", "Authorization", "Accept"])
+            .supports_credentials()
+            .max_age(3600);
+
+        // 动态添加允许的域名
+        let cors = if cors_origins_worker.contains(&"*".to_string()) {
+            cors.allow_any_origin()
+        } else {
+            cors.allowed_origin_fn(move |origin, _req_head| {
+                let origin_str = origin.to_str().unwrap_or("");
+                cors_origins_worker.iter().any(|allowed| {
+                    if allowed.ends_with('/') {
+                        origin_str.starts_with(&allowed[..allowed.len()-1])
+                    } else {
+                        origin_str == allowed || origin_str.starts_with(&format!("{}/", allowed))
+                    }
+                })
+            })
+        };
+
         App::new()
             .app_data(app_state.clone())
-            .wrap(
-                Cors::default()
-                    .allowed_origin("http://localhost:5173")
-                    .allowed_origin("http://127.0.0.1:5173")
-                    .allowed_methods(vec!["GET", "POST", "PUT", "DELETE", "OPTIONS"])
-                    .allowed_headers(vec!["Content-Type", "Authorization", "Accept"])
-                    .supports_credentials()
-                    .max_age(3600)
-            )
+            .wrap(cors)
             .wrap(Logger::new("%a %r %s %b %Dms")
                 .log_target("backend::access"))
             // API 路由（统一使用 /api 前缀，通过中间件控制认证）
