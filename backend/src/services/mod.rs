@@ -11,6 +11,7 @@ pub mod like_service;
 pub mod comment_service;
 pub mod notification_service;
 pub mod admin_service;
+pub mod favorite_service;
 
 pub use auth_service::*;
 pub use user_service::*;
@@ -23,3 +24,4 @@ pub use like_service::*;
 pub use comment_service::*;
 pub use notification_service::*;
 pub use admin_service::*;
+pub use favorite_service::*;

@@ -31,5 +31,6 @@ features = [
     "uuid",
     "chrono",
     "migrate",
-    "macros"
+    "macros",
+    "json"
 ]

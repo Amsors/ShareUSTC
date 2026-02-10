@@ -11,6 +11,7 @@
         <template v-if="authStore.isAuthenticated">
           <router-link to="/upload">上传</router-link>
           <router-link to="/image-host">图床</router-link>
+          <router-link to="/favorites">收藏夹</router-link>
           <router-link to="/profile">个人中心</router-link>
           <NotificationBell />
           <router-link v-if="authStore.isAdmin" to="/admin" class="admin-link">管理后台</router-link>

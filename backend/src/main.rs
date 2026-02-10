@@ -160,6 +160,14 @@ async fn main() -> std::io::Result<()> {
     log::debug!("  GET  /api/resources/{{id}} - 获取资源详情");
     log::debug!("  GET  /api/resources/{{id}}/download - 下载资源");
     log::debug!("  DEL  /api/resources/{{id}} - 删除资源");
+    log::debug!("  POST /api/favorites     - 创建收藏夹");
+    log::debug!("  GET  /api/favorites     - 获取我的收藏夹列表");
+    log::debug!("  GET  /api/favorites/{{id}} - 获取收藏夹详情");
+    log::debug!("  PUT  /api/favorites/{{id}} - 更新收藏夹");
+    log::debug!("  DEL  /api/favorites/{{id}} - 删除收藏夹");
+    log::debug!("  POST /api/favorites/{{id}}/resources - 添加资源到收藏夹");
+    log::debug!("  DEL  /api/favorites/{{id}}/resources/{{rid}} - 从收藏夹移除资源");
+    log::debug!("  GET  /api/favorites/check/{{rid}} - 检查资源收藏状态");
     log::debug!("  GET  /api/health        - 健康检查");
     log::debug!("  GET  /api/hello         - 测试接口");
 
@@ -224,6 +232,7 @@ async fn main() -> std::io::Result<()> {
                     .configure(api::comment::config)          // 评论路由
                     .configure(api::notification::config)     // 通知路由
                     .configure(api::admin::config)            // 管理后台路由
+                    .configure(api::favorite::config)         // 收藏夹路由
                     .configure(api::resource::config)          // 需要认证的资源路由（先注册）
                     .configure(api::resource::config_public)  // 公开资源路由（后注册）
             )

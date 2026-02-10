@@ -51,6 +51,11 @@
 
               <LikeButton v-if="authStore.isAuthenticated" :resource-id="resourceId" @update="onLikeUpdate" />
 
+              <el-button v-if="authStore.isAuthenticated" size="large" @click="showAddToFavorite = true">
+                <el-icon><Folder /></el-icon>
+                收藏
+              </el-button>
+
               <el-button size="large" v-if="canDelete" type="danger" @click="handleDelete">
                 <el-icon><Delete /></el-icon>
                 删除
@@ -176,6 +181,14 @@
           </el-col>
         </el-row>
       </div>
+
+      <!-- 添加到收藏夹弹窗 -->
+      <AddToFavoriteModal
+        v-if="authStore.isAuthenticated"
+        v-model="showAddToFavorite"
+        :resource-id="resourceId"
+        @success="onAddToFavoriteSuccess"
+      />
     </template>
   </div>
 </template>
@@ -191,13 +204,15 @@ import {
   Download,
   Star,
   Delete,
-  View
+  View,
+  Folder
 } from '@element-plus/icons-vue';
 import { getResourceDetail, downloadResource, deleteResource } from '../../api/resource';
 import { useAuthStore } from '../../stores/auth';
 import PreviewSwitch from '../../components/preview/PreviewSwitch.vue';
 import LikeButton from '../../components/interaction/LikeButton.vue';
 import CommentSection from '../../components/interaction/CommentSection.vue';
+import AddToFavoriteModal from '../../components/favorite/AddToFavoriteModal.vue';
 import {
   ResourceTypeLabels,
   ResourceCategoryLabels,
@@ -214,6 +229,7 @@ const authStore = useAuthStore();
 const loading = ref(true);
 const downloading = ref(false);
 const resource = ref<ResourceDetail | null>(null);
+const showAddToFavorite = ref(false);
 
 // 计算属性
 const resourceId = computed(() => route.params.id as string);
@@ -261,6 +277,11 @@ const onLikeUpdate = (_isLiked: boolean, count: number) => {
   if (resource.value) {
     resource.value.stats.likes = count;
   }
+};
+
+// 添加到收藏夹成功回调
+const onAddToFavoriteSuccess = () => {
+  // 可以在这里添加一些UI反馈，比如显示资源已被收藏的提示
 };
 
 // 格式化日期

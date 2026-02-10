@@ -88,6 +88,18 @@ const routes = [
     component: () => import('../views/notification/NotificationCenter.vue'),
     meta: { requiresAuth: true }
   },
+  {
+    path: '/favorites',
+    name: 'FavoriteList',
+    component: () => import('../views/favorite/FavoriteList.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/favorites/:id',
+    name: 'FavoriteDetail',
+    component: () => import('../views/favorite/FavoriteDetail.vue'),
+    meta: { requiresAuth: true }
+  },
   // 管理员路由
   {
     path: '/admin',
