@@ -84,6 +84,7 @@ impl From<User> for UserInfo {
 
 /// 注册请求 DTO
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RegisterRequest {
     pub username: String,
     pub password: String,
@@ -92,6 +93,7 @@ pub struct RegisterRequest {
 
 /// 登录请求 DTO
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct LoginRequest {
     pub username: String,
     pub password: String,
@@ -117,6 +119,7 @@ pub struct AuthResponse {
 
 /// 刷新 Token 请求 DTO
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RefreshTokenRequest {
     pub refresh_token: String,
 }

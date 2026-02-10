@@ -257,7 +257,7 @@ const handleDelete = async (comment: Comment) => {
       {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
-        type: 'danger'
+        type: 'warning'
       }
     );
 
