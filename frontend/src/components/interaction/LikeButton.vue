@@ -60,7 +60,9 @@ const handleToggleLike = async () => {
     ElMessage.success(result.message);
     emit('update', isLiked.value, likeCount.value);
   } catch (error: any) {
-    ElMessage.error(error.message || '操作失败');
+    if (!error.isHandled) {
+      ElMessage.error(error.message || '操作失败');
+    }
   } finally {
     loading.value = false;
   }

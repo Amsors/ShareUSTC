@@ -36,6 +36,15 @@ request.interceptors.request.use(
   }
 );
 
+// 自定义错误类型，用于标记错误是否已被处理
+class ApiError extends Error {
+  isHandled: boolean;
+  constructor(message: string, isHandled: boolean = false) {
+    super(message);
+    this.isHandled = isHandled;
+  }
+}
+
 // 响应拦截器
 request.interceptors.response.use(
   (response: AxiosResponse) => {
@@ -46,7 +55,7 @@ request.interceptors.response.use(
     // 如果 code 不是 200，视为错误
     if (code !== 200) {
       ElMessage.error(message || '请求失败');
-      return Promise.reject(new Error(message));
+      return Promise.reject(new ApiError(message || '请求失败', true));
     }
 
     return data;
@@ -97,10 +106,10 @@ request.interceptors.response.use(
           ElMessage.error(message);
       }
 
-      return Promise.reject(new Error(message));
+      return Promise.reject(new ApiError(message, true));
     } else {
       ElMessage.error('网络错误，请检查网络连接');
-      return Promise.reject(new Error('网络错误'));
+      return Promise.reject(new ApiError('网络错误', true));
     }
   }
 );

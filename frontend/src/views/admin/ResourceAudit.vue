@@ -189,8 +189,10 @@ const fetchResources = async () => {
     resources.value = data.resources;
     total.value = data.total;
     pendingCount.value = data.total;
-  } catch (error) {
-    ElMessage.error('获取待审核资源失败');
+  } catch (error: any) {
+    if (!error.isHandled) {
+      ElMessage.error('获取待审核资源失败');
+    }
   } finally {
     loading.value = false;
   }
@@ -215,8 +217,8 @@ const handleApprove = async (resource: Resource) => {
     await adminApi.auditResource(resource.id, 'approved');
     ElMessage.success('资源审核通过');
     fetchResources();
-  } catch (error) {
-    if (error !== 'cancel') {
+  } catch (error: any) {
+    if (error !== 'cancel' && !error.isHandled) {
       ElMessage.error('操作失败');
     }
   }
@@ -245,8 +247,10 @@ const confirmReject = async () => {
     ElMessage.success('资源已拒绝');
     rejectDialogVisible.value = false;
     fetchResources();
-  } catch (error) {
-    ElMessage.error('操作失败');
+  } catch (error: any) {
+    if (!error.isHandled) {
+      ElMessage.error('操作失败');
+    }
   }
 };
 

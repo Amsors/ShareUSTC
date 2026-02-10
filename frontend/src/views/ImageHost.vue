@@ -308,7 +308,9 @@ const uploadFile = async (file: File) => {
     // 刷新图片列表
     await loadImages();
   } catch (error: any) {
-    ElMessage.error(error.message || '上传失败');
+    if (!error.isHandled) {
+      ElMessage.error(error.message || '上传失败');
+    }
   } finally {
     uploading.value = false;
   }
@@ -325,7 +327,9 @@ const loadImages = async () => {
     images.value = result.images;
     total.value = result.total;
   } catch (error: any) {
-    ElMessage.error(error.message || '加载图片列表失败');
+    if (!error.isHandled) {
+      ElMessage.error(error.message || '加载图片列表失败');
+    }
   } finally {
     loading.value = false;
   }
@@ -365,7 +369,7 @@ const confirmDelete = async (image: Image) => {
 
     await loadImages();
   } catch (error: any) {
-    if (error !== 'cancel') {
+    if (error !== 'cancel' && !error.isHandled) {
       ElMessage.error(error.message || '删除失败');
     }
   }

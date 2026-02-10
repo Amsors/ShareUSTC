@@ -90,8 +90,10 @@ async function handleDismissCurrent() {
       // 全部关闭了
       visible.value = false;
     }
-  } catch (error) {
-    ElMessage.error('操作失败');
+  } catch (error: any) {
+    if (!error.isHandled) {
+      ElMessage.error('操作失败');
+    }
   } finally {
     dismissing.value = false;
   }
@@ -106,8 +108,10 @@ async function handleDismissAll() {
       await notificationStore.dismissPriority(id);
     }
     visible.value = false;
-  } catch (error) {
-    ElMessage.error('操作失败');
+  } catch (error: any) {
+    if (!error.isHandled) {
+      ElMessage.error('操作失败');
+    }
   } finally {
     dismissing.value = false;
   }
