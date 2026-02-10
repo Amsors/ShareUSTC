@@ -71,7 +71,6 @@ import { ref, watch, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Plus, Folder, Check } from '@element-plus/icons-vue';
 import { useFavoriteStore } from '../../stores/favorite';
-import type { CheckResourceInFavoriteResponse } from '../../types/favorite';
 import * as favoriteApi from '../../api/favorite';
 
 const props = defineProps<{

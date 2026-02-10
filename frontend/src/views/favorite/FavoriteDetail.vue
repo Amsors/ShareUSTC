@@ -143,7 +143,6 @@ import {
 } from '@element-plus/icons-vue';
 import { useFavoriteStore } from '../../stores/favorite';
 import { downloadFavorite } from '../../api/favorite';
-import { ResourceTypeLabels } from '../../types/resource';
 import CreateFavoriteModal from '../../components/favorite/CreateFavoriteModal.vue';
 
 const route = useRoute();

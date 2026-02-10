@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { Favorite, FavoriteDetail, FavoriteListResponse } from '../types/favorite';
+import type { Favorite, FavoriteDetail } from '../types/favorite';
 import * as favoriteApi from '../api/favorite';
 
 export const useFavoriteStore = defineStore('favorite', () => {
@@ -79,7 +79,7 @@ export const useFavoriteStore = defineStore('favorite', () => {
       // 更新本地状态
       const index = favorites.value.findIndex(f => f.id === favoriteId);
       if (index !== -1) {
-        favorites.value[index].name = name;
+        favorites.value[index]!.name = name;
       }
       // 如果当前查看的收藏夹被更新，也更新它
       if (currentFavorite.value?.id === favoriteId) {
