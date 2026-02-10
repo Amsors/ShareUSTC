@@ -398,13 +398,17 @@ const copyMarkdown = async (markdown: string) => {
 // 格式化日期
 const formatDate = (dateString?: string) => {
   if (!dateString) return '-';
-  return new Date(dateString).toLocaleDateString('zh-CN');
+  // 将无时区的时间字符串视为 UTC 时间
+  const utcTimeString = dateString.endsWith('Z') ? dateString : `${dateString}Z`;
+  return new Date(utcTimeString).toLocaleDateString('zh-CN');
 };
 
 // 格式化日期时间
 const formatDateTime = (dateString?: string) => {
   if (!dateString) return '-';
-  return new Date(dateString).toLocaleString('zh-CN');
+  // 将无时区的时间字符串视为 UTC 时间
+  const utcTimeString = dateString.endsWith('Z') ? dateString : `${dateString}Z`;
+  return new Date(utcTimeString).toLocaleString('zh-CN');
 };
 
 // 下拉菜单处理

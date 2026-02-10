@@ -119,7 +119,9 @@ async function handleDismissAll() {
 
 // 格式化时间
 function formatTime(time: string): string {
-  const date = new Date(time);
+  // 将无时区的时间字符串视为 UTC 时间
+  const utcTimeString = time.endsWith('Z') ? time : `${time}Z`;
+  const date = new Date(utcTimeString);
   return date.toLocaleString('zh-CN', {
     year: 'numeric',
     month: '2-digit',

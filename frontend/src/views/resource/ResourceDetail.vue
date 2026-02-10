@@ -253,9 +253,11 @@ const getResourceTypeTagType = (type: string) => {
   return typeMap[type] || 'info';
 };
 
-// 格式化时间
+// 格式化时间（服务器返回的是 UTC 时间，需要转换为本地时间显示）
 const formatTime = (time: string) => {
-  const date = new Date(time);
+  // 将无时区的时间字符串视为 UTC 时间
+  const utcTimeString = time.endsWith('Z') ? time : `${time}Z`;
+  const date = new Date(utcTimeString);
   const now = new Date();
   const diff = now.getTime() - date.getTime();
 
@@ -284,9 +286,12 @@ const onAddToFavoriteSuccess = () => {
   // 可以在这里添加一些UI反馈，比如显示资源已被收藏的提示
 };
 
-// 格式化日期
+// 格式化日期（服务器返回的是 UTC 时间，需要转换为本地时间显示）
 const formatDate = (time: string) => {
-  return new Date(time).toLocaleString('zh-CN');
+  // 将无时区的时间字符串视为 UTC 时间
+  const utcTimeString = time.endsWith('Z') ? time : `${time}Z`;
+  const date = new Date(utcTimeString);
+  return date.toLocaleString('zh-CN');
 };
 
 // 加载资源详情

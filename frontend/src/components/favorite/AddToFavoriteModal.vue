@@ -67,10 +67,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Plus, Folder, Check } from '@element-plus/icons-vue';
 import { useFavoriteStore } from '../../stores/favorite';
+import { storeToRefs } from 'pinia';
 import * as favoriteApi from '../../api/favorite';
 
 const props = defineProps<{
@@ -84,6 +85,12 @@ const emit = defineEmits<{
 }>();
 
 const favoriteStore = useFavoriteStore();
+
+// 使用 storeToRefs 保持响应式
+const { favorites: storeFavorites } = storeToRefs(favoriteStore);
+
+// 使用计算属性确保响应式更新
+const favorites = computed(() => storeFavorites.value);
 
 // 弹窗可见性
 const visible = ref(props.modelValue);
@@ -105,7 +112,6 @@ watch(() => visible.value, (newVal) => {
 const loading = ref(false);
 const creating = ref(false);
 const newFavoriteName = ref('');
-const favorites = favoriteStore.favorites;
 const selectedFavorites = ref<Set<string>>(new Set());
 
 // 获取数据
@@ -136,13 +142,13 @@ const isInFavorite = (favoriteId: string) => {
 const toggleFavorite = async (favoriteId: string) => {
   try {
     if (isInFavorite(favoriteId)) {
-      // 从收藏夹移除
-      await favoriteApi.removeFromFavorite(favoriteId, props.resourceId);
+      // 从收藏夹移除（store 方法内部已调用 API 并更新计数）
+      await favoriteStore.removeResourceFromFavorite(favoriteId, props.resourceId);
       selectedFavorites.value.delete(favoriteId);
       ElMessage.success('已从收藏夹移除');
     } else {
-      // 添加到收藏夹
-      await favoriteApi.addToFavorite(favoriteId, { resourceId: props.resourceId });
+      // 添加到收藏夹（store 方法内部已调用 API 并更新计数）
+      await favoriteStore.addResourceToFavorite(favoriteId, props.resourceId);
       selectedFavorites.value.add(favoriteId);
       ElMessage.success('已添加到收藏夹');
     }
@@ -162,15 +168,18 @@ const handleCreateNew = async () => {
 
   creating.value = true;
   try {
+    // 1. 创建收藏夹
     const response = await favoriteStore.createFavorite(name);
     newFavoriteName.value = '';
-    ElMessage.success('创建成功');
 
-    // 自动添加到新创建的收藏夹
+    // 2. 自动添加到新创建的收藏夹（store 方法内部已调用 API 并更新计数）
     if (response?.id) {
-      await favoriteApi.addToFavorite(response.id, { resourceId: props.resourceId });
+      await favoriteStore.addResourceToFavorite(response.id, props.resourceId);
       selectedFavorites.value.add(response.id);
       emit('success');
+      ElMessage.success('创建成功并已添加到收藏夹');
+    } else {
+      ElMessage.success('创建成功');
     }
   } catch (error: any) {
     ElMessage.error(error.message || '创建失败');

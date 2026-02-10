@@ -328,7 +328,7 @@
 import { ref, reactive, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
-import { getCurrentUser, updateProfile, verifyUser } from '../api/user';
+import { getCurrentUser, updateProfile, verifyUser, getUserProfile } from '../api/user';
 import type { UpdateProfileRequest, VerificationRequest } from '../api/user';
 import { getMyResources, deleteResource } from '../api/resource';
 import type { ResourceListItem } from '../types/resource';
@@ -540,10 +540,13 @@ watch(activeMenu, (newVal) => {
   }
 });
 
-// 格式化日期
+// 格式化日期（服务器返回的是 UTC 时间，需要转换为本地时间显示）
 const formatDate = (dateString?: string) => {
   if (!dateString) return '-';
-  return new Date(dateString).toLocaleDateString('zh-CN');
+  // 将无时区的时间字符串视为 UTC 时间
+  const utcTimeString = dateString.endsWith('Z') ? dateString : `${dateString}Z`;
+  const date = new Date(utcTimeString);
+  return date.toLocaleDateString('zh-CN');
 };
 
 // 获取用户标签类型
@@ -628,12 +631,27 @@ const submitVerification = async () => {
   }
 };
 
+// 加载用户统计数据
+const loadUserStats = async () => {
+  if (!authStore.user?.id) return;
+  try {
+    const profile = await getUserProfile(authStore.user.id);
+    userStats.uploadsCount = profile.uploadsCount;
+    userStats.totalLikes = profile.totalLikes;
+    userStats.totalDownloads = profile.totalDownloads;
+  } catch (error) {
+    console.error('加载用户统计数据失败:', error);
+  }
+};
+
 // 刷新用户信息
 const refreshUserInfo = async () => {
   try {
     const user = await getCurrentUser();
     authStore.user = user;
     localStorage.setItem('user', JSON.stringify(user));
+    // 获取用户统计数据
+    await loadUserStats();
   } catch (error) {
     console.error('刷新用户信息失败:', error);
   }

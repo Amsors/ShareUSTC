@@ -179,7 +179,9 @@ const rejectForm = ref({
 });
 
 const formatDate = (date: string) => {
-  return new Date(date).toLocaleString('zh-CN');
+  // 将无时区的时间字符串视为 UTC 时间
+  const utcTimeString = date.endsWith('Z') ? date : `${date}Z`;
+  return new Date(utcTimeString).toLocaleString('zh-CN');
 };
 
 const fetchResources = async () => {

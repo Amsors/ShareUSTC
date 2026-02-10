@@ -134,7 +134,9 @@ function truncateText(text: string, maxLength: number): string {
 
 // 格式化时间
 function formatTime(time: string): string {
-  const date = new Date(time);
+  // 将无时区的时间字符串视为 UTC 时间
+  const utcTimeString = time.endsWith('Z') ? time : `${time}Z`;
+  const date = new Date(utcTimeString);
   const now = new Date();
   const diff = now.getTime() - date.getTime();
 

@@ -104,7 +104,9 @@ const handleSubmit = async () => {
 };
 
 const formatTime = (time: string) => {
-  const date = new Date(time);
+  // 将无时区的时间字符串视为 UTC 时间
+  const utcTimeString = time.endsWith('Z') ? time : `${time}Z`;
+  const date = new Date(utcTimeString);
   return date.toLocaleString('zh-CN');
 };
 

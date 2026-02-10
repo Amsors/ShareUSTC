@@ -190,10 +190,17 @@ const getResourceTypeTagType = (type: string) => {
   return typeMap[type] || 'info';
 };
 
-// 格式化时间
+// 格式化时间（服务器返回的是 UTC 时间，需要转换为本地时间显示）
 const formatTime = (time: string) => {
-  const date = new Date(time);
+  // 将无时区的时间字符串视为 UTC 时间
+  // 如果字符串以 Z 结尾或有时区信息，直接使用；否则添加 Z 视为 UTC
+  const utcTimeString = time.endsWith('Z') ? time : `${time}Z`;
+
+  // 转换为 Date 对象（浏览器会自动处理时区转换）
+  const date = new Date(utcTimeString);
+
   const now = new Date();
+  // 计算时间差（使用 UTC 时间戳进行比较，避免时区影响）
   const diff = now.getTime() - date.getTime();
 
   // 小于1小时显示分钟
@@ -212,8 +219,12 @@ const formatTime = (time: string) => {
     return `${Math.floor(diff / (24 * 60 * 60 * 1000))}天前`;
   }
 
-  // 否则显示日期
-  return date.toLocaleDateString('zh-CN');
+  // 否则显示日期（浏览器会自动使用本地时区显示）
+  return date.toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
 };
 
 // 加载资源列表

@@ -116,7 +116,9 @@ const { favorites, hasFavorites } = storeToRefs(favoriteStore);
 
 // 格式化日期
 const formatDate = (dateStr: string) => {
-  const date = new Date(dateStr);
+  // 将无时区的时间字符串视为 UTC 时间
+  const utcTimeString = dateStr.endsWith('Z') ? dateStr : `${dateStr}Z`;
+  const date = new Date(utcTimeString);
   return date.toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: 'short',

@@ -7,7 +7,7 @@
       :loading="loading"
     >
       <el-icon><Star /></el-icon>
-      <span>{{ isLiked ? '取消收藏' : '收藏' }}</span>
+      <span>{{ isLiked ? '取消点赞' : '点赞' }}</span>
       <span v-if="likeCount > 0" class="like-count">({{ likeCount }})</span>
     </el-button>
   </div>
