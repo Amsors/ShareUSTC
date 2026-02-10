@@ -275,7 +275,9 @@ const loadResourceDetail = async () => {
     const response = await getResourceDetail(resourceId.value);
     resource.value = response;
   } catch (error: any) {
-    ElMessage.error(error.message || '加载资源详情失败');
+    if (!error.isHandled) {
+      ElMessage.error(error.message || '加载资源详情失败');
+    }
     resource.value = null;
   } finally {
     loading.value = false;
@@ -293,7 +295,9 @@ const handleDownload = async () => {
     // 更新下载次数
     resource.value.stats.downloads++;
   } catch (error: any) {
-    ElMessage.error(error.message || '下载失败');
+    if (!error.isHandled) {
+      ElMessage.error(error.message || '下载失败');
+    }
   } finally {
     downloading.value = false;
   }
@@ -318,7 +322,7 @@ const handleDelete = async () => {
     ElMessage.success('删除成功');
     router.push('/resources');
   } catch (error: any) {
-    if (error !== 'cancel') {
+    if (error !== 'cancel' && !error.isHandled) {
       ElMessage.error(error.message || '删除失败');
     }
   }

@@ -244,7 +244,9 @@ const loadResources = async () => {
     resources.value = response.resources;
     total.value = response.total;
   } catch (error: any) {
-    ElMessage.error(error.message || '加载资源列表失败');
+    if (!error.isHandled) {
+      ElMessage.error(error.message || '加载资源列表失败');
+    }
   } finally {
     loading.value = false;
   }

@@ -156,7 +156,10 @@ export const useAuthStore = defineStore('auth', () => {
       return true;
     } catch (error: any) {
       console.error('Login error:', error);
-      ElMessage.error(error.message || '登录失败');
+      // 如果错误已经被拦截器处理（显示过消息），则不再显示
+      if (!error.isHandled) {
+        ElMessage.error(error.message || '登录失败');
+      }
       return false;
     } finally {
       isLoading.value = false;
@@ -173,7 +176,10 @@ export const useAuthStore = defineStore('auth', () => {
       return true;
     } catch (error: any) {
       console.error('Register error:', error);
-      ElMessage.error(error.message || '注册失败');
+      // 如果错误已经被拦截器处理（显示过消息），则不再显示
+      if (!error.isHandled) {
+        ElMessage.error(error.message || '注册失败');
+      }
       return false;
     } finally {
       isLoading.value = false;

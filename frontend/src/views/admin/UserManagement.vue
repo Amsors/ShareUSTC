@@ -190,8 +190,10 @@ const fetchUsers = async () => {
     const data = await adminApi.getUserList(page.value, perPage.value);
     users.value = data.users;
     total.value = data.total;
-  } catch (error) {
-    ElMessage.error('获取用户列表失败');
+  } catch (error: any) {
+    if (!error.isHandled) {
+      ElMessage.error('获取用户列表失败');
+    }
   } finally {
     loading.value = false;
   }
@@ -213,8 +215,8 @@ const toggleUserStatus = async (user: User) => {
     await adminApi.updateUserStatus(user.id, !user.isActive);
     ElMessage.success(`用户已${action}`);
     fetchUsers();
-  } catch (error) {
-    if (error !== 'cancel') {
+  } catch (error: any) {
+    if (error !== 'cancel' && !error.isHandled) {
       ElMessage.error('操作失败');
     }
   }

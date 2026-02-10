@@ -74,7 +74,9 @@ const loadComments = async () => {
     comments.value = result.comments;
     total.value = result.total;
   } catch (error: any) {
-    ElMessage.error(error.message || '获取评论失败');
+    if (!error.isHandled) {
+      ElMessage.error(error.message || '获取评论失败');
+    }
   }
 };
 
@@ -93,7 +95,9 @@ const handleSubmit = async () => {
   } catch (error: any) {
     console.error('[CommentSection] 评论提交失败:', error);
     console.error('[CommentSection] 错误详情:', error.message, error.response?.data);
-    ElMessage.error(error.message || '评论失败');
+    if (!error.isHandled) {
+      ElMessage.error(error.message || '评论失败');
+    }
   } finally {
     submitting.value = false;
   }

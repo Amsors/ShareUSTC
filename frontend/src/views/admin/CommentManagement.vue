@@ -189,8 +189,10 @@ const fetchComments = async () => {
     );
     comments.value = data.comments;
     total.value = data.total;
-  } catch (error) {
-    ElMessage.error('获取评论列表失败');
+  } catch (error: any) {
+    if (!error.isHandled) {
+      ElMessage.error('获取评论列表失败');
+    }
   } finally {
     loading.value = false;
   }
@@ -220,8 +222,8 @@ const handleApprove = async (comment: Comment) => {
     await adminApi.auditComment(comment.id, 'approved');
     ElMessage.success('评论已通过');
     fetchComments();
-  } catch (error) {
-    if (error !== 'cancel') {
+  } catch (error: any) {
+    if (error !== 'cancel' && !error.isHandled) {
       ElMessage.error('操作失败');
     }
   }
@@ -242,8 +244,8 @@ const handleReject = async (comment: Comment) => {
     await adminApi.auditComment(comment.id, 'rejected');
     ElMessage.success('评论已拒绝');
     fetchComments();
-  } catch (error) {
-    if (error !== 'cancel') {
+  } catch (error: any) {
+    if (error !== 'cancel' && !error.isHandled) {
       ElMessage.error('操作失败');
     }
   }
@@ -264,8 +266,8 @@ const handleDelete = async (comment: Comment) => {
     await adminApi.deleteComment(comment.id);
     ElMessage.success('评论已删除');
     fetchComments();
-  } catch (error) {
-    if (error !== 'cancel') {
+  } catch (error: any) {
+    if (error !== 'cancel' && !error.isHandled) {
       ElMessage.error('删除失败');
     }
   }

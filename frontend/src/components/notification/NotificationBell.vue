@@ -114,8 +114,10 @@ async function handleMarkAllRead() {
   try {
     await notificationStore.markAllNotificationsAsRead();
     ElMessage.success('已全部标记为已读');
-  } catch (error) {
-    ElMessage.error('操作失败');
+  } catch (error: any) {
+    if (!error.isHandled) {
+      ElMessage.error('操作失败');
+    }
   }
 }
 

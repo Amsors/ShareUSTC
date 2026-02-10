@@ -407,7 +407,9 @@ const loadUserImages = async () => {
     userImages.value = result.images;
     imagesTotal.value = result.total;
   } catch (error: any) {
-    ElMessage.error(error.message || '加载图片失败');
+    if (!error.isHandled) {
+      ElMessage.error(error.message || '加载图片失败');
+    }
   } finally {
     imagesLoading.value = false;
   }
@@ -452,7 +454,7 @@ const deleteUserImage = async (image: Image) => {
 
     await loadUserImages();
   } catch (error: any) {
-    if (error !== 'cancel') {
+    if (error !== 'cancel' && !error.isHandled) {
       ElMessage.error(error.message || '删除失败');
     }
   }
@@ -472,7 +474,9 @@ const loadUserResources = async () => {
     userResources.value = result.resources;
     resourcesTotal.value = result.total;
   } catch (error: any) {
-    ElMessage.error(error.message || '加载资源失败');
+    if (!error.isHandled) {
+      ElMessage.error(error.message || '加载资源失败');
+    }
   } finally {
     resourcesLoading.value = false;
   }
@@ -501,7 +505,7 @@ const deleteUserResource = async (resource: ResourceListItem) => {
 
     await loadUserResources();
   } catch (error: any) {
-    if (error !== 'cancel') {
+    if (error !== 'cancel' && !error.isHandled) {
       ElMessage.error(error.message || '删除失败');
     }
   }
@@ -596,7 +600,9 @@ const saveProfile = async () => {
     authStore.updateUserInfo(updatedUser);
     ElMessage.success('资料更新成功');
   } catch (error: any) {
-    ElMessage.error(error.message || '更新失败');
+    if (!error.isHandled) {
+      ElMessage.error(error.message || '更新失败');
+    }
   } finally {
     saving.value = false;
   }
@@ -614,7 +620,9 @@ const submitVerification = async () => {
     // 切换到概览页面，让用户看到已认证状态
     activeMenu.value = 'overview';
   } catch (error: any) {
-    ElMessage.error(error.message || '认证失败');
+    if (!error.isHandled) {
+      ElMessage.error(error.message || '认证失败');
+    }
   } finally {
     verifying.value = false;
   }

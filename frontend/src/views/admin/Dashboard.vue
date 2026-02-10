@@ -150,8 +150,10 @@ const fetchStats = async () => {
   try {
     const data = await adminApi.getDashboardStats();
     stats.value = data;
-  } catch (error) {
-    ElMessage.error('获取统计数据失败');
+  } catch (error: any) {
+    if (!error.isHandled) {
+      ElMessage.error('获取统计数据失败');
+    }
   } finally {
     loading.value = false;
   }

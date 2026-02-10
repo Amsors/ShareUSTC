@@ -251,7 +251,9 @@ const handleUpload = async () => {
   } catch (error: any) {
     auditStatus.value = 'rejected';
     auditMessage.value = error.message || '上传失败，请重试';
-    ElMessage.error(error.message || '上传失败');
+    if (!error.isHandled) {
+      ElMessage.error(error.message || '上传失败');
+    }
   } finally {
     isUploading.value = false;
   }
