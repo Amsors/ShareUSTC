@@ -1,5 +1,5 @@
 use actix_multipart::Multipart;
-use actix_web::{delete, get, post, web, HttpRequest, HttpResponse, Responder};
+use actix_web::{delete, get, post, put, web, HttpRequest, HttpResponse, Responder};
 use futures_util::StreamExt;
 use uuid::Uuid;
 
@@ -7,7 +7,7 @@ use crate::db::AppState;
 use crate::models::{
     resource::*,
     CreateRatingRequest, CreateCommentRequest, CommentListQuery,
-    CurrentUser,
+    CurrentUser, UpdateResourceContentRequest,
 };
 use crate::services::{ResourceService, RatingService, LikeService, CommentService};
 
@@ -331,7 +331,7 @@ pub async fn download_resource(
 
     // 获取资源文件路径
     match ResourceService::get_resource_file_path(&state.pool, resource_id).await {
-        Ok((file_path, resource_type)) => {
+        Ok((file_path, resource_type, title)) => {
             // 读取文件
             match crate::services::FileService::read_resource_file(&file_path).await {
                 Ok(file_content) => {
@@ -358,10 +358,10 @@ pub async fn download_resource(
                     // 设置 Content-Type 和 Content-Disposition
                     // 使用 resource_type 获取 MIME 类型，因为它更准确
                     let content_type = crate::services::FileService::get_mime_type_by_type(&resource_type);
-                    let filename = std::path::Path::new(&file_path)
-                        .file_name()
-                        .and_then(|n| n.to_str())
-                        .unwrap_or("download");
+
+                    // 生成下载文件名：使用资源标题 + 正确的扩展名
+                    let extension = crate::services::FileService::get_extension_by_type(&resource_type);
+                    let filename = format!("{}.{}", sanitize_filename(&title), extension);
 
                     HttpResponse::Ok()
                         .content_type(content_type)
@@ -394,6 +394,18 @@ pub async fn download_resource(
             }))
         }
     }
+}
+
+/// 清理文件名，移除不合法字符
+fn sanitize_filename(filename: &str) -> String {
+    // 移除或替换文件系统不支持的字符
+    filename
+        .chars()
+        .map(|c| match c {
+            '<' | '>' | ':' | '"' | '/' | '\\' | '|' | '?' | '*' => '_',
+            c => c,
+        })
+        .collect()
 }
 
 /// 获取资源文件内容（用于预览）
@@ -437,6 +449,81 @@ pub async fn get_resource_content(
             let (code, message) = match e {
                 crate::services::ResourceError::NotFound(msg) => (404, msg),
                 _ => (500, "获取资源失败".to_string()),
+            };
+            HttpResponse::Ok().json(serde_json::json!({
+                "code": code,
+                "message": message,
+                "data": null
+            }))
+        }
+    }
+}
+
+/// 获取资源原始内容（用于Markdown编辑）
+#[get("/resources/{resource_id}/raw")]
+pub async fn get_resource_raw_content(
+    state: web::Data<AppState>,
+    user: web::ReqData<CurrentUser>,
+    path: web::Path<Uuid>,
+) -> impl Responder {
+    let resource_id = path.into_inner();
+
+    match ResourceService::get_resource_content_raw(&state.pool, &user, resource_id).await {
+        Ok(content) => HttpResponse::Ok().json(serde_json::json!({
+            "code": 200,
+            "message": "获取成功",
+            "data": {
+                "content": content
+            }
+        })),
+        Err(e) => {
+            log::warn!("获取资源原始内容失败: {}", e);
+            let (code, message) = match e {
+                crate::services::ResourceError::NotFound(msg) => (404, msg),
+                crate::services::ResourceError::Unauthorized(msg) => (403, msg),
+                _ => (500, "获取资源原始内容失败".to_string()),
+            };
+            HttpResponse::Ok().json(serde_json::json!({
+                "code": code,
+                "message": message,
+                "data": null
+            }))
+        }
+    }
+}
+
+/// 更新资源内容（用于Markdown在线编辑）
+#[put("/resources/{resource_id}/content")]
+pub async fn update_resource_content(
+    state: web::Data<AppState>,
+    user: web::ReqData<CurrentUser>,
+    path: web::Path<Uuid>,
+    request: web::Json<UpdateResourceContentRequest>,
+) -> impl Responder {
+    let resource_id = path.into_inner();
+
+    // 验证请求
+    if let Err(msg) = request.validate() {
+        return HttpResponse::Ok().json(serde_json::json!({
+            "code": 400,
+            "message": msg,
+            "data": null
+        }));
+    }
+
+    match ResourceService::update_resource_content(&state.pool, &user, resource_id, request.content.clone()).await {
+        Ok(response) => HttpResponse::Ok().json(serde_json::json!({
+            "code": 200,
+            "message": "更新成功",
+            "data": response
+        })),
+        Err(e) => {
+            log::warn!("更新资源内容失败: {}", e);
+            let (code, message) = match e {
+                crate::services::ResourceError::NotFound(msg) => (404, msg),
+                crate::services::ResourceError::Unauthorized(msg) => (403, msg),
+                crate::services::ResourceError::ValidationError(msg) => (400, msg),
+                _ => (500, "更新资源内容失败".to_string()),
             };
             HttpResponse::Ok().json(serde_json::json!({
                 "code": code,
@@ -684,5 +771,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
         .service(get_my_rating)
         .service(delete_rating)
         .service(toggle_like)
-        .service(create_comment);
+        .service(create_comment)
+        .service(update_resource_content)
+        .service(get_resource_raw_content);
 }

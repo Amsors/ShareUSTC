@@ -71,7 +71,7 @@ const previewType = computed(() => {
 
 const handleDownload = async () => {
   try {
-    await downloadResource(props.resourceId, props.resourceTitle || '资源');
+    await downloadResource(props.resourceId);
   } catch (error: any) {
     // 错误已在API中处理
   }

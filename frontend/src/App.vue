@@ -1,9 +1,11 @@
 <template>
+  <Navbar />
   <router-view />
   <PriorityModal />
 </template>
 
 <script setup lang="ts">
+import Navbar from './components/Navbar.vue';
 import PriorityModal from './components/notification/PriorityModal.vue';
 </script>
 

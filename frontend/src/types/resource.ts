@@ -237,3 +237,19 @@ export function getResourceTypeFromFileName(fileName: string): ResourceTypeType 
   };
   return typeMap[ext] || ResourceType.Other;
 }
+
+// 更新资源内容请求（用于Markdown在线编辑）
+export interface UpdateResourceContentRequest {
+  content: string;
+}
+
+// 更新资源内容响应
+export interface UpdateResourceContentResponse {
+  id: string;
+  updatedAt: string;
+}
+
+// 获取资源原始内容响应
+export interface GetResourceRawContentResponse {
+  content: string;
+}

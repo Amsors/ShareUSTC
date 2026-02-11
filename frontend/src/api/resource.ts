@@ -5,7 +5,10 @@ import type {
   ResourceSearchQuery,
   ResourceDetail,
   UploadResourceRequest,
-  UploadResourceResponse
+  UploadResourceResponse,
+  UpdateResourceContentRequest,
+  UpdateResourceContentResponse,
+  GetResourceRawContentResponse
 } from '../types/resource';
 
 /**
@@ -193,4 +196,33 @@ export const getResourceContent = async (resourceId: string): Promise<Blob> => {
   const blob = await response.blob();
   // 创建带有正确 MIME 类型的 Blob
   return new Blob([blob], { type: contentType });
+};
+
+/**
+ * 获取资源原始内容（用于Markdown编辑）
+ * @param resourceId 资源ID
+ * @returns 原始内容响应
+ */
+export const getResourceRawContent = async (resourceId: string): Promise<GetResourceRawContentResponse> => {
+  return request({
+    url: `/resources/${resourceId}/raw`,
+    method: 'get'
+  }) as Promise<GetResourceRawContentResponse>;
+};
+
+/**
+ * 更新资源内容（用于Markdown在线编辑）
+ * @param resourceId 资源ID
+ * @param data 更新内容请求
+ * @returns 更新响应
+ */
+export const updateResourceContent = async (
+  resourceId: string,
+  data: UpdateResourceContentRequest
+): Promise<UpdateResourceContentResponse> => {
+  return request({
+    url: `/resources/${resourceId}/content`,
+    method: 'put',
+    data
+  }) as Promise<UpdateResourceContentResponse>;
 };

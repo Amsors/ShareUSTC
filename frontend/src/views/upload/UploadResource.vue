@@ -16,14 +16,43 @@
 
       <!-- 步骤1: 选择文件 -->
       <div v-if="currentStep === 0" class="step-content">
-        <FileUploader
-          v-model="selectedFile"
-          :max-size-mb="100"
-          :disabled="isUploading"
-        />
+        <!-- 上传方式选项卡 -->
+        <el-tabs v-model="uploadMode" class="upload-mode-tabs">
+          <el-tab-pane label="上传文件" name="file">
+            <FileUploader
+              v-model="selectedFile"
+              :max-size-mb="100"
+              :disabled="isUploading"
+            />
+          </el-tab-pane>
+          <el-tab-pane label="在线编写 Markdown" name="markdown">
+            <div class="markdown-editor-section">
+              <div class="editor-header">
+                <el-input
+                  v-model="markdownFileName"
+                  placeholder="请输入文件名（不含扩展名）"
+                  class="filename-input"
+                >
+                  <template #append>.md</template>
+                </el-input>
+              </div>
+              <MarkdownEditor
+                v-model="markdownContent"
+                :auto-save-key="'upload_markdown_draft'"
+                placeholder="开始编写你的 Markdown 内容..."
+                style="height: 500px;"
+              />
+            </div>
+          </el-tab-pane>
+        </el-tabs>
 
         <div class="step-actions">
-          <el-button type="primary" size="large" :disabled="!selectedFile" @click="goToStep(1)">
+          <el-button
+            type="primary"
+            size="large"
+            :disabled="!canProceedToStep2"
+            @click="goToStep(1)"
+          >
             下一步
             <el-icon class="el-icon--right"><ArrowRight /></el-icon>
           </el-button>
@@ -39,7 +68,9 @@
               <span class="file-name">{{ selectedFile?.name }}</span>
               <span class="file-size">{{ formatFileSize(selectedFile?.size) }}</span>
             </div>
-            <el-button type="primary" link @click="goToStep(0)">更换文件</el-button>
+            <el-button type="primary" link @click="goToStep(0)">
+              {{ uploadMode === 'file' ? '更换文件' : '返回编辑' }}
+            </el-button>
           </div>
         </el-card>
 
@@ -119,6 +150,7 @@
       </template>
       <ul>
         <li>支持上传：PDF、PPT、PPTX、DOC、DOCX、TXT、Markdown、图片、ZIP等格式</li>
+        <li>在线编写 Markdown 可直接在网页中编辑并保存为 .md 文件</li>
         <li>单个文件大小限制：100MB</li>
         <li>资源需经过AI审核，违规内容将被拒绝</li>
         <li>请确保上传资源不侵犯他人版权</li>
@@ -141,10 +173,12 @@ import {
 } from '@element-plus/icons-vue';
 import FileUploader from '../../components/upload/FileUploader.vue';
 import MetadataForm from '../../components/upload/MetadataForm.vue';
+import MarkdownEditor from '../../components/editor/MarkdownEditor.vue';
 import { uploadResource } from '../../api/resource';
 import {
   formatFileSize,
   getResourceTypeFromFileName,
+  ResourceType,
   type ResourceTypeType,
   type ResourceCategoryType
 } from '../../types/resource';
@@ -154,8 +188,15 @@ const router = useRouter();
 // 当前步骤
 const currentStep = ref(0);
 
-// 选中的文件
+// 上传模式：'file' 或 'markdown'
+const uploadMode = ref<'file' | 'markdown'>('file');
+
+// 选中的文件（文件上传模式）
 const selectedFile = ref<File | null>(null);
+
+// Markdown 编辑器内容（在线编写模式）
+const markdownContent = ref('');
+const markdownFileName = ref('');
 
 // 元数据表单引用
 const metadataFormRef = ref<InstanceType<typeof MetadataForm>>();
@@ -180,8 +221,21 @@ const uploadedResourceId = ref('');
 
 // 检测到的资源类型
 const detectedResourceType = computed<ResourceTypeType>(() => {
+  if (uploadMode.value === 'markdown') {
+    return ResourceType.WebMarkdown;
+  }
   if (!selectedFile.value) return 'other';
   return getResourceTypeFromFileName(selectedFile.value.name);
+});
+
+// 是否可以进入步骤2
+const canProceedToStep2 = computed(() => {
+  if (uploadMode.value === 'file') {
+    return !!selectedFile.value;
+  } else {
+    // Markdown 模式：需要文件名和内容
+    return markdownFileName.value.trim() && markdownContent.value.trim();
+  }
 });
 
 // 审核状态文本
@@ -200,13 +254,31 @@ const auditStatusText = computed(() => {
 
 // 跳转到指定步骤
 const goToStep = (step: number) => {
+  // 如果从步骤2返回步骤1，且是markdown模式，需要清空selectedFile
+  if (currentStep.value === 1 && step === 0 && uploadMode.value === 'markdown') {
+    selectedFile.value = null;
+  }
   currentStep.value = step;
+};
+
+// 将 Markdown 内容转换为 File 对象
+const createMarkdownFile = (): File => {
+  const blob = new Blob([markdownContent.value], { type: 'text/markdown' });
+  const fileName = markdownFileName.value.endsWith('.md')
+    ? markdownFileName.value
+    : `${markdownFileName.value}.md`;
+  return new File([blob], fileName, { type: 'text/markdown' });
 };
 
 // 处理上传
 const handleUpload = async () => {
+  // 如果是 Markdown 模式，先创建文件
+  if (uploadMode.value === 'markdown') {
+    selectedFile.value = createMarkdownFile();
+  }
+
   if (!selectedFile.value) {
-    ElMessage.warning('请先选择文件');
+    ElMessage.warning(uploadMode.value === 'file' ? '请先选择文件' : '请编写 Markdown 内容');
     return;
   }
 
@@ -242,6 +314,11 @@ const handleUpload = async () => {
     auditStatus.value = 'passed';
     auditMessage.value = response.aiMessage || '资源已通过AI审核并发布';
 
+    // 清除 Markdown 草稿
+    if (uploadMode.value === 'markdown') {
+      localStorage.removeItem('markdown_draft_upload_markdown_draft');
+    }
+
     // 延迟后显示成功页面
     setTimeout(() => {
       currentStep.value = 3;
@@ -269,6 +346,8 @@ const goToResourceDetail = () => {
 // 重置并继续上传
 const resetAndUpload = () => {
   selectedFile.value = null;
+  markdownContent.value = '';
+  markdownFileName.value = '';
   metadata.value.title = '';
   metadata.value.courseName = '';
   metadata.value.category = 'other';
@@ -279,6 +358,7 @@ const resetAndUpload = () => {
   auditMessage.value = '';
   uploadedResourceId.value = '';
   currentStep.value = 0;
+  uploadMode.value = 'file';
   metadataFormRef.value?.resetFields();
 };
 </script>
@@ -327,6 +407,31 @@ const resetAndUpload = () => {
   justify-content: center;
   gap: 16px;
   margin-top: 32px;
+}
+
+/* 上传模式选项卡样式 */
+.upload-mode-tabs {
+  margin-bottom: 16px;
+}
+
+.upload-mode-tabs :deep(.el-tabs__header) {
+  margin-bottom: 24px;
+}
+
+.markdown-editor-section {
+  border: 1px solid var(--el-border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.editor-header {
+  padding: 16px;
+  background-color: var(--el-fill-color-lighter);
+  border-bottom: 1px solid var(--el-border-color);
+}
+
+.filename-input {
+  max-width: 400px;
 }
 
 .file-preview-card {

@@ -83,6 +83,12 @@ const routes = [
     meta: { public: true }
   },
   {
+    path: '/resources/:id/edit',
+    name: 'EditMarkdownResource',
+    component: () => import('../views/resource/EditMarkdownResource.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/notifications',
     name: 'NotificationCenter',
     component: () => import('../views/notification/NotificationCenter.vue'),

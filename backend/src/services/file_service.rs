@@ -162,6 +162,34 @@ impl FileService {
             .map_err(|e| FileError::FileSystemError(format!("读取文件失败: {}", e)))
     }
 
+    /// 读取资源文件内容为字符串
+    pub async fn read_resource_file_to_string(file_path: &str) -> Result<String, FileError> {
+        let path = Path::new(file_path);
+        if !path.exists() {
+            return Err(FileError::NotFound(format!("文件不存在: {}", file_path)));
+        }
+
+        tokio::fs::read_to_string(path)
+            .await
+            .map_err(|e| FileError::FileSystemError(format!("读取文件失败: {}", e)))
+    }
+
+    /// 写入资源文件内容
+    pub async fn write_resource_file(file_path: &str, content: &[u8]) -> Result<(), FileError> {
+        let path = Path::new(file_path);
+
+        // 确保目录存在
+        if let Some(parent) = path.parent() {
+            tokio::fs::create_dir_all(parent)
+                .await
+                .map_err(|e| FileError::FileSystemError(format!("创建目录失败: {}", e)))?;
+        }
+
+        tokio::fs::write(path, content)
+            .await
+            .map_err(|e| FileError::FileSystemError(format!("写入文件失败: {}", e)))
+    }
+
     /// 获取文件 MIME 类型（通过文件路径）（预留接口）
     #[allow(dead_code)]
     pub fn get_mime_type(file_path: &str) -> String {
@@ -196,6 +224,26 @@ impl FileService {
             "png" => "image/png",
             "zip" => "application/zip",
             _ => "application/octet-stream",
+        }
+        .to_string()
+    }
+
+    /// 根据资源类型获取文件扩展名
+    pub fn get_extension_by_type(resource_type: &str) -> String {
+        let resource_type_lower = resource_type.to_lowercase();
+        match resource_type_lower.as_str() {
+            "web_markdown" => "md",
+            "ppt" => "ppt",
+            "pptx" => "pptx",
+            "doc" => "doc",
+            "docx" => "docx",
+            "pdf" => "pdf",
+            "txt" => "txt",
+            "jpeg" => "jpeg",
+            "jpg" => "jpg",
+            "png" => "png",
+            "zip" => "zip",
+            _ => "bin",
         }
         .to_string()
     }
