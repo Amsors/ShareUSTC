@@ -115,7 +115,7 @@
           </div>
 
           <div v-if="imagesLoading" class="loading-state">
-            <el-skeleton :rows="3" animated />
+            <el-icon class="loading-icon" :size="32"><Loading /></el-icon>
           </div>
 
           <el-empty v-else-if="userImages.length === 0" description="暂无上传的图片">
@@ -179,7 +179,7 @@
           </div>
 
           <div v-if="resourcesLoading" class="loading-state">
-            <el-skeleton :rows="3" animated />
+            <el-icon class="loading-icon" :size="32"><Loading /></el-icon>
           </div>
 
           <el-empty v-else-if="userResources.length === 0" description="暂无上传的资源">
@@ -351,7 +351,8 @@ import {
   Delete,
   View,
   Download,
-  Star
+  Star,
+  Loading
 } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 
@@ -831,6 +832,21 @@ onMounted(() => {
 
 .loading-state {
   padding: 40px 0;
+  text-align: center;
+}
+
+.loading-icon {
+  color: #409eff;
+  animation: rotating 2s linear infinite;
+}
+
+@keyframes rotating {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .user-images-grid {

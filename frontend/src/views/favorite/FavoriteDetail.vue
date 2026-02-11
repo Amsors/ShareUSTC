@@ -35,8 +35,10 @@
 
     <!-- 资源列表 -->
     <div class="resource-list">
-      <!-- 加载状态 - 纯空白 -->
-      <div v-if="loading" class="loading-placeholder"></div>
+      <!-- 加载状态 -->
+      <div v-if="loading" class="loading-container">
+        <el-icon class="loading-icon" :size="48"><Loading /></el-icon>
+      </div>
 
       <!-- 空状态 -->
       <el-empty
@@ -139,7 +141,8 @@ import {
   Download,
   View,
   Star,
-  Remove
+  Remove,
+  Loading
 } from '@element-plus/icons-vue';
 import { useFavoriteStore } from '../../stores/favorite';
 import { downloadFavorite } from '../../api/favorite';
