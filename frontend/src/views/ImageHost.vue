@@ -1,28 +1,5 @@
 <template>
   <div class="image-host-page">
-    <!-- 导航栏 -->
-    <nav class="navbar">
-      <div class="nav-brand">
-        <h1 @click="$router.push('/')" style="cursor: pointer;">ShareUSTC</h1>
-      </div>
-      <div class="nav-links">
-        <router-link to="/">首页</router-link>
-        <router-link to="/profile">个人中心</router-link>
-        <el-dropdown @command="handleCommand">
-          <span class="user-info">
-            {{ authStore.user?.username }}
-            <el-icon><ArrowDown /></el-icon>
-          </span>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="settings">账号设置</el-dropdown-item>
-              <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-      </div>
-    </nav>
-
     <div class="image-host-container">
       <h1 class="page-title">
         <el-icon><Picture /></el-icon>
@@ -215,8 +192,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { useAuthStore } from '../stores/auth';
 import {
   uploadImage,
   getMyImages,
@@ -226,7 +201,6 @@ import {
 } from '../api/imageHost';
 import type { Image, ImageUploadResponse } from '../types/image';
 import {
-  ArrowDown,
   Picture,
   Upload,
   CopyDocument,
@@ -234,9 +208,6 @@ import {
   Delete
 } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-
-const router = useRouter();
-const authStore = useAuthStore();
 
 // 上传相关
 const fileInput = ref<HTMLInputElement | null>(null);
@@ -411,25 +382,6 @@ const formatDateTime = (dateString?: string) => {
   return new Date(utcTimeString).toLocaleString('zh-CN');
 };
 
-// 下拉菜单处理
-const handleCommand = async (command: string) => {
-  if (command === 'logout') {
-    try {
-      await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      });
-      await authStore.logoutUser();
-      router.push('/');
-    } catch (error) {
-      // 用户取消
-    }
-  } else if (command === 'settings') {
-    router.push('/profile');
-  }
-};
-
 onMounted(() => {
   loadImages();
 });
@@ -439,55 +391,6 @@ onMounted(() => {
 .image-host-page {
   min-height: 100vh;
   background-color: #f5f7fa;
-}
-
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 40px;
-  height: 60px;
-  background-color: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.nav-brand h1 {
-  margin: 0;
-  color: #409eff;
-  font-size: 24px;
-}
-
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-
-.nav-links a {
-  text-decoration: none;
-  color: #606266;
-  font-size: 14px;
-  transition: color 0.3s;
-}
-
-.nav-links a:hover {
-  color: #409eff;
-}
-
-.nav-links a.router-link-active {
-  color: #409eff;
-  font-weight: 500;
-}
-
-.user-info {
-  cursor: pointer;
-  color: #606266;
-  display: flex;
-  align-items: center;
-  gap: 4px;
 }
 
 .image-host-container {

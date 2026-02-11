@@ -648,12 +648,13 @@ impl ResourceService {
     }
 
     /// 获取资源文件路径（检查审核状态，用于下载）
+    /// 返回：(file_path, resource_type, title)
     pub async fn get_resource_file_path(
         pool: &PgPool,
         resource_id: Uuid,
-    ) -> Result<(String, String), ResourceError> {
-        let row: (String, String) = sqlx::query_as(
-            "SELECT file_path, resource_type FROM resources WHERE id = $1 AND audit_status = 'approved'"
+    ) -> Result<(String, String, String), ResourceError> {
+        let row: (String, String, String) = sqlx::query_as(
+            "SELECT file_path, resource_type, title FROM resources WHERE id = $1 AND audit_status = 'approved'"
         )
         .bind(resource_id)
         .fetch_optional(pool)
@@ -703,5 +704,125 @@ impl ResourceService {
         })?;
 
         Ok(())
+    }
+
+    /// 更新资源内容（用于Markdown在线编辑）
+    /// 更新后会进行AI审核，并更新 file_hash、file_size、updated_at 字段
+    pub async fn update_resource_content(
+        pool: &PgPool,
+        user: &CurrentUser,
+        resource_id: Uuid,
+        content: String,
+    ) -> Result<crate::models::UpdateResourceContentResponse, ResourceError> {
+        // 验证内容长度
+        if content.len() > 10 * 1024 * 1024 {
+            return Err(ResourceError::ValidationError("内容大小超过10MB限制".to_string()));
+        }
+
+        // 获取资源信息
+        let resource: crate::models::Resource = sqlx::query_as::<_, crate::models::Resource>(
+            "SELECT * FROM resources WHERE id = $1"
+        )
+        .bind(resource_id)
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?
+        .ok_or_else(|| ResourceError::NotFound(format!("资源 {} 不存在", resource_id)))?;
+
+        // 检查权限（上传者或管理员）
+        if resource.uploader_id != user.id && user.role != crate::models::UserRole::Admin {
+            return Err(ResourceError::Unauthorized(
+                "没有权限编辑此资源".to_string()
+            ));
+        }
+
+        // 检查资源类型是否为web_markdown
+        if resource.resource_type != "web_markdown" {
+            return Err(ResourceError::ValidationError(
+                "只有Markdown类型资源可以在线编辑".to_string()
+            ));
+        }
+
+        // AI 审核更新后的内容
+        let ai_result = AiService::audit_resource(
+            &resource.title,
+            Some(&content),
+            Some(content.as_bytes()),
+        )
+        .await
+        .map_err(|e| ResourceError::AiError(e.to_string()))?;
+
+        // 更新文件内容
+        FileService::write_resource_file(&resource.file_path, content.as_bytes()).await?;
+
+        // 计算新的文件哈希和大小
+        let file_hash = crate::services::FileService::calculate_hash(content.as_bytes());
+        let file_size = content.len() as i64;
+
+        // 确定审核状态
+        let audit_status = if ai_result.passed {
+            AuditStatus::Approved
+        } else {
+            AuditStatus::Pending
+        };
+
+        // 更新数据库中的 updated_at、file_hash、file_size、audit_status、content_accuracy
+        let updated_at = sqlx::query_scalar::<_, chrono::NaiveDateTime>(
+            r#"
+            UPDATE resources
+            SET
+                updated_at = CURRENT_TIMESTAMP,
+                file_hash = $1,
+                file_size = $2,
+                audit_status = $3,
+                content_accuracy = $4,
+                ai_reject_reason = $5
+            WHERE id = $6
+            RETURNING updated_at
+            "#
+        )
+        .bind(file_hash)
+        .bind(file_size)
+        .bind(audit_status.to_string())
+        .bind(ai_result.accuracy_score)
+        .bind(if ai_result.passed { None } else { ai_result.reason })
+        .bind(resource_id)
+        .fetch_one(pool)
+        .await
+        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+
+        Ok(crate::models::UpdateResourceContentResponse {
+            id: resource_id,
+            updated_at,
+        })
+    }
+
+    /// 获取资源原始内容（用于编辑）
+    pub async fn get_resource_content_raw(
+        pool: &PgPool,
+        user: &CurrentUser,
+        resource_id: Uuid,
+    ) -> Result<String, ResourceError> {
+        // 获取资源信息
+        let resource: crate::models::Resource = sqlx::query_as::<_, crate::models::Resource>(
+            "SELECT * FROM resources WHERE id = $1"
+        )
+        .bind(resource_id)
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?
+        .ok_or_else(|| ResourceError::NotFound(format!("资源 {} 不存在", resource_id)))?;
+
+        // 检查权限（上传者或管理员）
+        if resource.uploader_id != user.id && user.role != crate::models::UserRole::Admin {
+            return Err(ResourceError::Unauthorized(
+                "没有权限查看此资源的原始内容".to_string()
+            ));
+        }
+
+        // 读取文件内容
+        let content = FileService::read_resource_file_to_string(&resource.file_path).await?;
+
+        Ok(content)
     }
 }

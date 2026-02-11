@@ -1,29 +1,5 @@
 <template>
   <div class="profile-page">
-    <!-- 导航栏 -->
-    <nav class="navbar">
-      <div class="nav-brand">
-        <h1 @click="$router.push('/')" style="cursor: pointer;">ShareUSTC</h1>
-      </div>
-      <div class="nav-links">
-        <router-link to="/">首页</router-link>
-        <router-link to="/image-host">图床</router-link>
-        <router-link to="/profile">个人中心</router-link>
-        <el-dropdown @command="handleCommand">
-          <span class="user-info">
-            {{ authStore.user?.username }}
-            <el-icon><ArrowDown /></el-icon>
-          </span>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="settings">账号设置</el-dropdown-item>
-              <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-      </div>
-    </nav>
-
     <div class="profile-container">
       <!-- 左侧菜单 -->
       <aside class="sidebar">
@@ -52,7 +28,7 @@
             <el-icon><Document /></el-icon>
             <span>我的资源</span>
           </el-menu-item>
-          <el-menu-item index="settings" v-if="authStore.isVerified">
+          <el-menu-item index="settings">
             <el-icon><Setting /></el-icon>
             <span>账号设置</span>
           </el-menu-item>
@@ -87,6 +63,9 @@
           <el-card class="info-card">
             <template #header>
               <span>基本信息</span>
+              <el-button link type="primary" @click="activeMenu = 'settings'">
+                编辑资料
+              </el-button>
             </template>
             <el-descriptions :column="2">
               <el-descriptions-item label="用户名">{{ authStore.user?.username }}</el-descriptions-item>
@@ -97,10 +76,16 @@
                   {{ authStore.isVerified ? '已认证' : '未认证' }}
                 </el-tag>
               </el-descriptions-item>
-              <el-descriptions-item label="个人简介" :span="2">
-                {{ authStore.user?.bio || '这个人很懒，还没有写简介...' }}
-              </el-descriptions-item>
             </el-descriptions>
+
+            <!-- 个人简介 Markdown 渲染 -->
+            <div class="bio-section">
+              <h4>个人简介</h4>
+              <div v-if="authStore.user?.bio" class="bio-content markdown-body" v-html="renderedBio"></div>
+              <el-empty v-else description="这个人很懒，还没有写简介...">
+                <el-button type="primary" @click="activeMenu = 'settings'">去编辑</el-button>
+              </el-empty>
+            </div>
           </el-card>
         </div>
 
@@ -225,6 +210,15 @@
                     查看
                   </el-button>
                   <el-button
+                    v-if="resource.resourceType === 'web_markdown'"
+                    type="success"
+                    link
+                    size="small"
+                    @click="$router.push(`/resources/${resource.id}/edit`)"
+                  >
+                    编辑
+                  </el-button>
+                  <el-button
                     type="danger"
                     link
                     size="small"
@@ -249,26 +243,46 @@
         </div>
 
         <!-- 账号设置页面 -->
-        <div v-if="activeMenu === 'settings'" class="content-section">
+        <div v-if="activeMenu === 'settings'" class="content-section settings-section">
           <h2>账号设置</h2>
-          <el-card>
-            <el-form :model="profileForm" label-width="100px" class="settings-form">
+          <el-card class="settings-card-wide">
+            <el-form :model="profileForm" label-width="100px" class="settings-form-wide">
               <el-form-item label="用户名">
                 <el-input v-model="profileForm.username" />
               </el-form-item>
               <el-form-item label="邮箱">
                 <el-input v-model="profileForm.email" />
               </el-form-item>
-              <el-form-item label="个人简介">
-                <el-input
-                  v-model="profileForm.bio"
-                  type="textarea"
-                  :rows="4"
-                  placeholder="介绍一下你自己..."
-                />
+              <el-form-item label="个人简介" class="bio-form-item-wide">
+                <!-- 未实名用户显示提示信息 -->
+                <div v-if="!authStore.isVerified" class="bio-disabled-notice">
+                  <el-alert type="info" :closable="false">
+                    <template #title>
+                      <span>个人简介功能需要实名认证后才可使用</span>
+                    </template>
+                    <p>实名认证后，您可以：</p>
+                    <ul>
+                      <li>编辑和展示个人简介</li>
+                      <li>使用 Markdown 格式编写</li>
+                      <li>在个人主页展示您的简介</li>
+                    </ul>
+                    <el-button type="primary" size="small" @click="activeMenu = 'verification'">前往实名认证</el-button>
+                  </el-alert>
+                </div>
+                <!-- 已实名用户显示编辑器 -->
+                <div v-else class="bio-editor-wrapper-wide">
+                  <MarkdownEditor
+                    :model-value="profileForm.bio || ''"
+                    @update:model-value="(val: string) => profileForm.bio = val"
+                    :auto-save-key="`user_bio_${authStore.user?.id}`"
+                    style="height: 600px;"
+                  />
+                </div>
+                <p v-if="authStore.isVerified" class="form-hint">支持 Markdown 语法，可以使用图床插入图片</p>
               </el-form-item>
               <el-form-item>
                 <el-button type="primary" @click="saveProfile" :loading="saving">保存修改</el-button>
+                <el-button v-if="authStore.isVerified" @click="previewVisible = true">预览</el-button>
               </el-form-item>
             </el-form>
           </el-card>
@@ -321,14 +335,25 @@
         </div>
       </main>
     </div>
+
+    <!-- Bio 预览对话框 -->
+    <el-dialog
+      v-model="previewVisible"
+      title="个人简介预览"
+      width="700px"
+      destroy-on-close
+    >
+      <div class="bio-preview markdown-body" v-html="renderedBio || '<p style=\'color: #999;\'>暂无内容</p>'"></div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, reactive, onMounted, watch, computed } from 'vue';
+import MarkdownIt from 'markdown-it';
 import { useAuthStore } from '../stores/auth';
 import { getCurrentUser, updateProfile, verifyUser, getUserProfile } from '../api/user';
+import MarkdownEditor from '../components/editor/MarkdownEditor.vue';
 import type { UpdateProfileRequest, VerificationRequest } from '../api/user';
 import { getMyResources, deleteResource } from '../api/resource';
 import type { ResourceListItem } from '../types/resource';
@@ -340,7 +365,6 @@ import {
 } from '../api/imageHost';
 import type { Image } from '../types/image';
 import {
-  ArrowDown,
   UserFilled,
   User,
   Document,
@@ -356,8 +380,24 @@ import {
 } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 
-const router = useRouter();
 const authStore = useAuthStore();
+
+// 初始化 MarkdownIt
+const md = new MarkdownIt({
+  html: false,
+  breaks: true,
+  linkify: true,
+  typographer: true
+});
+
+// 计算渲染后的 Bio
+const renderedBio = computed(() => {
+  if (!authStore.user?.bio) return '';
+  return md.render(authStore.user.bio);
+});
+
+// 预览对话框
+const previewVisible = ref(false);
 
 const activeMenu = ref('overview');
 const saving = ref(false);
@@ -576,24 +616,6 @@ const handleMenuSelect = (index: string) => {
   }
 };
 
-// 下拉菜单处理
-const handleCommand = async (command: string) => {
-  if (command === 'logout') {
-    try {
-      await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      });
-      await authStore.logoutUser();
-      router.push('/');
-    } catch (error) {
-      // 用户取消
-    }
-  } else if (command === 'settings') {
-    activeMenu.value = 'settings';
-  }
-};
 
 // 保存资料
 const saveProfile = async () => {
@@ -669,58 +691,9 @@ onMounted(() => {
   background-color: #f5f7fa;
 }
 
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 40px;
-  height: 60px;
-  background-color: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.nav-brand h1 {
-  margin: 0;
-  color: #409eff;
-  font-size: 24px;
-}
-
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-
-.nav-links a {
-  text-decoration: none;
-  color: #606266;
-  font-size: 14px;
-  transition: color 0.3s;
-}
-
-.nav-links a:hover {
-  color: #409eff;
-}
-
-.nav-links a.router-link-active {
-  color: #409eff;
-  font-weight: 500;
-}
-
-.user-info {
-  cursor: pointer;
-  color: #606266;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
 .profile-container {
   display: flex;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 24px;
   gap: 24px;
@@ -793,6 +766,28 @@ onMounted(() => {
 
 .settings-form {
   max-width: 500px;
+}
+
+.settings-card-wide {
+  max-width: 1400px;
+}
+
+.settings-form-wide {
+  max-width: 100%;
+}
+
+.settings-form-wide .el-form-item__content {
+  max-width: calc(100% - 100px);
+}
+
+.bio-form-item-wide :deep(.el-form-item__content) {
+  width: 100%;
+  max-width: 100%;
+}
+
+.bio-editor-wrapper-wide {
+  width: 100%;
+  min-height: 600px;
 }
 
 .verification-card {
@@ -997,5 +992,150 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+/* Bio 编辑器样式 */
+.bio-form-item :deep(.el-form-item__content) {
+  display: block;
+}
+
+.bio-editor-wrapper {
+  margin-bottom: 8px;
+}
+
+.form-hint {
+  font-size: 12px;
+  color: #909399;
+  margin: 0;
+}
+
+/* Bio 显示区域样式 */
+.bio-section {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #ebeef5;
+}
+
+.bio-section h4 {
+  margin: 0 0 16px;
+  color: #303133;
+  font-size: 16px;
+}
+
+.bio-content {
+  background: #f5f7fa;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.bio-preview {
+  padding: 16px;
+}
+
+/* Markdown 内容样式 */
+.markdown-body :deep(h1),
+.markdown-body :deep(h2),
+.markdown-body :deep(h3),
+.markdown-body :deep(h4),
+.markdown-body :deep(h5),
+.markdown-body :deep(h6) {
+  margin: 16px 0 12px;
+  color: #303133;
+}
+
+.markdown-body :deep(h1) {
+  font-size: 1.5em;
+  border-bottom: 1px solid #e4e7ed;
+  padding-bottom: 8px;
+}
+
+.markdown-body :deep(h2) {
+  font-size: 1.3em;
+}
+
+.markdown-body :deep(p) {
+  margin: 12px 0;
+  line-height: 1.8;
+  color: #606266;
+}
+
+.markdown-body :deep(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  margin: 12px 0;
+}
+
+.markdown-body :deep(a) {
+  color: #409eff;
+  text-decoration: none;
+}
+
+.markdown-body :deep(a:hover) {
+  text-decoration: underline;
+}
+
+.markdown-body :deep(code) {
+  background-color: #f5f7fa;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.9em;
+  color: #e83e8c;
+}
+
+.markdown-body :deep(pre) {
+  background-color: #282c34;
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 12px 0;
+}
+
+.markdown-body :deep(pre code) {
+  background-color: transparent;
+  color: #abb2bf;
+  padding: 0;
+}
+
+.markdown-body :deep(blockquote) {
+  border-left: 4px solid #409eff;
+  padding-left: 16px;
+  margin: 12px 0;
+  color: #606266;
+}
+
+.markdown-body :deep(ul),
+.markdown-body :deep(ol) {
+  padding-left: 24px;
+  margin: 12px 0;
+}
+
+.markdown-body :deep(li) {
+  margin: 6px 0;
+}
+
+.markdown-body :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+}
+
+.markdown-body :deep(th),
+.markdown-body :deep(td) {
+  border: 1px solid #dcdfe6;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.markdown-body :deep(th) {
+  background-color: #f5f7fa;
+  font-weight: 600;
+}
+
+.markdown-body :deep(hr) {
+  border: none;
+  border-top: 1px solid #e4e7ed;
+  margin: 16px 0;
 }
 </style>

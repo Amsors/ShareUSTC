@@ -56,6 +56,11 @@
                 收藏
               </el-button>
 
+              <el-button v-if="canEdit" size="large" type="success" @click="handleEdit">
+                <el-icon><Edit /></el-icon>
+                编辑
+              </el-button>
+
               <el-button size="large" v-if="canDelete" type="danger" @click="handleDelete">
                 <el-icon><Delete /></el-icon>
                 删除
@@ -206,7 +211,8 @@ import {
   Delete,
   View,
   Folder,
-  Loading
+  Loading,
+  Edit
 } from '@element-plus/icons-vue';
 import { getResourceDetail, downloadResource, deleteResource } from '../../api/resource';
 import { useAuthStore } from '../../stores/auth';
@@ -237,6 +243,13 @@ const resourceId = computed(() => route.params.id as string);
 
 const canDelete = computed(() => {
   if (!resource.value || !authStore.user) return false;
+  return resource.value.uploaderId === authStore.user.id || authStore.user.role === 'admin';
+});
+
+// 是否可以编辑（Markdown资源且是上传者或管理员）
+const canEdit = computed(() => {
+  if (!resource.value || !authStore.user) return false;
+  if (resource.value.resourceType !== 'web_markdown') return false;
   return resource.value.uploaderId === authStore.user.id || authStore.user.role === 'admin';
 });
 
@@ -317,7 +330,7 @@ const handleDownload = async () => {
 
   downloading.value = true;
   try {
-    await downloadResource(resourceId.value, resource.value.title);
+    await downloadResource(resourceId.value);
     ElMessage.success('开始下载');
     // 更新下载次数
     resource.value.stats.downloads++;
@@ -358,6 +371,11 @@ const handleDelete = async () => {
 // 返回列表
 const goBack = () => {
   router.push('/resources');
+};
+
+// 编辑资源
+const handleEdit = () => {
+  router.push(`/resources/${resourceId.value}/edit`);
 };
 
 // 页面加载时获取资源详情

@@ -390,3 +390,33 @@ pub struct AiAuditResult {
     pub reason: Option<String>,
     pub accuracy_score: Option<f64>,
 }
+
+/// 更新资源内容请求 DTO（用于Markdown在线编辑）
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateResourceContentRequest {
+    pub content: String,
+}
+
+impl UpdateResourceContentRequest {
+    /// 验证请求
+    pub fn validate(&self) -> Result<(), String> {
+        // 内容不能为空
+        if self.content.trim().is_empty() {
+            return Err("内容不能为空".to_string());
+        }
+        // 内容长度限制（10MB）
+        if self.content.len() > 10 * 1024 * 1024 {
+            return Err("内容大小超过10MB限制".to_string());
+        }
+        Ok(())
+    }
+}
+
+/// 更新资源内容响应 DTO
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateResourceContentResponse {
+    pub id: Uuid,
+    pub updated_at: chrono::NaiveDateTime,
+}

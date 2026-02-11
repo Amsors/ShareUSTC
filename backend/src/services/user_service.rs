@@ -112,10 +112,17 @@ impl UserService {
     }
 
     /// 更新用户资料
+    ///
+    /// # Arguments
+    /// * `pool` - 数据库连接池
+    /// * `user_id` - 用户ID
+    /// * `req` - 更新请求
+    /// * `is_verified` - 是否已实名认证，未实名用户不能修改个人简介
     pub async fn update_profile(
         pool: &PgPool,
         user_id: Uuid,
         req: UpdateProfileRequest,
+        is_verified: bool,
     ) -> Result<UserInfo, UserError> {
         // 验证请求
         req.validate()
@@ -144,7 +151,12 @@ impl UserService {
 
         // 构建更新查询 - 使用简单的字符串拼接
         let username = req.username.unwrap_or(current_user.username);
-        let bio = req.bio.or(current_user.bio);
+        // 未实名用户不能修改个人简介，保持原有值
+        let bio = if is_verified {
+            req.bio.or(current_user.bio)
+        } else {
+            current_user.bio
+        };
         let email = req.email.or(current_user.email);
         let social_links = req.social_links;
 

@@ -44,18 +44,20 @@ pub async fn update_profile(
     user: web::ReqData<CurrentUser>,
     req: web::Json<UpdateProfileRequest>,
 ) -> impl Responder {
-    // 检查是否为实名用户（只有实名用户可以修改资料）
-    if user.role != crate::models::UserRole::Verified
-        && user.role != crate::models::UserRole::Admin
-    {
+    // 检查是否为实名用户或管理员
+    let is_verified = user.role == crate::models::UserRole::Verified
+        || user.role == crate::models::UserRole::Admin;
+
+    // 未实名用户尝试修改个人简介时，返回错误
+    if !is_verified && req.bio.is_some() {
         return HttpResponse::Ok().json(serde_json::json!({
             "code": 403,
-            "message": "只有实名用户可以修改资料",
+            "message": "实名认证后才可修改个人简介",
             "data": null
         }));
     }
 
-    match UserService::update_profile(&state.pool, user.id, req.into_inner()).await {
+    match UserService::update_profile(&state.pool, user.id, req.into_inner(), is_verified).await {
         Ok(user_info) => HttpResponse::Ok().json(serde_json::json!({
             "code": 200,
             "message": "更新成功",
