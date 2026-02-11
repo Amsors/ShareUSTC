@@ -121,7 +121,7 @@
         </template>
 
         <div v-if="loading" class="loading-state">
-          <el-skeleton :rows="3" animated />
+          <span class="loading-text">加载中...</span>
         </div>
 
         <div v-else-if="images.length === 0" class="empty-state">
@@ -607,6 +607,12 @@ onMounted(() => {
 .loading-state,
 .empty-state {
   padding: 40px 0;
+  text-align: center;
+}
+
+.loading-text {
+  color: #909399;
+  font-size: 14px;
 }
 
 .image-gallery {

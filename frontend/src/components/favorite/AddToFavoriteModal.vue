@@ -30,7 +30,7 @@
       <el-scrollbar max-height="300px">
         <!-- 加载状态 -->
         <div v-if="loading" class="loading-wrapper">
-          <el-skeleton :rows="3" animated />
+          <span class="loading-text">加载中...</span>
         </div>
 
         <!-- 空状态 -->
@@ -221,6 +221,11 @@ onMounted(() => {
 }
 
 .empty-text {
+  color: #909399;
+  font-size: 14px;
+}
+
+.loading-text {
   color: #909399;
   font-size: 14px;
 }

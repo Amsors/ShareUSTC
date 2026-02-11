@@ -1,7 +1,7 @@
 <template>
   <div class="markdown-viewer">
     <div v-if="loading" class="loading-container">
-      <el-skeleton :rows="10" animated />
+      <span class="loading-text">加载中...</span>
     </div>
     <div v-else-if="error" class="error-container">
       <el-empty description="内容加载失败" />
@@ -73,6 +73,11 @@ watch(() => props.resourceId, () => {
 .error-container {
   padding: 40px 0;
   text-align: center;
+}
+
+.loading-text {
+  color: #909399;
+  font-size: 14px;
 }
 
 .markdown-container {

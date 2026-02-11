@@ -8,8 +8,10 @@
       </el-button>
     </div>
 
-    <!-- 加载状态 - 纯空白 -->
-    <div v-if="loading" class="loading-container"></div>
+    <!-- 加载状态 -->
+    <div v-if="loading" class="loading-container">
+      <el-icon class="loading-icon" :size="48"><Loading /></el-icon>
+    </div>
 
     <!-- 空状态 -->
     <el-empty
@@ -93,7 +95,8 @@ import {
   Document,
   More,
   Edit,
-  Delete
+  Delete,
+  Loading
 } from '@element-plus/icons-vue';
 import { storeToRefs } from 'pinia';
 import { useFavoriteStore } from '../../stores/favorite';
@@ -209,7 +212,22 @@ onMounted(() => {
 }
 
 .loading-container {
-  padding: 20px;
+  padding: 60px 0;
+  text-align: center;
+}
+
+.loading-icon {
+  color: #409eff;
+  animation: rotating 2s linear infinite;
+}
+
+@keyframes rotating {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .favorite-grid {

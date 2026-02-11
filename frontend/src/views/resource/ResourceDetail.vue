@@ -1,7 +1,7 @@
 <template>
   <div class="resource-detail-page">
     <div v-if="loading" class="loading-container">
-      <el-skeleton :rows="10" animated />
+      <el-icon class="loading-icon" :size="48"><Loading /></el-icon>
     </div>
 
     <div v-else-if="!resource" class="error-container">
@@ -205,7 +205,8 @@ import {
   Star,
   Delete,
   View,
-  Folder
+  Folder,
+  Loading
 } from '@element-plus/icons-vue';
 import { getResourceDetail, downloadResource, deleteResource } from '../../api/resource';
 import { useAuthStore } from '../../stores/auth';
@@ -376,6 +377,20 @@ onMounted(() => {
 .error-container {
   padding: 60px 0;
   text-align: center;
+}
+
+.loading-icon {
+  color: #409eff;
+  animation: rotating 2s linear infinite;
+}
+
+@keyframes rotating {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .resource-header-card {

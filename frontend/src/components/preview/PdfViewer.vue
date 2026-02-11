@@ -1,7 +1,6 @@
 <template>
   <div class="pdf-viewer">
     <div v-if="loading" class="loading-container">
-      <el-skeleton :rows="10" animated />
       <p class="loading-text">正在加载 PDF...</p>
     </div>
 
