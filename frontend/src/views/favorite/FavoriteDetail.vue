@@ -35,8 +35,8 @@
 
     <!-- 资源列表 -->
     <div class="resource-list">
-      <!-- 加载状态 -->
-      <el-skeleton v-if="loading" :rows="5" animated />
+      <!-- 加载状态 - 纯空白 -->
+      <div v-if="loading" class="loading-placeholder"></div>
 
       <!-- 空状态 -->
       <el-empty
@@ -408,6 +408,10 @@ onMounted(() => {
   padding-top: 12px;
   border-top: 1px solid #ebeef5;
   text-align: right;
+}
+
+.loading-placeholder {
+  min-height: 400px;
 }
 
 @media (max-width: 768px) {

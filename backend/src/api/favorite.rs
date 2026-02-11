@@ -236,6 +236,77 @@ pub async fn check_resource_in_favorite(
     }
 }
 
+/// 打包下载收藏夹
+#[get("/favorites/{favorite_id}/download")]
+pub async fn download_favorite(
+    state: web::Data<AppState>,
+    user: web::ReqData<CurrentUser>,
+    path: web::Path<Uuid>,
+) -> impl Responder {
+    let favorite_id = path.into_inner();
+
+    // 首先获取收藏夹名称
+    let favorite_name = match FavoriteService::get_favorite_detail(&state.pool, favorite_id, user.id).await {
+        Ok(detail) => detail.name,
+        Err(e) => {
+            return match e {
+                crate::services::ResourceError::NotFound(msg) => {
+                    HttpResponse::NotFound().json(serde_json::json!({
+                        "code": 404,
+                        "message": msg,
+                        "data": null
+                    }))
+                }
+                _ => HttpResponse::InternalServerError().json(serde_json::json!({
+                    "code": 500,
+                    "message": "获取收藏夹信息失败".to_string(),
+                    "data": null
+                }))
+            };
+        }
+    };
+
+    // 打包下载
+    match FavoriteService::pack_favorite_resources(&state.pool, favorite_id, user.id, &favorite_name).await {
+        Ok((zip_data, filename)) => {
+            HttpResponse::Ok()
+                .content_type("application/zip")
+                .append_header(("Content-Disposition", format!(r#"attachment; filename="{}""#, filename)))
+                .body(zip_data)
+        }
+        Err(e) => {
+            match e {
+                crate::services::ResourceError::ValidationError(msg) => {
+                    HttpResponse::BadRequest().json(serde_json::json!({
+                        "code": 400,
+                        "message": msg,
+                        "data": null
+                    }))
+                }
+                crate::services::ResourceError::NotFound(msg) => {
+                    HttpResponse::NotFound().json(serde_json::json!({
+                        "code": 404,
+                        "message": msg,
+                        "data": null
+                    }))
+                }
+                crate::services::ResourceError::FileError(msg) => {
+                    HttpResponse::InternalServerError().json(serde_json::json!({
+                        "code": 500,
+                        "message": msg,
+                        "data": null
+                    }))
+                }
+                _ => HttpResponse::InternalServerError().json(serde_json::json!({
+                    "code": 500,
+                    "message": "打包下载失败".to_string(),
+                    "data": null
+                }))
+            }
+        }
+    }
+}
+
 /// 配置收藏夹路由
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(create_favorite)
@@ -245,5 +316,6 @@ pub fn config(cfg: &mut web::ServiceConfig) {
         .service(delete_favorite)
         .service(add_resource_to_favorite)
         .service(remove_resource_from_favorite)
-        .service(check_resource_in_favorite);
+        .service(check_resource_in_favorite)
+        .service(download_favorite);
 }

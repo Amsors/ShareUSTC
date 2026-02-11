@@ -112,44 +112,50 @@ export const checkResourceInFavorite = async (resourceId: string): Promise<Check
  * @param favoriteName 收藏夹名称（用于文件名）
  */
 export const downloadFavorite = async (favoriteId: string, favoriteName?: string): Promise<void> => {
-  try {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
-    const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
-    const response = await fetch(
-      `${cleanBaseUrl}/api/favorites/${favoriteId}/download`,
-      {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`
-        }
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error('下载失败');
-    }
-
-    // 获取文件名
-    const contentDisposition = response.headers.get('content-disposition');
-    let downloadFileName = `${favoriteName || '收藏夹'}.zip`;
-    if (contentDisposition) {
-      const match = contentDisposition.match(/filename="(.+)"/);
-      if (match && match[1]) {
-        downloadFileName = match[1];
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+  const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
+  const response = await fetch(
+    `${cleanBaseUrl}/api/favorites/${favoriteId}/download`,
+    {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`
       }
     }
+  );
 
-    // 创建下载链接
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = downloadFileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-  } catch (error) {
-    console.error('下载失败:', error);
-    throw error;
+  if (!response.ok) {
+    // 尝试解析错误消息
+    let errorMessage = '下载失败';
+    try {
+      const errorData = await response.json();
+      if (errorData.message) {
+        errorMessage = errorData.message;
+      }
+    } catch {
+      // 如果解析失败，使用状态码文本
+      errorMessage = response.statusText || '下载失败';
+    }
+    throw new Error(errorMessage);
   }
+
+  // 获取文件名
+  const contentDisposition = response.headers.get('content-disposition');
+  let downloadFileName = `${favoriteName || '收藏夹'}.zip`;
+  if (contentDisposition) {
+    const match = contentDisposition.match(/filename="(.+)"/);
+    if (match && match[1]) {
+      downloadFileName = match[1];
+    }
+  }
+
+  // 创建下载链接
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = downloadFileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
 };

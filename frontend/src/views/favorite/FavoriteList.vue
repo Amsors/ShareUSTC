@@ -8,10 +8,8 @@
       </el-button>
     </div>
 
-    <!-- 加载状态 -->
-    <div v-if="loading" class="loading-container">
-      <el-skeleton :rows="5" animated />
-    </div>
+    <!-- 加载状态 - 纯空白 -->
+    <div v-if="loading" class="loading-container"></div>
 
     <!-- 空状态 -->
     <el-empty

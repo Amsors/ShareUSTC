@@ -1,5 +1,6 @@
 use sqlx::PgPool;
 use uuid::Uuid;
+use std::io::Write;
 
 use crate::models::{
     AddToFavoriteRequest, CheckResourceInFavoriteResponse, CreateFavoriteRequest,
@@ -403,7 +404,7 @@ impl FavoriteService {
         pool: &PgPool,
         favorite_id: Uuid,
         user_id: Uuid,
-    ) -> Result<Vec<(Uuid, String, String)>, ResourceError> {
+    ) -> Result<Vec<(Uuid, String, String, String, i64)>, ResourceError> {
         // 检查收藏夹是否存在且属于当前用户
         let favorite = sqlx::query_as::<_, Favorite>(
             "SELECT * FROM favorites WHERE id = $1 AND user_id = $2"
@@ -417,10 +418,10 @@ impl FavoriteService {
             return Err(ResourceError::NotFound("收藏夹不存在".to_string()));
         }
 
-        // 获取资源文件路径
-        let rows = sqlx::query_as::<_, (Uuid, String, String)>(
+        // 获取资源文件路径、标题、资源类型和文件大小
+        let rows = sqlx::query_as::<_, (Uuid, String, String, String, i64)>(
             r#"
-            SELECT r.id, r.title, r.file_path
+            SELECT r.id, r.title, r.file_path, r.resource_type, r.file_size
             FROM favorite_resources fr
             JOIN resources r ON fr.resource_id = r.id
             WHERE fr.favorite_id = $1
@@ -431,5 +432,136 @@ impl FavoriteService {
         .await?;
 
         Ok(rows)
+    }
+
+    /// 打包下载收藏夹资源
+    /// 返回 ZIP 文件的字节数据
+    /// 限制：最多 100 个文件，总大小不超过 500MB
+    pub async fn pack_favorite_resources(
+        pool: &PgPool,
+        favorite_id: Uuid,
+        user_id: Uuid,
+        favorite_name: &str,
+    ) -> Result<(Vec<u8>, String), ResourceError> {
+        // 获取资源文件信息
+        let resources = Self::get_favorite_resource_paths(pool, favorite_id, user_id).await?;
+
+        if resources.is_empty() {
+            return Err(ResourceError::ValidationError("收藏夹为空".to_string()));
+        }
+
+        // 检查文件数量限制
+        const MAX_FILES: usize = 100;
+        if resources.len() > MAX_FILES {
+            return Err(ResourceError::ValidationError(
+                format!("收藏夹资源数量超过限制，最多支持 {} 个文件", MAX_FILES)
+            ));
+        }
+
+        // 计算总文件大小并检查限制
+        const MAX_TOTAL_SIZE: i64 = 500 * 1024 * 1024; // 500MB
+        let total_size: i64 = resources.iter().map(|(_, _, _, _, size)| size).sum();
+        if total_size > MAX_TOTAL_SIZE {
+            return Err(ResourceError::ValidationError(
+                format!("收藏夹资源总大小超过限制，最大支持 500MB，当前 {:.2}MB",
+                    total_size as f64 / 1024.0 / 1024.0)
+            ));
+        }
+
+        // 在内存中创建 ZIP 文件
+        let mut zip_buffer = Vec::new();
+        {
+            let mut zip_writer = zip::ZipWriter::new(std::io::Cursor::new(&mut zip_buffer));
+            let options = zip::write::FileOptions::default()
+                .compression_method(zip::CompressionMethod::Deflated)
+                .unix_permissions(0o644);
+
+            // 用于检测文件名冲突
+            let mut file_names: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+
+            for (resource_id, title, file_path, resource_type, _) in &resources {
+                // 读取文件内容
+                let file_content = match tokio::fs::read(file_path).await {
+                    Ok(content) => content,
+                    Err(e) => {
+                        log::warn!("读取资源文件失败: resource_id={}, path={}, error={}",
+                            resource_id, file_path, e);
+                        continue; // 跳过无法读取的文件
+                    }
+                };
+
+                // 生成安全的文件名 - 保留 Unicode 字符（包括中文），只替换文件系统不安全字符
+                let safe_title = title.chars()
+                    .map(|c| {
+                        // 文件系统不安全的字符: / \ ? % * : | " < > 和控制字符
+                        if c.is_control() || matches!(c, '/' | '\\' | '?' | '%' | '*' | ':' | '|' | '"' | '<' | '>') {
+                            '_'
+                        } else {
+                            c
+                        }
+                    })
+                    .collect::<String>();
+
+                // 确定文件扩展名
+                let ext = match resource_type.as_str() {
+                    "web_markdown" => "md",
+                    "pdf" => "pdf",
+                    "ppt" => "ppt",
+                    "pptx" => "pptx",
+                    "doc" => "doc",
+                    "docx" => "docx",
+                    "txt" => "txt",
+                    "zip" => "zip",
+                    _ => "bin",
+                };
+
+                // 生成唯一的文件名
+                let base_name = format!("{}.{}", safe_title, ext);
+                let file_name = if let Some(count) = file_names.get(&base_name) {
+                    let new_count = count + 1;
+                    file_names.insert(base_name.clone(), new_count);
+                    format!("{}_{}.{}", safe_title, new_count, ext)
+                } else {
+                    file_names.insert(base_name.clone(), 1);
+                    base_name
+                };
+
+                // 添加到 ZIP
+                if let Err(e) = zip_writer.start_file(&file_name, options) {
+                    log::warn!("添加文件到ZIP失败: {}, error={}", file_name, e);
+                    continue;
+                }
+
+                if let Err(e) = zip_writer.write_all(&file_content) {
+                    log::warn!("写入文件内容到ZIP失败: {}, error={}", file_name, e);
+                    continue;
+                }
+
+                log::debug!("已添加文件到ZIP: {} ({} bytes)", file_name, file_content.len());
+            }
+
+            // 完成 ZIP 文件
+            if let Err(e) = zip_writer.finish() {
+                return Err(ResourceError::FileError(format!("创建ZIP文件失败: {}", e)));
+            }
+        }
+
+        // 生成下载文件名 - 保留 Unicode 字符（包括中文），只替换文件系统不安全字符
+        let safe_favorite_name = favorite_name.chars()
+            .map(|c| {
+                // 文件系统不安全的字符: / \ ? % * : | " < > 和控制字符
+                if c.is_control() || matches!(c, '/' | '\\' | '?' | '%' | '*' | ':' | '|' | '"' | '<' | '>') {
+                    '_'
+                } else {
+                    c
+                }
+            })
+            .collect::<String>();
+        let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
+        let download_filename = format!("{}_{}.zip", safe_favorite_name, timestamp);
+
+        log::info!("打包下载完成: {}, 文件大小: {} bytes", download_filename, zip_buffer.len());
+
+        Ok((zip_buffer, download_filename))
     }
 }
