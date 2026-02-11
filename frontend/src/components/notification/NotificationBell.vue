@@ -163,10 +163,10 @@ function formatTime(time: string): string {
 
 // 开始轮询
 function startPolling() {
-  // 每30秒刷新一次未读数量
+  // 每3分钟刷新一次未读数量
   pollTimer = setInterval(() => {
     notificationStore.fetchUnreadCount();
-  }, 30000);
+  }, 180000);
 }
 
 // 停止轮询

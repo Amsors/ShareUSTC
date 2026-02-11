@@ -3,8 +3,8 @@ use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use uuid::Uuid;
 
-/// Access Token 有效期：15分钟
-const ACCESS_TOKEN_EXPIRE_MINUTES: i64 = 15;
+/// Access Token 有效期：60分钟（1小时）
+const ACCESS_TOKEN_EXPIRE_MINUTES: i64 = 60;
 /// Refresh Token 有效期：7天
 const REFRESH_TOKEN_EXPIRE_DAYS: i64 = 7;
 
