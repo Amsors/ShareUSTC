@@ -134,6 +134,21 @@ async fn main() -> std::io::Result<()> {
         }
     };
 
+    // 同步管理员权限（根据环境变量配置）
+    if !config.admin_usernames.is_empty() {
+        log::info!("正在同步管理员权限，配置的管理员: {:?}", config.admin_usernames);
+        match services::AdminService::sync_admin_roles(&pool, &config.admin_usernames).await {
+            Ok((granted, revoked)) => {
+                log::info!("管理员权限同步完成: 新增 {} 个, 取消 {} 个", granted, revoked);
+            }
+            Err(e) => {
+                log::warn!("管理员权限同步失败: {}", e);
+            }
+        }
+    } else {
+        log::info!("未配置管理员用户名列表 (ADMIN_USERNAMES)，跳过权限同步");
+    }
+
     // 创建应用状态
     let app_state = web::Data::new(AppState::new(pool, config.jwt_secret.clone()));
 

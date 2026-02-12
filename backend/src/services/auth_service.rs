@@ -68,9 +68,14 @@ impl AuthService {
 
         // 创建用户
         let user_id = Uuid::new_v4();
-        // 检查用户名是否匹配ADMIN_USERNAME环境变量，如果是则赋予admin角色
-        let admin_username = std::env::var("ADMIN_USERNAME").unwrap_or_default();
-        let role = if req.username == admin_username && !admin_username.is_empty() {
+        // 检查用户名是否在ADMIN_USERNAMES环境变量列表中，如果是则赋予admin角色
+        let admin_usernames = std::env::var("ADMIN_USERNAMES").unwrap_or_default();
+        let admin_list: Vec<String> = admin_usernames
+            .split(',')
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect();
+        let role = if admin_list.contains(&req.username) {
             "admin"
         } else {
             "user"

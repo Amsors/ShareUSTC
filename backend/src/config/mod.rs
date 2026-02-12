@@ -11,6 +11,7 @@ pub struct Config {
     pub image_upload_path: String,
     pub resource_upload_path: String,
     pub cors_allowed_origins: Vec<String>,
+    pub admin_usernames: Vec<String>,
 }
 
 impl Config {
@@ -21,6 +22,14 @@ impl Config {
             .unwrap_or_else(|_| {
                 "http://localhost:5173,http://127.0.0.1:5173".to_string()
             })
+            .split(',')
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect();
+
+        // 解析管理员用户名列表（逗号分隔）
+        let admin_usernames = env::var("ADMIN_USERNAMES")
+            .unwrap_or_default()
             .split(',')
             .map(|s| s.trim().to_string())
             .filter(|s| !s.is_empty())
@@ -44,6 +53,12 @@ impl Config {
             resource_upload_path: env::var("RESOURCE_UPLOAD_PATH")
                 .unwrap_or_else(|_| "./uploads/resources".to_string()),
             cors_allowed_origins: cors_origins,
+            admin_usernames,
         }
+    }
+
+    /// 检查指定用户名是否为配置中的管理员
+    pub fn is_admin_username(&self, username: &str) -> bool {
+        self.admin_usernames.iter().any(|admin| admin == username)
     }
 }
