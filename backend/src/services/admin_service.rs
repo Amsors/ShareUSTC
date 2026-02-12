@@ -129,6 +129,64 @@ pub struct AdminCommentListResponse {
 pub struct AdminService;
 
 impl AdminService {
+    /// 同步管理员权限
+    /// 根据环境变量 ADMIN_USERNAMES 的配置，同步数据库中的管理员权限：
+    /// 1. 配置文件中存在的用户 -> 赋予管理员权限
+    /// 2. 配置文件中不存在的用户（但数据库中是管理员）-> 取消管理员权限
+    pub async fn sync_admin_roles(pool: &PgPool, admin_usernames: &[String]) -> Result<(usize, usize), AdminError> {
+        let admin_set: std::collections::HashSet<&str> = admin_usernames.iter().map(|s| s.as_str()).collect();
+
+        // 1. 将配置中的管理员用户设置为 admin
+        let mut granted_count = 0usize;
+        for username in admin_usernames {
+            if username.is_empty() {
+                continue;
+            }
+            let result = sqlx::query(
+                "UPDATE users SET role = 'admin', updated_at = NOW() WHERE username = $1 AND role != 'admin'"
+            )
+            .bind(username)
+            .execute(pool)
+            .await
+            .map_err(|e| AdminError::DatabaseError(format!("更新管理员权限失败: {}", e)))?;
+
+            if result.rows_affected() > 0 {
+                log::info!("已为用户 '{}' 赋予管理员权限", username);
+                granted_count += 1;
+            }
+        }
+
+        // 2. 获取所有当前是 admin 的用户
+        let current_admins: Vec<(String,)> = sqlx::query_as("SELECT username FROM users WHERE role = 'admin'")
+            .fetch_all(pool)
+            .await
+            .map_err(|e| AdminError::DatabaseError(format!("查询当前管理员失败: {}", e)))?;
+
+        // 3. 取消不在配置中的管理员权限
+        let mut revoked_count = 0usize;
+        for (username,) in current_admins {
+            if !admin_set.contains(username.as_str()) {
+                let result = sqlx::query(
+                    "UPDATE users SET role = 'user', updated_at = NOW() WHERE username = $1"
+                )
+                .bind(&username)
+                .execute(pool)
+                .await
+                .map_err(|e| AdminError::DatabaseError(format!("取消管理员权限失败: {}", e)))?;
+
+                if result.rows_affected() > 0 {
+                    log::info!("已取消用户 '{}' 的管理员权限", username);
+                    revoked_count += 1;
+                }
+            }
+        }
+
+        log::info!("管理员权限同步完成: 赋予 {} 个, 取消 {} 个", granted_count, revoked_count);
+        Ok((granted_count, revoked_count))
+    }
+}
+
+impl AdminService {
     /// 获取仪表盘统计数据
     pub async fn get_dashboard_stats(pool: &PgPool) -> Result<DashboardStats, AdminError> {
         // 用户总数
