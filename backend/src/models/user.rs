@@ -220,6 +220,42 @@ pub struct UserProfileResponse {
     pub total_downloads: i64,
 }
 
+/// 用户主页响应（包含资源列表和统计数据）
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserHomepageResponse {
+    pub id: Uuid,
+    pub username: String,
+    pub bio: Option<String>,
+    pub email: Option<String>,
+    pub role: String,
+    pub is_verified: bool,
+    pub created_at: NaiveDateTime,
+    pub uploads_count: i64,
+    pub total_likes: i64,
+    pub total_downloads: i64,
+    pub resources: Vec<crate::models::resource::ResourceListItem>,
+    pub resources_total: i64,
+}
+
+/// 用户主页查询参数
+#[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserHomepageQuery {
+    pub page: Option<i32>,
+    pub per_page: Option<i32>,
+}
+
+impl UserHomepageQuery {
+    pub fn get_page(&self) -> i32 {
+        self.page.unwrap_or(1).max(1)
+    }
+
+    pub fn get_per_page(&self) -> i32 {
+        self.per_page.unwrap_or(10).min(50).max(1)
+    }
+}
+
 impl UpdateProfileRequest {
     /// 验证更新请求
     pub fn validate(&self) -> Result<(), String> {

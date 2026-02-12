@@ -114,6 +114,124 @@ export const auditComment = (commentId: string, status: string): Promise<void> =
   return request.put(`/admin/comments/${commentId}/audit`, { status });
 };
 
+// =====================
+// 发送通知相关
+// =====================
+
+export type NotificationTarget = 'all' | 'specific';
+export type NotificationType = 'system' | 'admin_message';
+export type NotificationPriority = 'normal' | 'high';
+
+export interface SendNotificationRequest {
+  target: NotificationTarget;
+  userId?: string;
+  title: string;
+  content: string;
+  notificationType: NotificationType;
+  priority: NotificationPriority;
+  linkUrl?: string;
+}
+
+export const sendNotification = (data: SendNotificationRequest): Promise<void> => {
+  return request.post('/admin/notifications', data);
+};
+
+// =====================
+// 详细统计相关
+// =====================
+
+export interface UserStats {
+  totalUsers: number;
+  newUsersToday: number;
+  newUsersWeek: number;
+  newUsersMonth: number;
+}
+
+export interface ResourceTypeStat {
+  resourceType: string;
+  count: number;
+}
+
+export interface ResourceStats {
+  totalResources: number;
+  pendingResources: number;
+  approvedResources: number;
+  rejectedResources: number;
+  typeDistribution: ResourceTypeStat[];
+}
+
+export interface TopResource {
+  id: string;
+  title: string;
+  downloadCount: number;
+}
+
+export interface DownloadStats {
+  totalDownloads: number;
+  downloadsToday: number;
+  downloadsWeek: number;
+  topResources: TopResource[];
+}
+
+export interface RatingDistribution {
+  ratingRange: string;
+  count: number;
+}
+
+export interface InteractionStats {
+  totalComments: number;
+  totalRatings: number;
+  totalLikes: number;
+  ratingDistribution: RatingDistribution[];
+}
+
+export interface DetailedStats {
+  userStats: UserStats;
+  resourceStats: ResourceStats;
+  downloadStats: DownloadStats;
+  interactionStats: InteractionStats;
+}
+
+export const getDetailedStats = (): Promise<DetailedStats> => {
+  return request.get('/admin/stats/detailed');
+};
+
+// =====================
+// 操作日志相关
+// =====================
+
+export interface AuditLogItem {
+  id: string;
+  userId: string | null;
+  userName: string | null;
+  action: string;
+  targetType: string | null;
+  targetId: string | null;
+  details: Record<string, any> | null;
+  ipAddress: string | null;
+  createdAt: string;
+}
+
+export interface AuditLogListResponse {
+  logs: AuditLogItem[];
+  total: number;
+  page: number;
+  perPage: number;
+}
+
+export interface AuditLogQuery {
+  page?: number;
+  perPage?: number;
+  action?: string;
+  userId?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export const getAuditLogs = (query: AuditLogQuery = {}): Promise<AuditLogListResponse> => {
+  return request.get('/admin/audit-logs', { params: query });
+};
+
 // 导出API对象
 export const adminApi = {
   getDashboardStats,
@@ -123,5 +241,8 @@ export const adminApi = {
   auditResource,
   getCommentList,
   deleteComment,
-  auditComment
+  auditComment,
+  sendNotification,
+  getDetailedStats,
+  getAuditLogs
 };

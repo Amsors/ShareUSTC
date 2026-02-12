@@ -43,7 +43,13 @@
       <main class="main-content">
         <!-- 概览页面 -->
         <div v-if="activeMenu === 'overview'" class="content-section">
-          <h2>个人概览</h2>
+          <div class="section-header">
+            <h2>个人概览</h2>
+            <el-button type="primary" plain @click="goToMyHomepage">
+              <el-icon><Link /></el-icon>
+              查看我的公开主页
+            </el-button>
+          </div>
 
           <div class="stats-cards">
             <el-card class="stat-card">
@@ -350,6 +356,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import MarkdownIt from 'markdown-it';
 import { useAuthStore } from '../stores/auth';
 import { getCurrentUser, updateProfile, verifyUser, getUserProfile } from '../api/user';
@@ -376,11 +383,20 @@ import {
   View,
   Download,
   Star,
-  Loading
+  Loading,
+  Link
 } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 
 const authStore = useAuthStore();
+const router = useRouter();
+
+// 跳转到我的公开主页
+const goToMyHomepage = () => {
+  if (authStore.user?.id) {
+    router.push(`/user/${authStore.user.id}`);
+  }
+};
 
 // 初始化 MarkdownIt
 const md = new MarkdownIt({

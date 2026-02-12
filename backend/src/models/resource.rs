@@ -302,7 +302,7 @@ pub struct ResourceDetailResponse {
 }
 
 /// 资源统计响应 DTO
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ResourceStatsResponse {
     pub views: i32,
@@ -325,7 +325,7 @@ pub struct ResourceListResponse {
 }
 
 /// 资源列表项 DTO
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ResourceListItem {
     pub id: Uuid,

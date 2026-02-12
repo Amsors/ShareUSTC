@@ -1,6 +1,6 @@
 use actix_web::{get, put, post, web, HttpResponse, Responder};
 use crate::db::AppState;
-use crate::models::{CurrentUser, UpdateProfileRequest, VerificationRequest, AuthResponse, TokenResponse, UserRole};
+use crate::models::{CurrentUser, UpdateProfileRequest, VerificationRequest, AuthResponse, TokenResponse, UserRole, UserHomepageQuery};
 use crate::services::{UserError, UserService};
 use crate::utils::{generate_access_token, generate_refresh_token};
 use uuid::Uuid;
@@ -173,12 +173,11 @@ pub async fn verify_user(
     }
 }
 
-/// 获取用户公开资料
+/// 获取用户公开资料（公开接口，任何人都可以访问）
 #[get("/users/{user_id}")]
 pub async fn get_user_profile(
     state: web::Data<AppState>,
     path: web::Path<Uuid>,
-    _user: web::ReqData<CurrentUser>, // 需要登录才能查看他人资料
 ) -> impl Responder {
     let user_id = path.into_inner();
 
@@ -203,10 +202,42 @@ pub async fn get_user_profile(
     }
 }
 
+/// 获取用户主页数据（公开接口，任何人都可以访问）
+/// 包含用户基本信息、统计数据和已通过审核的资源列表
+#[get("/users/{user_id}/homepage")]
+pub async fn get_user_homepage(
+    state: web::Data<AppState>,
+    path: web::Path<Uuid>,
+    query: web::Query<UserHomepageQuery>,
+) -> impl Responder {
+    let user_id = path.into_inner();
+
+    match UserService::get_user_homepage(&state.pool, user_id, &query.into_inner()).await {
+        Ok(homepage) => HttpResponse::Ok().json(serde_json::json!({
+            "code": 200,
+            "message": "获取成功",
+            "data": homepage
+        })),
+        Err(e) => {
+            log::warn!("获取用户主页失败: {}", e);
+            let (code, message) = match e {
+                UserError::UserNotFound(_) => (404, e.to_string()),
+                _ => (500, "获取用户主页失败".to_string()),
+            };
+            HttpResponse::Ok().json(serde_json::json!({
+                "code": code,
+                "message": message,
+                "data": null
+            }))
+        }
+    }
+}
+
 /// 配置用户路由
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(get_current_user)
         .service(update_profile)
         .service(verify_user)
+        .service(get_user_homepage)  // 必须在 get_user_profile 之前注册
         .service(get_user_profile);
 }

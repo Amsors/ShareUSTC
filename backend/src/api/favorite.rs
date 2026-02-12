@@ -7,6 +7,50 @@ use crate::models::{
 };
 use crate::services::FavoriteService;
 
+/// 对文件名进行 RFC 5987 编码，用于支持中文等非 ASCII 字符
+/// 参考: https://datatracker.ietf.org/doc/html/rfc5987
+fn encode_rfc5987(filename: &str) -> String {
+    let mut result = String::new();
+    for c in filename.chars() {
+        if c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_' {
+            // ASCII 字母数字和常用符号直接保留
+            result.push(c);
+        } else {
+            // 非 ASCII 字符进行 percent-encoding
+            for byte in c.encode_utf8(&mut [0; 4]).bytes() {
+                result.push_str(&format!("%{:02X}", byte));
+            }
+        }
+    }
+    result
+}
+
+/// 检查文件名是否只包含 ASCII 字符
+fn is_ascii_filename(filename: &str) -> bool {
+    filename.chars().all(|c| c.is_ascii())
+}
+
+/// 构建 Content-Disposition 头部值
+///
+/// 策略：
+/// 1. 对于纯 ASCII 文件名：直接使用 filename="xxx"
+/// 2. 对于含中文的文件名：同时提供 filename 和 filename*
+///    - filename*：RFC 5987 编码，现代浏览器优先使用
+fn build_content_disposition(filename: &str) -> String {
+    if is_ascii_filename(filename) {
+        // 纯 ASCII 文件名，直接使用
+        format!("attachment; filename=\"{}\"", filename)
+    } else {
+        // 包含中文等非 ASCII 字符
+        // RFC 5987 编码用于 filename*
+        let encoded = encode_rfc5987(filename);
+
+        // 同时提供 filename* 和 filename
+        // filename* 优先被现代浏览器使用，能正确显示中文
+        format!("attachment; filename*=UTF-8''{}; filename=\"{}\"", encoded, filename)
+    }
+}
+
 /// 创建收藏夹
 #[post("/favorites")]
 pub async fn create_favorite(
@@ -269,9 +313,12 @@ pub async fn download_favorite(
     // 打包下载
     match FavoriteService::pack_favorite_resources(&state.pool, favorite_id, user.id, &favorite_name).await {
         Ok((zip_data, filename)) => {
+            // 构建 Content-Disposition 头，支持中文文件名
+            let content_disposition = build_content_disposition(&filename);
+
             HttpResponse::Ok()
                 .content_type("application/zip")
-                .append_header(("Content-Disposition", format!(r#"attachment; filename="{}""#, filename)))
+                .append_header(("Content-Disposition", content_disposition))
                 .body(zip_data)
         }
         Err(e) => {

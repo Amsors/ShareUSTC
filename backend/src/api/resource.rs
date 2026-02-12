@@ -9,7 +9,7 @@ use crate::models::{
     CreateRatingRequest, CreateCommentRequest, CommentListQuery,
     CurrentUser, UpdateResourceContentRequest,
 };
-use crate::services::{ResourceService, RatingService, LikeService, CommentService};
+use crate::services::{ResourceService, RatingService, LikeService, CommentService, AuditLogService};
 
 /// 上传资源
 #[post("/resources")]
@@ -17,6 +17,7 @@ pub async fn upload_resource(
     state: web::Data<AppState>,
     user: web::ReqData<CurrentUser>,
     mut payload: Multipart,
+    req: HttpRequest,
 ) -> impl Responder {
     let mut metadata: Option<UploadResourceRequest> = None;
     let mut file_data: Option<(String, Vec<u8>, Option<String>)> = None;
@@ -141,11 +142,27 @@ pub async fn upload_resource(
     )
     .await
     {
-        Ok(response) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "上传成功",
-            "data": response
-        })),
+        Ok(response) => {
+            // 记录审计日志
+            let ip_address = req
+                .peer_addr()
+                .map(|addr| addr.ip().to_string());
+
+            let _ = AuditLogService::log_upload_resource(
+                &state.pool,
+                user.id,
+                response.id,
+                &response.title,
+                &response.resource_type,
+                ip_address.as_deref(),
+            ).await;
+
+            HttpResponse::Ok().json(serde_json::json!({
+                "code": 200,
+                "message": "上传成功",
+                "data": response
+            }))
+        }
         Err(e) => {
             log::error!("上传资源失败: {:?}", e);
             let (code, message) = match e {
@@ -267,15 +284,32 @@ pub async fn delete_resource(
     state: web::Data<AppState>,
     user: web::ReqData<CurrentUser>,
     path: web::Path<Uuid>,
+    req: HttpRequest,
 ) -> impl Responder {
     let resource_id = path.into_inner();
 
     match ResourceService::delete_resource(&state.pool, &user, resource_id).await {
-        Ok(_) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "删除成功",
-            "data": null
-        })),
+        Ok(title) => {
+            // 获取 IP 地址
+            let ip_address = req
+                .peer_addr()
+                .map(|addr| addr.ip().to_string());
+
+            // 记录审计日志
+            let _ = AuditLogService::log_delete_resource(
+                &state.pool,
+                user.id,
+                resource_id,
+                &title,
+                ip_address.as_deref(),
+            ).await;
+
+            HttpResponse::Ok().json(serde_json::json!({
+                "code": 200,
+                "message": "删除成功",
+                "data": null
+            }))
+        }
         Err(e) => {
             log::warn!("删除资源失败: {}", e);
             let (code, message) = match e {
@@ -355,6 +389,15 @@ pub async fn download_resource(
                         &ip_address
                     ).await;
 
+                    // 记录审计日志
+                    let _ = AuditLogService::log_download_resource(
+                        &state.pool,
+                        user_id,
+                        resource_id,
+                        &title,
+                        Some(&ip_address),
+                    ).await;
+
                     // 设置 Content-Type 和 Content-Disposition
                     // 使用 resource_type 获取 MIME 类型，因为它更准确
                     let content_type = crate::services::FileService::get_mime_type_by_type(&resource_type);
@@ -363,11 +406,14 @@ pub async fn download_resource(
                     let extension = crate::services::FileService::get_extension_by_type(&resource_type);
                     let filename = format!("{}.{}", sanitize_filename(&title), extension);
 
+                    // 构建 Content-Disposition 头
+                    let content_disposition = build_content_disposition(&filename);
+
                     HttpResponse::Ok()
                         .content_type(content_type)
                         .insert_header((
                             "Content-Disposition",
-                            format!("attachment; filename=\"{}\"", filename),
+                            content_disposition,
                         ))
                         .body(file_content)
                 }
@@ -406,6 +452,51 @@ fn sanitize_filename(filename: &str) -> String {
             c => c,
         })
         .collect()
+}
+
+/// 对文件名进行 RFC 5987 编码，用于支持中文等非 ASCII 字符
+/// 参考: https://datatracker.ietf.org/doc/html/rfc5987
+fn encode_rfc5987(filename: &str) -> String {
+    let mut result = String::new();
+    for c in filename.chars() {
+        if c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_' {
+            // ASCII 字母数字和常用符号直接保留
+            result.push(c);
+        } else {
+            // 非 ASCII 字符进行 percent-encoding
+            for byte in c.encode_utf8(&mut [0; 4]).bytes() {
+                result.push_str(&format!("%{:02X}", byte));
+            }
+        }
+    }
+    result
+}
+
+/// 检查文件名是否只包含 ASCII 字符
+fn is_ascii_filename(filename: &str) -> bool {
+    filename.chars().all(|c| c.is_ascii())
+}
+
+/// 构建 Content-Disposition 头部值
+///
+/// 策略：
+/// 1. 对于纯 ASCII 文件名：直接使用 filename="xxx"
+/// 2. 对于含中文的文件名：同时提供 filename 和 filename*
+///    - filename：包含原始中文，HTTP 库会自动处理编码
+///    - filename*：RFC 5987 编码，现代浏览器优先使用
+fn build_content_disposition(filename: &str) -> String {
+    if is_ascii_filename(filename) {
+        // 纯 ASCII 文件名，直接使用
+        format!("attachment; filename=\"{}\"", filename)
+    } else {
+        // 包含中文等非 ASCII 字符
+        // RFC 5987 编码用于 filename*
+        let encoded = encode_rfc5987(filename);
+
+        // 同时提供 filename 和 filename*
+        // filename* 优先被现代浏览器使用，能正确显示中文
+        format!("attachment; filename*=UTF-8''{}; filename=\"{}\"", encoded, filename)
+    }
 }
 
 /// 获取资源文件内容（用于预览）

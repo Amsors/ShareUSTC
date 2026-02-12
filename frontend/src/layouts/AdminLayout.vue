@@ -30,31 +30,6 @@
 
     <!-- 主内容区 -->
     <main class="main-content">
-      <!-- 顶部栏 -->
-      <header class="header">
-        <div class="breadcrumb">
-          <el-breadcrumb>
-            <el-breadcrumb-item>管理后台</el-breadcrumb-item>
-            <el-breadcrumb-item>{{ currentPageTitle }}</el-breadcrumb-item>
-          </el-breadcrumb>
-        </div>
-        <div class="header-right">
-          <el-dropdown @command="handleCommand">
-            <span class="user-info">
-              <el-icon :size="18"><User /></el-icon>
-              <span>{{ userStore.user?.username || '管理员' }}</span>
-              <el-icon><ArrowDown /></el-icon>
-            </span>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="home">返回首页</el-dropdown-item>
-                <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-        </div>
-      </header>
-
       <!-- 页面内容 -->
       <div class="page-content">
         <router-view />
@@ -64,23 +39,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { ref } from 'vue';
 import {
   HomeFilled,
   UserFilled,
   Document,
   ChatDotSquare,
+  Bell,
+  DataLine,
+  List,
   Fold,
-  Expand,
-  User,
-  ArrowDown
+  Expand
 } from '@element-plus/icons-vue';
-import { useAuthStore } from '../stores/auth';
-
-const route = useRoute();
-const router = useRouter();
-const userStore = useAuthStore();
 
 const isCollapsed = ref(false);
 
@@ -89,27 +59,13 @@ const menuItems = [
   { path: '/admin/users', title: '用户管理', icon: UserFilled },
   { path: '/admin/resources', title: '资源审核', icon: Document },
   { path: '/admin/comments', title: '评论管理', icon: ChatDotSquare },
+  { path: '/admin/notifications', title: '发送通知', icon: Bell },
+  { path: '/admin/stats', title: '详细统计', icon: DataLine },
+  { path: '/admin/logs', title: '操作日志', icon: List },
 ];
-
-const currentPageTitle = computed(() => {
-  const item = menuItems.find(item => item.path === route.path);
-  return item?.title || '仪表盘';
-});
 
 const toggleCollapse = () => {
   isCollapsed.value = !isCollapsed.value;
-};
-
-const handleCommand = (command: string) => {
-  switch (command) {
-    case 'home':
-      router.push('/');
-      break;
-    case 'logout':
-      userStore.logoutUser();
-      router.push('/login');
-      break;
-  }
 };
 </script>
 
@@ -205,45 +161,6 @@ const handleCommand = (command: string) => {
 
 .sidebar.collapsed + .main-content {
   margin-left: 64px;
-}
-
-/* 顶部栏 */
-.header {
-  height: 64px;
-  background-color: white;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
-  position: sticky;
-  top: 0;
-  z-index: 50;
-}
-
-.breadcrumb {
-  font-size: 14px;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  color: #606266;
-  padding: 8px 12px;
-  border-radius: 4px;
-  transition: background-color 0.3s;
-}
-
-.user-info:hover {
-  background-color: #f5f7fa;
 }
 
 /* 页面内容 */

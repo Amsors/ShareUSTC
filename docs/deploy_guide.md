@@ -1,8 +1,8 @@
 # 部署指南
 
-version 1.2
+version 1.3
 
-2025/2/6/17:13
+2025/2/12/19:52
 
 以Ubuntu 25.10为例
 
@@ -21,7 +21,7 @@ sudo apt install npm
 ## 安装rust
 
 ```bash
-sudo apt install rustup pkg-config
+sudo apt install rustup pkg-config libssl-dev
 ```
 
 重启终端以加载环境变量，然后安装rust：
@@ -72,7 +72,7 @@ GRANT ALL PRIVILEGES ON DATABASE shareustc TO shareustc_app;
 在项目**根目录**执行数据库初始化脚本：
 
 ```bash
-./scripts/db_init_tables.sh
+./scripts/database/db_init_tables.sh
 ```
 
 
@@ -95,11 +95,15 @@ cp .env.example .env
 cargo run
 ```
 
+**如有必要，请修改前端和后端的两个`.env`文件**
+
 
 
 ## 开始使用
 
 [http://localhost:5173](http://localhost:5173)
+
+之后将更新将网站部署到服务器的详细教程，敬请期待
 
 
 

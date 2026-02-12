@@ -1,10 +1,11 @@
-use actix_web::{delete, get, put, web, HttpResponse, Responder};
+use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 use uuid::Uuid;
 
 use crate::db::AppState;
 use crate::models::CurrentUser;
 use crate::services::{
     AdminService, AdminError, AuditResourceRequest, UpdateUserStatusRequest,
+    AuditLogQuery,
 };
 
 /// 检查用户是否是管理员
@@ -277,6 +278,83 @@ async fn audit_comment(
     }
 }
 
+/// 发送系统通知
+#[post("/admin/notifications")]
+async fn send_notification(
+    data: web::Data<AppState>,
+    current_user: actix_web::web::ReqData<CurrentUser>,
+    req: web::Json<crate::services::SendNotificationRequest>,
+) -> impl Responder {
+    let user = current_user.into_inner();
+
+    if let Err(e) = check_admin(&user) {
+        return handle_admin_error(e);
+    }
+
+    match AdminService::send_notification(&data.pool, req.into_inner()).await {
+        Ok(_) => HttpResponse::Ok().json(serde_json::json!({
+            "code": 200,
+            "message": "通知发送成功",
+            "data": null
+        })),
+        Err(e) => handle_admin_error(e),
+    }
+}
+
+/// 获取详细统计数据
+#[get("/admin/stats/detailed")]
+async fn get_detailed_stats(
+    data: web::Data<AppState>,
+    current_user: actix_web::web::ReqData<CurrentUser>,
+) -> impl Responder {
+    let user = current_user.into_inner();
+
+    if let Err(e) = check_admin(&user) {
+        return handle_admin_error(e);
+    }
+
+    match AdminService::get_detailed_stats(&data.pool).await {
+        Ok(stats) => HttpResponse::Ok().json(serde_json::json!({
+            "code": 200,
+            "message": "success",
+            "data": stats
+        })),
+        Err(e) => handle_admin_error(e),
+    }
+}
+
+/// 获取操作日志列表
+#[get("/admin/audit-logs")]
+async fn get_audit_logs(
+    data: web::Data<AppState>,
+    current_user: actix_web::web::ReqData<CurrentUser>,
+    query: web::Query<AuditLogQuery>,
+) -> impl Responder {
+    let user = current_user.into_inner();
+
+    if let Err(e) = check_admin(&user) {
+        return handle_admin_error(e);
+    }
+
+    let query_params = AuditLogQuery {
+        page: query.page,
+        per_page: query.per_page,
+        action: query.action.clone(),
+        user_id: query.user_id,
+        start_date: query.start_date.clone(),
+        end_date: query.end_date.clone(),
+    };
+
+    match AdminService::get_audit_logs(&data.pool, query_params).await {
+        Ok(response) => HttpResponse::Ok().json(serde_json::json!({
+            "code": 200,
+            "message": "success",
+            "data": response
+        })),
+        Err(e) => handle_admin_error(e),
+    }
+}
+
 /// 配置管理后台路由
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(get_dashboard)
@@ -286,5 +364,8 @@ pub fn config(cfg: &mut web::ServiceConfig) {
         .service(audit_resource)
         .service(get_comment_list)
         .service(delete_comment)
-        .service(audit_comment);
+        .service(audit_comment)
+        .service(send_notification)
+        .service(get_detailed_stats)
+        .service(get_audit_logs);
 }

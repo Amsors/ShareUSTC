@@ -31,7 +31,7 @@
             </div>
 
             <div class="resource-meta">
-              <span class="meta-item">
+              <span class="meta-item uploader-link" @click="goToUploaderHomepage">
                 <el-avatar :size="24" :icon="UserFilled" />
                 {{ resource.uploaderName || '未知用户' }}
               </span>
@@ -373,6 +373,13 @@ const goBack = () => {
   router.push('/resources');
 };
 
+// 跳转到上传者主页
+const goToUploaderHomepage = () => {
+  if (resource.value?.uploaderId) {
+    router.push(`/user/${resource.value.uploaderId}`);
+  }
+};
+
 // 编辑资源
 const handleEdit = () => {
   router.push(`/resources/${resourceId.value}/edit`);
@@ -459,6 +466,15 @@ onMounted(() => {
   gap: 8px;
   font-size: 14px;
   color: var(--el-text-color-secondary);
+}
+
+.meta-item.uploader-link {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.meta-item.uploader-link:hover {
+  color: var(--el-color-primary);
 }
 
 .header-right {

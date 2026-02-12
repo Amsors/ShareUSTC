@@ -107,6 +107,41 @@ export const checkResourceInFavorite = async (resourceId: string): Promise<Check
 };
 
 /**
+ * 从 Content-Disposition 头部解析文件名
+ * 支持 RFC 5987 编码的 filename* 格式
+ * @param contentDisposition Content-Disposition 头部值
+ * @param fallbackName 默认文件名
+ * @returns 解析后的文件名
+ */
+function parseFilenameFromContentDisposition(
+  contentDisposition: string | null,
+  fallbackName: string
+): string {
+  if (!contentDisposition) {
+    return fallbackName;
+  }
+
+  // 首先尝试解析 RFC 5987 格式的 filename*=UTF-8''xxx
+  const filenameStarMatch = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (filenameStarMatch && filenameStarMatch[1]) {
+    try {
+      // 解码 percent-encoded 字符串
+      return decodeURIComponent(filenameStarMatch[1]);
+    } catch {
+      // 解码失败，继续尝试其他格式
+    }
+  }
+
+  // 尝试解析标准的 filename="xxx"
+  const filenameMatch = contentDisposition.match(/filename="([^"]+)"/);
+  if (filenameMatch && filenameMatch[1]) {
+    return filenameMatch[1];
+  }
+
+  return fallbackName;
+}
+
+/**
  * 打包下载收藏夹
  * @param favoriteId 收藏夹ID
  * @param favoriteName 收藏夹名称（用于文件名）
@@ -140,13 +175,8 @@ export const downloadFavorite = async (favoriteId: string, favoriteName?: string
 
   // 获取文件名
   const contentDisposition = response.headers.get('content-disposition');
-  let downloadFileName = `${favoriteName || '收藏夹'}.zip`;
-  if (contentDisposition) {
-    const match = contentDisposition.match(/filename="(.+)"/);
-    if (match && match[1]) {
-      downloadFileName = match[1];
-    }
-  }
+  const fallbackName = `${favoriteName || '收藏夹'}.zip`;
+  const downloadFileName = parseFilenameFromContentDisposition(contentDisposition, fallbackName);
 
   // 创建下载链接
   const blob = await response.blob();

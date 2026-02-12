@@ -2,44 +2,46 @@
   <el-dialog
     v-model="visible"
     title="重要通知"
-    width="600px"
+    width="500px"
     :close-on-click-modal="false"
     :close-on-press-escape="false"
     :show-close="false"
     class="priority-modal"
     align-center
   >
-    <div class="priority-notifications">
-      <div
-        v-for="notification in priorityNotifications"
-        :key="notification.id"
-        class="priority-item"
-      >
-        <div class="priority-icon">
-          <el-icon size="32" color="#f56c6c">
-            <Warning />
-          </el-icon>
-        </div>
+    <div v-if="currentNotification" class="priority-content">
+      <div class="priority-icon">
+        <el-icon :size="48" color="#f56c6c">
+          <WarningFilled />
+        </el-icon>
+      </div>
 
-        <div class="priority-content">
-          <h3 class="priority-title">{{ notification.title }}</h3>
-          <p class="priority-text">{{ notification.content }}</p>
-          <div class="priority-time">{{ formatTime(notification.createdAt) }}</div>
-        </div>
+      <h3 class="priority-title">{{ currentNotification.title }}</h3>
+      <p class="priority-text">{{ currentNotification.content }}</p>
+
+      <div v-if="currentNotification.linkUrl" class="priority-link">
+        <el-link type="primary" @click="handleLinkClick">
+          点击查看详情
+        </el-link>
+      </div>
+
+      <div class="priority-meta">
+        <span>剩余 {{ pendingCount }} 条未读通知</span>
+        <span class="priority-time">{{ formatTime(currentNotification.createdAt) }}</span>
       </div>
     </div>
 
     <template #footer>
       <div class="priority-footer">
         <el-button
-          v-if="priorityNotifications.length > 1"
-          @click="handleDismissAll"
+          v-if="pendingCount > 1"
+          @click="handleDismissAndNext"
           :loading="dismissing"
         >
-          全部关闭
+          下一条
         </el-button>
-        <el-button type="primary" @click="handleDismissCurrent" :loading="dismissing">
-          我知道了
+        <el-button type="primary" @click="handleDismiss" :loading="dismissing">
+          {{ pendingCount > 1 ? '我知道了' : '关闭' }}
         </el-button>
       </div>
     </template>
@@ -47,49 +49,55 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
-import { Warning } from '@element-plus/icons-vue';
+import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { WarningFilled } from '@element-plus/icons-vue';
 import { useNotificationStore } from '../../stores/notification';
-import { useAuthStore } from '../../stores/auth';
 import type { Notification } from '../../types/notification';
 import { ElMessage } from 'element-plus';
 
+const router = useRouter();
 const notificationStore = useNotificationStore();
-const authStore = useAuthStore();
 
 // 状态
 const visible = ref(false);
 const dismissing = ref(false);
-const currentIndex = ref(0);
+const currentNotification = ref<Notification | null>(null);
 
 // 计算属性
-const priorityNotifications = computed(() => notificationStore.priorityNotifications);
-const currentNotification = computed(() => priorityNotifications.value[currentIndex.value]);
-const hasUnreadPriority = computed(() => priorityNotifications.value.length > 0);
+const pendingNotifications = computed(() => notificationStore.priorityNotifications);
+const pendingCount = computed(() => pendingNotifications.value.length);
 
-// 方法
-async function checkPriorityNotifications() {
+// 显示下一条通知
+function showNext() {
+  if (pendingNotifications.value.length > 0) {
+    const nextNotification = pendingNotifications.value[0];
+    if (nextNotification) {
+      currentNotification.value = nextNotification;
+      visible.value = true;
+      return;
+    }
+  }
+  currentNotification.value = null;
+  visible.value = false;
+}
+
+// 公开方法：检查并显示高优先级通知
+async function checkAndShowPriorityNotifications() {
   await notificationStore.fetchPriorityNotifications();
-  if (hasUnreadPriority.value) {
-    visible.value = true;
-    currentIndex.value = 0;
+  if (pendingCount.value > 0 && !visible.value) {
+    showNext();
   }
 }
 
-async function handleDismissCurrent() {
+// 关闭当前通知
+async function handleDismiss() {
   if (!currentNotification.value) return;
 
   dismissing.value = true;
   try {
     await notificationStore.dismissPriority(currentNotification.value.id);
-
-    // 如果还有更多，显示下一个
-    if (currentIndex.value < priorityNotifications.value.length - 1) {
-      currentIndex.value++;
-    } else if (priorityNotifications.value.length === 0) {
-      // 全部关闭了
-      visible.value = false;
-    }
+    showNext();
   } catch (error: any) {
     if (!error.isHandled) {
       ElMessage.error('操作失败');
@@ -99,27 +107,39 @@ async function handleDismissCurrent() {
   }
 }
 
-async function handleDismissAll() {
+// 关闭并显示下一条
+async function handleDismissAndNext() {
+  if (!currentNotification.value) return;
+
   dismissing.value = true;
   try {
-    // 关闭所有高优先级通知
-    const ids = priorityNotifications.value.map((n: Notification) => n.id);
-    for (const id of ids) {
-      await notificationStore.dismissPriority(id);
-    }
-    visible.value = false;
+    await notificationStore.dismissPriority(currentNotification.value.id);
+    // 短暂延迟后显示下一条，让用户有视觉反馈
+    setTimeout(() => {
+      showNext();
+      dismissing.value = false;
+    }, 200);
   } catch (error: any) {
     if (!error.isHandled) {
       ElMessage.error('操作失败');
     }
-  } finally {
     dismissing.value = false;
+  }
+}
+
+// 点击链接
+function handleLinkClick() {
+  if (currentNotification.value?.linkUrl) {
+    // 先标记为已读
+    notificationStore.dismissPriority(currentNotification.value.id);
+    visible.value = false;
+    // 然后跳转
+    router.push(currentNotification.value.linkUrl);
   }
 }
 
 // 格式化时间
 function formatTime(time: string): string {
-  // 将无时区的时间字符串视为 UTC 时间
   const utcTimeString = time.endsWith('Z') ? time : `${time}Z`;
   const date = new Date(utcTimeString);
   return date.toLocaleString('zh-CN', {
@@ -131,15 +151,9 @@ function formatTime(time: string): string {
   });
 }
 
-// 生命周期
-onMounted(() => {
-  // 延迟检查，等待认证状态初始化完成
-  setTimeout(() => {
-    // 只有登录用户才检查通知
-    if (authStore.isAuthenticated) {
-      checkPriorityNotifications();
-    }
-  }, 1000);
+// 暴露方法给父组件
+defineExpose({
+  checkAndShowPriorityNotifications
 });
 </script>
 
@@ -157,9 +171,7 @@ onMounted(() => {
 }
 
 .priority-modal :deep(.el-dialog__body) {
-  padding: 0;
-  max-height: 400px;
-  overflow-y: auto;
+  padding: 24px;
 }
 
 .priority-modal :deep(.el-dialog__footer) {
@@ -167,48 +179,44 @@ onMounted(() => {
   padding: 16px 20px;
 }
 
-.priority-notifications {
-  padding: 20px;
-}
-
-.priority-item {
-  display: flex;
-  gap: 16px;
-  padding: 16px;
-  background-color: var(--el-color-danger-light-9);
-  border: 1px solid var(--el-color-danger-light-7);
-  border-radius: 8px;
+.priority-content {
+  text-align: center;
 }
 
 .priority-icon {
-  display: flex;
-  align-items: flex-start;
-  padding-top: 4px;
-}
-
-.priority-content {
-  flex: 1;
-  min-width: 0;
+  margin-bottom: 16px;
 }
 
 .priority-title {
-  margin: 0 0 8px 0;
-  font-size: 16px;
+  margin: 0 0 16px 0;
+  font-size: 18px;
   font-weight: 600;
   color: var(--el-text-color-primary);
+  line-height: 1.4;
 }
 
 .priority-text {
-  margin: 0 0 12px 0;
-  font-size: 14px;
+  margin: 0 0 20px 0;
+  font-size: 15px;
   color: var(--el-text-color-regular);
   line-height: 1.6;
   white-space: pre-wrap;
+  text-align: left;
 }
 
-.priority-time {
+.priority-link {
+  margin-bottom: 16px;
+}
+
+.priority-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   font-size: 12px;
   color: var(--el-text-color-placeholder);
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--el-border-color-lighter);
 }
 
 .priority-footer {

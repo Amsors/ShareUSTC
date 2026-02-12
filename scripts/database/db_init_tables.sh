@@ -198,6 +198,17 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 
 -- ============================================
+-- 10b. 通知已读记录表（用于群发通知的独立已读状态）
+-- ============================================
+CREATE TABLE IF NOT EXISTS notification_reads (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    notification_id UUID NOT NULL REFERENCES notifications(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(notification_id, user_id)
+);
+
+-- ============================================
 -- 11. 审计日志表
 -- ============================================
 CREATE TABLE IF NOT EXISTS audit_logs (
@@ -279,6 +290,11 @@ CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipien
 CREATE INDEX IF NOT EXISTS idx_notifications_priority ON notifications(priority);
 CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications(is_read);
 CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at DESC);
+
+-- 通知已读记录表索引
+CREATE INDEX IF NOT EXISTS idx_notification_reads_notification ON notification_reads(notification_id);
+CREATE INDEX IF NOT EXISTS idx_notification_reads_user ON notification_reads(user_id);
+CREATE INDEX IF NOT EXISTS idx_notification_reads_unique ON notification_reads(notification_id, user_id);
 
 -- 审计日志索引
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON audit_logs(user_id);

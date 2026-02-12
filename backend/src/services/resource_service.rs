@@ -455,11 +455,12 @@ impl ResourceService {
     }
 
     /// 删除资源
+    /// 返回被删除资源的标题
     pub async fn delete_resource(
         pool: &PgPool,
         user: &CurrentUser,
         resource_id: Uuid,
-    ) -> Result<(), ResourceError> {
+    ) -> Result<String, ResourceError> {
         // 获取资源信息
         let resource: Resource = sqlx::query_as::<_, Resource>(
             "SELECT * FROM resources WHERE id = $1"
@@ -485,6 +486,9 @@ impl ResourceService {
             FileService::delete_resource_file(source_path).await.ok();
         }
 
+        // 保存资源标题用于返回
+        let title = resource.title.clone();
+
         // 删除数据库记录
         sqlx::query("DELETE FROM resources WHERE id = $1")
             .bind(resource_id)
@@ -492,7 +496,7 @@ impl ResourceService {
             .await
             .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
 
-        Ok(())
+        Ok(title)
     }
 
     /// 获取用户上传的资源列表

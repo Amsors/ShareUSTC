@@ -1,19 +1,34 @@
-use actix_web::{post, web, HttpResponse, Responder};
+use actix_web::{post, web, HttpRequest, HttpResponse, Responder};
 use crate::db::AppState;
 use crate::models::{LoginRequest, RefreshTokenRequest, RegisterRequest};
-use crate::services::AuthService;
+use crate::services::{AuthService, AuditLogService};
 
 /// 注册
 #[post("/auth/register")]
 pub async fn register(
     state: web::Data<AppState>,
     req: web::Json<RegisterRequest>,
+    http_req: HttpRequest,
 ) -> impl Responder {
     log::debug!("收到注册请求: username={}", req.username);
 
     match AuthService::register(&state.pool, &state.jwt_secret, req.into_inner()).await {
         Ok(response) => {
             log::info!("用户注册成功: {}", response.user.username);
+
+            // 获取 IP 地址
+            let ip_address = http_req
+                .peer_addr()
+                .map(|addr| addr.ip().to_string());
+
+            // 记录审计日志
+            let _ = AuditLogService::log_register(
+                &state.pool,
+                response.user.id,
+                &response.user.username,
+                ip_address.as_deref(),
+            ).await;
+
             HttpResponse::Ok().json(serde_json::json!({
                 "code": 200,
                 "message": "注册成功",
@@ -41,12 +56,27 @@ pub async fn register(
 pub async fn login(
     state: web::Data<AppState>,
     req: web::Json<LoginRequest>,
+    http_req: HttpRequest,
 ) -> impl Responder {
     log::debug!("收到登录请求: username={}", req.username);
 
     match AuthService::login(&state.pool, &state.jwt_secret, req.into_inner()).await {
         Ok(response) => {
             log::info!("用户登录成功: {}", response.user.username);
+
+            // 获取 IP 地址
+            let ip_address = http_req
+                .peer_addr()
+                .map(|addr| addr.ip().to_string());
+
+            // 记录审计日志
+            let _ = AuditLogService::log_login(
+                &state.pool,
+                response.user.id,
+                &response.user.username,
+                ip_address.as_deref(),
+            ).await;
+
             HttpResponse::Ok().json(serde_json::json!({
                 "code": 200,
                 "message": "登录成功",

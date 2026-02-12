@@ -1,7 +1,9 @@
 use crate::models::{
     UpdateProfileRequest, User, UserInfo, UserProfileResponse, VerificationRequest,
+    UserHomepageResponse, UserHomepageQuery,
 };
-use sqlx::PgPool;
+use crate::models::resource::{ResourceListItem, ResourceStatsResponse};
+use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
 /// 用户服务错误类型
@@ -240,5 +242,129 @@ impl UserService {
         log::info!("用户完成实名认证: {}", updated_user.username);
 
         Ok(UserInfo::from(updated_user))
+    }
+
+    /// 获取用户主页数据（公开接口）
+    /// 包含用户基本信息、统计数据和已通过审核的资源列表
+    pub async fn get_user_homepage(
+        pool: &PgPool,
+        user_id: Uuid,
+        query: &UserHomepageQuery,
+    ) -> Result<UserHomepageResponse, UserError> {
+        // 获取用户基本信息
+        let user: User = sqlx::query_as::<_, User>(
+            "SELECT id, username, password_hash, email, role, bio,
+                    CASE WHEN social_links = '{}'::jsonb THEN NULL ELSE social_links END as social_links,
+                    CASE WHEN real_info = '{}'::jsonb THEN NULL ELSE real_info END as real_info,
+                    is_verified, is_active, created_at, updated_at
+             FROM users WHERE id = $1 AND is_active = true"
+        )
+        .bind(user_id)
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| UserError::DatabaseError(e.to_string()))?
+        .ok_or_else(|| UserError::UserNotFound("用户不存在".to_string()))?;
+
+        // 获取用户上传的已通过审核的资源数量
+        let uploads_count: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM resources WHERE uploader_id = $1 AND audit_status = 'approved'"
+        )
+        .bind(user_id)
+        .fetch_one(pool)
+        .await
+        .unwrap_or(0);
+
+        // 获取总点赞数
+        let total_likes: i64 = sqlx::query_scalar(
+            "SELECT COALESCE(SUM(likes), 0) FROM resource_stats rs
+             JOIN resources r ON rs.resource_id = r.id
+             WHERE r.uploader_id = $1 AND r.audit_status = 'approved'"
+        )
+        .bind(user_id)
+        .fetch_one(pool)
+        .await
+        .unwrap_or(0);
+
+        // 获取总下载数
+        let total_downloads: i64 = sqlx::query_scalar(
+            "SELECT COALESCE(SUM(downloads), 0) FROM resource_stats rs
+             JOIN resources r ON rs.resource_id = r.id
+             WHERE r.uploader_id = $1 AND r.audit_status = 'approved'"
+        )
+        .bind(user_id)
+        .fetch_one(pool)
+        .await
+        .unwrap_or(0);
+
+        // 获取分页参数
+        let page = query.get_page();
+        let per_page = query.get_per_page();
+        let offset = (page - 1) * per_page;
+
+        // 获取用户上传的已通过审核资源列表
+        let rows = sqlx::query(
+            r#"
+            SELECT r.*, rs.views, rs.downloads, rs.likes, rs.avg_difficulty,
+                   rs.avg_quality, rs.avg_detail, rs.rating_count,
+                   u.username as uploader_name
+            FROM resources r
+            LEFT JOIN resource_stats rs ON r.id = rs.resource_id
+            LEFT JOIN users u ON r.uploader_id = u.id
+            WHERE r.uploader_id = $1 AND r.audit_status = 'approved'
+            ORDER BY r.created_at DESC
+            LIMIT $2 OFFSET $3
+            "#
+        )
+        .bind(user_id)
+        .bind(per_page as i64)
+        .bind(offset as i64)
+        .fetch_all(pool)
+        .await
+        .map_err(|e| UserError::DatabaseError(e.to_string()))?;
+
+        // 映射资源列表
+        let mut resources = Vec::new();
+        for row in rows {
+            let tags_json: Option<serde_json::Value> = row.try_get("tags").ok();
+            let tags: Option<Vec<String>> = tags_json.and_then(|t| {
+                serde_json::from_value::<Vec<String>>(t).ok()
+            });
+
+            resources.push(ResourceListItem {
+                id: row.try_get("id").map_err(|e| UserError::DatabaseError(e.to_string()))?,
+                title: row.try_get("title").map_err(|e| UserError::DatabaseError(e.to_string()))?,
+                course_name: row.try_get("course_name").ok(),
+                resource_type: row.try_get("resource_type").map_err(|e| UserError::DatabaseError(e.to_string()))?,
+                category: row.try_get("category").map_err(|e| UserError::DatabaseError(e.to_string()))?,
+                tags,
+                audit_status: row.try_get("audit_status").map_err(|e| UserError::DatabaseError(e.to_string()))?,
+                created_at: row.try_get("created_at").map_err(|e| UserError::DatabaseError(e.to_string()))?,
+                stats: ResourceStatsResponse {
+                    views: row.try_get::<i32, _>("views").unwrap_or(0),
+                    downloads: row.try_get::<i32, _>("downloads").unwrap_or(0),
+                    likes: row.try_get::<i32, _>("likes").unwrap_or(0),
+                    avg_difficulty: row.try_get("avg_difficulty").ok(),
+                    avg_quality: row.try_get("avg_quality").ok(),
+                    avg_detail: row.try_get("avg_detail").ok(),
+                    rating_count: row.try_get::<i32, _>("rating_count").unwrap_or(0),
+                },
+                uploader_name: row.try_get("uploader_name").ok(),
+            });
+        }
+
+        Ok(UserHomepageResponse {
+            id: user.id,
+            username: user.username,
+            bio: user.bio,
+            email: user.email,
+            role: user.role,
+            is_verified: user.is_verified,
+            created_at: user.created_at,
+            uploads_count,
+            total_likes,
+            total_downloads,
+            resources,
+            resources_total: uploads_count,
+        })
     }
 }

@@ -7,6 +7,9 @@ import AdminDashboard from '../views/admin/Dashboard.vue';
 import UserManagement from '../views/admin/UserManagement.vue';
 import ResourceAudit from '../views/admin/ResourceAudit.vue';
 import CommentManagement from '../views/admin/CommentManagement.vue';
+import SendNotification from '../views/admin/SendNotification.vue';
+import DetailedStats from '../views/admin/DetailedStats.vue';
+import AuditLogs from '../views/admin/AuditLogs.vue';
 
 // 路由配置
 const routes = [
@@ -89,6 +92,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/user/:id',
+    name: 'UserHomepage',
+    component: () => import('../views/user/UserHomepage.vue'),
+    meta: { public: true }
+  },
+  {
     path: '/notifications',
     name: 'NotificationCenter',
     component: () => import('../views/notification/NotificationCenter.vue'),
@@ -131,6 +140,21 @@ const routes = [
         path: 'comments',
         name: 'CommentManagement',
         component: CommentManagement
+      },
+      {
+        path: 'notifications',
+        name: 'SendNotification',
+        component: SendNotification
+      },
+      {
+        path: 'stats',
+        name: 'DetailedStats',
+        component: DetailedStats
+      },
+      {
+        path: 'logs',
+        name: 'AuditLogs',
+        component: AuditLogs
       }
     ]
   },
