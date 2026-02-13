@@ -652,14 +652,16 @@ pub async fn get_hot_resources(
 
 /// 配置公开资源路由（不需要认证）
 pub fn config_public(cfg: &mut web::ServiceConfig) {
-    cfg.service(get_resource_list)
-        .service(search_resources)
-        .service(get_resource_detail)
+    // 注意：具体路径必须放在通配路径之前注册
+    // 否则 /resources/hot 会被 /resources/{id} 匹配
+    cfg.service(get_hot_resources)   // /resources/hot （先注册具体路径）
+        .service(get_resource_list)   // /resources
+        .service(search_resources)    // /resources/search
+        .service(get_resource_detail) // /resources/{id} （后注册通配路径）
         .service(download_resource)
         .service(get_resource_content)
-        .service(get_like_status)  // 获取点赞状态（支持未登录用户）
-        .service(get_comments)     // 获取评论列表（公开）
-        .service(get_hot_resources); // 热门资源（公开）
+        .service(get_like_status)     // 获取点赞状态（支持未登录用户）
+        .service(get_comments);       // 获取评论列表（公开）
 }
 
 /// 提交评分

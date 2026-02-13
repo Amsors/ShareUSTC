@@ -3,59 +3,53 @@
     <div class="page-container">
       <!-- 左侧主内容区 -->
       <main class="main-content">
-        <!-- 欢迎区域（靠左，在Hero上方） -->
-        <div class="welcome-bar" v-if="authStore.isAuthenticated">
-          <el-avatar :size="40" :src="authStore.user?.avatar || ''" class="user-avatar">
-            {{ authStore.user?.username?.charAt(0).toUpperCase() }}
-          </el-avatar>
-          <span class="welcome-text">欢迎回来，{{ authStore.user?.username }}</span>
-          <el-tag :type="authStore.isAdmin ? 'danger' : (authStore.isVerified ? 'success' : 'info')" size="small">
-            {{ authStore.isAdmin ? '管理员' : (authStore.isVerified ? '已认证用户' : '普通用户') }}
-          </el-tag>
+        <!-- 顶部栏：欢迎信息 + 日历（占满一行） -->
+        <div class="top-bar">
+          <!-- 欢迎区域（左侧小长方形） -->
+          <div class="welcome-box" v-if="authStore.isAuthenticated">
+            <el-avatar :size="40" class="user-avatar">
+              {{ authStore.user?.username?.charAt(0).toUpperCase() }}
+            </el-avatar>
+            <div class="welcome-info">
+              <span class="welcome-name">欢迎回来，{{ authStore.user?.username }}</span>
+              <el-tag :type="authStore.isAdmin ? 'danger' : (authStore.isVerified ? 'success' : 'info')" size="small" effect="plain">
+                {{ authStore.isAdmin ? '管理员' : (authStore.isVerified ? '已认证' : '普通用户') }}
+              </el-tag>
+            </div>
+          </div>
+
+          <div class="welcome-box guest" v-else @click="$router.push('/register')">
+            <el-icon :size="22" class="guest-icon"><User /></el-icon>
+            <span class="guest-text">欢迎访问，点击登录 / 注册</span>
+          </div>
+
+          <!-- 日历（右侧，拉长） -->
+          <div class="calendar-box">
+            <el-icon :size="18"><Calendar /></el-icon>
+            <span class="calendar-date">{{ todayDate }}</span>
+            <span class="calendar-weekday">{{ todayWeekday }}</span>
+          </div>
         </div>
 
-        <div class="welcome-bar guest" v-else>
-          <span class="welcome-text">登录后可享创建收藏夹、打包下载资源等功能</span>
-          <el-link type="primary" @click="$router.push('/register')">立即登录</el-link>
-        </div>
-
-        <!-- Hero 区域 -->
+        <!-- Hero 区域（恢复原来大小） -->
         <div class="hero-section">
           <h1>ShareUSTC</h1>
           <p class="subtitle">学习资源分享平台</p>
           <p class="description">分享知识，传递经验，获得4.3</p>
-
+          
           <div class="hero-actions" v-if="!authStore.isAuthenticated">
             <el-button type="primary" size="large" @click="$router.push('/register')">
               <el-icon class="btn-icon"><User /></el-icon>
               注册 / 登录
             </el-button>
           </div>
-
-          <!-- 浮动卡片 - 两两左右对齐 -->
-          <div class="floating-card card-1">
-            <el-icon :size="20" color="#409eff"><Document /></el-icon>
-            <span>笔记资料</span>
-          </div>
-          <div class="floating-card card-2">
-            <el-icon :size="20" color="#67c23a"><Folder /></el-icon>
-            <span>试卷题库</span>
-          </div>
-          <div class="floating-card card-3">
-            <el-icon :size="20" color="#e6a23c"><Notebook /></el-icon>
-            <span>课程讲义</span>
-          </div>
-          <div class="floating-card card-4">
-            <el-icon :size="20" color="#f56c6c"><Edit /></el-icon>
-            <span>复习摘要</span>
-          </div>
         </div>
 
-        <!-- 快捷入口 -->
+        <!-- 快捷入口（增大卡片） -->
         <div class="quick-links">
           <div class="quick-link-card" @click="$router.push('/resources')">
             <div class="link-icon blue">
-              <el-icon :size="28"><Search /></el-icon>
+              <el-icon :size="32"><Search /></el-icon>
             </div>
             <div class="link-text">
               <h3>查找资源</h3>
@@ -66,7 +60,7 @@
 
           <div class="quick-link-card" @click="$router.push('/upload')" v-if="authStore.isAuthenticated">
             <div class="link-icon green">
-              <el-icon :size="28"><Upload /></el-icon>
+              <el-icon :size="32"><Upload /></el-icon>
             </div>
             <div class="link-text">
               <h3>上传资源</h3>
@@ -77,7 +71,7 @@
 
           <div class="quick-link-card" @click="$router.push('/register')" v-else>
             <div class="link-icon green">
-              <el-icon :size="28"><Plus /></el-icon>
+              <el-icon :size="32"><Plus /></el-icon>
             </div>
             <div class="link-text">
               <h3>加入社区</h3>
@@ -88,7 +82,7 @@
 
           <div class="quick-link-card" @click="$router.push('/about')">
             <div class="link-icon orange">
-              <el-icon :size="28"><InfoFilled /></el-icon>
+              <el-icon :size="32"><InfoFilled /></el-icon>
             </div>
             <div class="link-text">
               <h3>关于平台</h3>
@@ -176,18 +170,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { getHotResources } from '../api/resource';
 import type { HotResourceItem } from '../types/resource';
-import { getResourceTypeColor, ResourceTypeLabels } from '../types/resource';
+import { ResourceTypeLabels } from '../types/resource';
 import {
-  Document,
   Search,
-  Folder,
-  Notebook,
-  Edit,
   Trophy,
   ArrowRight,
   Upload,
@@ -195,9 +185,7 @@ import {
   Plus,
   InfoFilled,
   View,
-  DocumentChecked,
-  Picture,
-  Files
+  Calendar
 } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 
@@ -206,6 +194,18 @@ const authStore = useAuthStore();
 const searchKeyword = ref('');
 const hotResources = ref<HotResourceItem[]>([]);
 const loadingHot = ref(false);
+
+// 获取当前日期
+const today = new Date();
+const todayDate = computed(() => {
+  const month = today.getMonth() + 1;
+  const date = today.getDate();
+  return `${month}月${date}日`;
+});
+const todayWeekday = computed(() => {
+  const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+  return weekdays[today.getDay()];
+});
 
 // 获取资源类型标签文字
 const getResourceTypeLabel = (type: string): string => {
@@ -244,13 +244,24 @@ const formatNumber = (num: number): string => {
 // 获取热门资源
 const fetchHotResources = async () => {
   loadingHot.value = true;
+  hotResources.value = [];
   try {
-    const data = await getHotResources(10);
-    console.log('获取热门资源:', data);
-    hotResources.value = data || [];
-  } catch (error) {
+    console.log('开始获取热门资源...');
+    const result = await getHotResources(10);
+    console.log('热门资源API返回:', result);
+    
+    if (result && Array.isArray(result)) {
+      hotResources.value = result;
+      console.log('成功设置热门资源:', hotResources.value.length, '条');
+      if (result.length > 0) {
+        console.log('第一条数据:', JSON.stringify(result[0]));
+      }
+    } else {
+      console.warn('返回数据不是数组:', result);
+    }
+  } catch (error: any) {
     console.error('获取热门资源失败:', error);
-    hotResources.value = [];
+    ElMessage.error('获取热门资源失败');
   } finally {
     loadingHot.value = false;
   }
@@ -287,9 +298,9 @@ onMounted(() => {
 .page-container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 40px 20px;
+  padding: 30px 20px;
   display: flex;
-  gap: 24px;
+  gap: 20px;
 }
 
 /* 左侧主内容区 */
@@ -298,22 +309,38 @@ onMounted(() => {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
-/* 欢迎栏（靠左，在Hero上方） */
-.welcome-bar {
+/* 顶部栏（占满一行） */
+.top-bar {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+}
+
+/* 欢迎区域（左侧） */
+.welcome-box {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px 20px;
   background: #fff;
-  border-radius: 10px;
+  border-radius: 12px;
   border: 1px solid #ebeef5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  flex-shrink: 0;
 }
 
-.welcome-bar.guest {
-  background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
+.welcome-box.guest {
+  cursor: pointer;
+  color: #606266;
+  transition: all 0.3s;
+}
+
+.welcome-box.guest:hover {
+  border-color: #409eff;
+  color: #409eff;
 }
 
 .user-avatar {
@@ -323,21 +350,70 @@ onMounted(() => {
   font-size: 14px;
 }
 
-.welcome-text {
-  font-size: 14px;
-  color: #606266;
-  flex: 1;
+.welcome-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-/* Hero 区域 */
+.welcome-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.welcome-info .el-tag {
+  width: fit-content;
+}
+
+.guest-icon {
+  color: #909399;
+}
+
+.guest-text {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+/* 日历（右侧，拉长占满剩余空间） */
+.calendar-box {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 12px 24px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #ebeef5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.calendar-box .el-icon {
+  color: #409eff;
+}
+
+.calendar-date {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.calendar-weekday {
+  font-size: 14px;
+  color: #909399;
+  padding: 4px 12px;
+  background: #f5f7fa;
+  border-radius: 6px;
+}
+
+/* Hero 区域（恢复原来大小） */
 .hero-section {
-  position: relative;
   text-align: center;
-  padding: 60px 20px;
+  padding: 50px 20px;
   background: linear-gradient(135deg, #ffcccc 0%, #ffffcc 50%, #ccf0ce 100%);
   border-radius: 16px;
   color: #456;
-  overflow: hidden;
 }
 
 .hero-section h1 {
@@ -381,59 +457,10 @@ onMounted(() => {
   margin-right: 6px;
 }
 
-/* Floating Cards - 两两左右对齐 */
-.floating-card {
-  position: absolute;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 10px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  font-size: 13px;
-  color: #606266;
-  animation: float 4s ease-in-out infinite;
-  backdrop-filter: blur(4px);
-}
-
-/* 左上 */
-.card-1 {
-  top: 15%;
-  left: 10%;
-  animation-delay: 0s;
-}
-
-/* 右上 */
-.card-2 {
-  top: 15%;
-  right: 10%;
-  animation-delay: -1s;
-}
-
-/* 左下 */
-.card-3 {
-  bottom: 15%;
-  left: 10%;
-  animation-delay: -2s;
-}
-
-/* 右下 */
-.card-4 {
-  bottom: 15%;
-  right: 10%;
-  animation-delay: -3s;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
-}
-
-/* 快捷入口 */
+/* 快捷入口（增大卡片，填充空间） */
 .quick-links {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
 }
 
@@ -441,23 +468,23 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 20px;
+  padding: 24px 20px;
   background: #fff;
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid #ebeef5;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .quick-link-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
   border-color: #d0d7de;
 }
 
 .link-icon {
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -486,8 +513,8 @@ onMounted(() => {
 }
 
 .link-text h3 {
-  margin: 0 0 4px 0;
-  font-size: 16px;
+  margin: 0 0 6px 0;
+  font-size: 17px;
   color: #303133;
 }
 
@@ -513,6 +540,7 @@ onMounted(() => {
   text-align: center;
   color: #909399;
   font-size: 13px;
+  margin-top: 8px;
 }
 
 .home-footer p {
@@ -525,12 +553,12 @@ onMounted(() => {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .sidebar-section {
   background: #fff;
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid #ebeef5;
   padding: 20px;
 }
@@ -574,7 +602,7 @@ onMounted(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 450px;
+  min-height: 480px;
 }
 
 .hot-resources-list {
@@ -585,7 +613,7 @@ onMounted(() => {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 12px;
+  padding: 14px 12px;
   margin: 0 -12px;
   border-radius: 10px;
   cursor: pointer;
@@ -721,8 +749,13 @@ onMounted(() => {
     padding: 20px 16px;
   }
 
-  .welcome-bar {
-    padding: 10px 16px;
+  .top-bar {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .calendar-box {
+    justify-content: center;
   }
 
   .hero-section {
@@ -735,19 +768,6 @@ onMounted(() => {
 
   .subtitle {
     font-size: 18px;
-  }
-
-  .description {
-    font-size: 14px;
-  }
-
-  .hero-actions :deep(.el-button) {
-    width: 100%;
-    max-width: 200px;
-  }
-
-  .floating-card {
-    display: none;
   }
 
   .quick-links {
@@ -770,10 +790,6 @@ onMounted(() => {
 
   .hero-section h1 {
     font-size: 28px;
-  }
-
-  .subtitle {
-    font-size: 16px;
   }
 }
 </style>

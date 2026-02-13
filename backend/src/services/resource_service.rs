@@ -839,7 +839,14 @@ impl ResourceService {
     ) -> Result<Vec<crate::models::HotResourceItem>, ResourceError> {
         let limit = limit.max(1).min(20);
 
-        log::debug!("获取热门资源，限制数量: {}", limit);
+        log::info!("获取热门资源，限制数量: {}", limit);
+
+        // 先检查资源总数
+        let total_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM resources")
+            .fetch_one(pool)
+            .await
+            .unwrap_or(0);
+        log::info!("数据库中共有 {} 条资源", total_count);
 
         // 先尝试获取有浏览量的资源
         let rows = sqlx::query(
