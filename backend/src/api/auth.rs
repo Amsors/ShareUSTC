@@ -10,11 +10,12 @@ pub async fn register(
     req: web::Json<RegisterRequest>,
     http_req: HttpRequest,
 ) -> impl Responder {
-    log::debug!("收到注册请求: username={}", req.username);
+    let username = req.username.clone();
+    log::info!("[Auth] 用户注册 | username={}", username);
 
     match AuthService::register(&state.pool, &state.jwt_secret, req.into_inner()).await {
         Ok(response) => {
-            log::info!("用户注册成功: {}", response.user.username);
+            log::info!("[Auth] 用户注册成功 | user_id={}, username={}", response.user.id, response.user.username);
 
             // 获取 IP 地址
             let ip_address = http_req
@@ -36,7 +37,7 @@ pub async fn register(
             }))
         }
         Err(e) => {
-            log::warn!("注册失败: {}", e);
+            log::warn!("[Auth] 用户注册失败 | username={}, error={}", username, e);
             let (code, message) = match e {
                 crate::services::AuthError::UserExists(_) => (409, e.to_string()),
                 crate::services::AuthError::ValidationError(_) => (400, e.to_string()),
@@ -58,11 +59,12 @@ pub async fn login(
     req: web::Json<LoginRequest>,
     http_req: HttpRequest,
 ) -> impl Responder {
-    log::debug!("收到登录请求: username={}", req.username);
+    let username = req.username.clone();
+    log::info!("[Auth] 用户登录 | username={}", username);
 
     match AuthService::login(&state.pool, &state.jwt_secret, req.into_inner()).await {
         Ok(response) => {
-            log::info!("用户登录成功: {}", response.user.username);
+            log::info!("[Auth] 用户登录成功 | user_id={}, username={}", response.user.id, response.user.username);
 
             // 获取 IP 地址
             let ip_address = http_req
@@ -84,7 +86,7 @@ pub async fn login(
             }))
         }
         Err(e) => {
-            log::warn!("登录失败: {}", e);
+            log::warn!("[Auth] 用户登录失败 | username={}, error={}", username, e);
             let (code, message) = match e {
                 crate::services::AuthError::InvalidCredentials(_) => (401, e.to_string()),
                 crate::services::AuthError::ValidationError(_) => (400, e.to_string()),
@@ -105,11 +107,11 @@ pub async fn refresh(
     state: web::Data<AppState>,
     req: web::Json<RefreshTokenRequest>,
 ) -> impl Responder {
-    log::debug!("收到刷新Token请求");
+    log::info!("[Auth] Token刷新请求");
 
     match AuthService::refresh_token(&state.pool, &state.jwt_secret, req.into_inner()).await {
         Ok(tokens) => {
-            log::info!("Token刷新成功");
+            log::info!("[Auth] Token刷新成功");
             HttpResponse::Ok().json(serde_json::json!({
                 "code": 200,
                 "message": "刷新成功",
@@ -117,7 +119,7 @@ pub async fn refresh(
             }))
         }
         Err(e) => {
-            log::warn!("Token刷新失败: {}", e);
+            log::warn!("[Auth] Token刷新失败 | error={}", e);
             let (code, message) = match e {
                 crate::services::AuthError::TokenInvalid(_) => (401, e.to_string()),
                 _ => (500, "刷新失败".to_string()),
@@ -134,7 +136,7 @@ pub async fn refresh(
 /// 登出（此处仅记录，实际Token失效需要在前端处理或使用黑名单）
 #[post("/auth/logout")]
 pub async fn logout() -> impl Responder {
-    log::info!("用户登出");
+    log::info!("[Auth] 用户登出");
     HttpResponse::Ok().json(serde_json::json!({
         "code": 200,
         "message": "登出成功",

@@ -10,6 +10,7 @@ import type {
 } from '../types/auth';
 import { UserRole } from '../types/auth';
 import { ElMessage } from 'element-plus';
+import logger from '../utils/logger';
 
 const TOKEN_KEY = 'access_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
@@ -63,18 +64,18 @@ export const useAuthStore = defineStore('auth', () => {
         // Token 有效，更新用户信息
         user.value = response.data.data;
         localStorage.setItem(USER_KEY, JSON.stringify(response.data.data));
-        console.log('[Auth] Token 验证成功，用户:', response.data.data.username);
+        logger.info('[Auth]', `Token 验证成功 | username=${response.data.data.username}`);
         isAuthChecked.value = true;
         return true;
       } else {
         // 响应格式不正确，保留登录状态
-        console.warn('[Auth] Token 验证响应格式不正确，保留登录状态');
+        logger.warn('[Auth]', 'Token 验证响应格式不正确，保留登录状态');
         isAuthChecked.value = true;
         return true;
       }
     } catch (error: any) {
       if (error.response?.status === 401) {
-        console.warn('[Auth] Access Token 已过期，尝试刷新...');
+        logger.warn('[Auth]', 'Access Token 已过期，尝试刷新...');
         // 立即清除用户信息，避免 UI 上继续显示已登录状态
         user.value = null;
 
@@ -102,19 +103,19 @@ export const useAuthStore = defineStore('auth', () => {
               if (userResponse.data.code === 200 && userResponse.data.data) {
                 user.value = userResponse.data.data;
                 localStorage.setItem(USER_KEY, JSON.stringify(userResponse.data.data));
-                console.log('[Auth] Token 刷新成功，用户:', userResponse.data.data.username);
+                logger.info('[Auth]', `Token 刷新成功 | username=${userResponse.data.data.username}`);
                 isAuthChecked.value = true;
                 return true;
               }
             }
           } catch (refreshError: any) {
-            console.warn('[Auth] Refresh Token 也已过期');
+            logger.warn('[Auth]', 'Refresh Token 也已过期');
             ElMessage.warning('登录已失效，请重新登录');
           }
         }
 
         // 只有确定是 401 且刷新失败时，才清除登录状态
-        console.warn('[Auth] 认证已失效，清除登录状态');
+        logger.warn('[Auth]', '认证已失效，清除登录状态');
         user.value = null;
         accessToken.value = null;
         refreshTokenValue.value = null;
@@ -124,7 +125,7 @@ export const useAuthStore = defineStore('auth', () => {
         return false;
       } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
         // 请求超时，清除登录状态（因为无法确定token是否有效）
-        console.warn('[Auth] Token 验证请求超时，清除登录状态');
+        logger.warn('[Auth]', 'Token 验证请求超时，清除登录状态');
         user.value = null;
         accessToken.value = null;
         refreshTokenValue.value = null;
@@ -134,7 +135,7 @@ export const useAuthStore = defineStore('auth', () => {
         return false;
       } else {
         // 其他错误（网络错误、服务器错误等），清除登录状态
-        console.warn('[Auth] Token 验证请求失败:', error.message || error);
+        logger.warn('[Auth]', `Token 验证请求失败 | error=${error.message || error}`);
         user.value = null;
         accessToken.value = null;
         refreshTokenValue.value = null;
@@ -155,7 +156,7 @@ export const useAuthStore = defineStore('auth', () => {
       ElMessage.success('登录成功');
       return true;
     } catch (error: any) {
-      console.error('Login error:', error);
+      logger.error('[Auth]', '登录失败', error);
       // 如果错误已经被拦截器处理（显示过消息），则不再显示
       if (!error.isHandled) {
         ElMessage.error(error.message || '登录失败');
@@ -175,7 +176,7 @@ export const useAuthStore = defineStore('auth', () => {
       ElMessage.success('注册成功');
       return true;
     } catch (error: any) {
-      console.error('Register error:', error);
+      logger.error('[Auth]', '注册失败', error);
       // 如果错误已经被拦截器处理（显示过消息），则不再显示
       if (!error.isHandled) {
         ElMessage.error(error.message || '注册失败');
@@ -201,7 +202,7 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem(REFRESH_TOKEN_KEY, response.refreshToken);
       return true;
     } catch (error) {
-      console.error('Refresh token error:', error);
+      logger.error('[Auth]', '刷新 Token 失败', error);
       return false;
     }
   };
@@ -211,7 +212,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       await logout();
     } catch (error) {
-      console.error('Logout error:', error);
+      logger.error('[Auth]', '登出失败', error);
     } finally {
       clearAuth();
       ElMessage.success('已退出登录');
@@ -230,7 +231,7 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem(REFRESH_TOKEN_KEY, response.tokens.refreshToken);
     localStorage.setItem(USER_KEY, JSON.stringify(response.user));
 
-    console.log('[Auth] User logged in:', response.user.username, 'Role:', response.user.role);
+    logger.info('[Auth]', `用户登录成功 | username=${response.user.username}, role=${response.user.role}`);
   };
 
   // 清除认证数据

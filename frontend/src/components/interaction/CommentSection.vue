@@ -53,6 +53,7 @@ import { ref, onMounted, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getComments, createComment } from '../../api/comment';
 import type { Comment } from '../../types/comment';
+import logger from '../../utils/logger';
 
 const props = defineProps<{
   resourceId: string;
@@ -86,15 +87,14 @@ const handleSubmit = async () => {
 
   submitting.value = true;
   try {
-    console.log('[CommentSection] 提交评论:', props.resourceId, content);
-    const result = await createComment(props.resourceId, { content });
-    console.log('[CommentSection] 评论提交成功:', result);
+    logger.info('[CommentSection]', `提交评论 | resourceId=${props.resourceId}`);
+    await createComment(props.resourceId, { content });
+    logger.info('[CommentSection]', '评论提交成功');
     ElMessage.success('评论成功');
     newComment.value = '';
     loadComments();
   } catch (error: any) {
-    console.error('[CommentSection] 评论提交失败:', error);
-    console.error('[CommentSection] 错误详情:', error.message, error.response?.data);
+    logger.error('[CommentSection]', '评论提交失败', { message: error.message, data: error.response?.data });
     if (!error.isHandled) {
       ElMessage.error(error.message || '评论失败');
     }

@@ -11,11 +11,11 @@ pub async fn get_current_user(
     state: web::Data<AppState>,
     user: web::ReqData<CurrentUser>,
 ) -> impl Responder {
-    log::info!("获取当前用户信息: user_id={}, username={}, role={}", user.id, user.username, user.role.to_string());
+    log::debug!("[User] 获取当前用户信息 | user_id={}", user.id);
 
     match UserService::get_current_user(&state.pool, user.id).await {
         Ok(user_info) => {
-            log::info!("返回用户信息: username={}, role={}", user_info.username, user_info.role);
+            log::info!("[User] 获取当前用户信息成功 | user_id={}, username={}", user.id, user_info.username);
             HttpResponse::Ok().json(serde_json::json!({
                 "code": 200,
                 "message": "获取成功",
@@ -23,7 +23,7 @@ pub async fn get_current_user(
             }))
         }
         Err(e) => {
-            log::warn!("获取当前用户失败: {}", e);
+            log::warn!("[User] 获取当前用户信息失败 | user_id={}, error={}", user.id, e);
             let (code, message) = match e {
                 UserError::UserNotFound(_) => (404, e.to_string()),
                 _ => (500, "获取用户信息失败".to_string()),
@@ -57,14 +57,19 @@ pub async fn update_profile(
         }));
     }
 
+    log::info!("[User] 更新用户资料 | user_id={}", user.id);
+
     match UserService::update_profile(&state.pool, user.id, req.into_inner(), is_verified).await {
-        Ok(user_info) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "更新成功",
-            "data": user_info
-        })),
+        Ok(user_info) => {
+            log::info!("[User] 用户资料更新成功 | user_id={}", user.id);
+            HttpResponse::Ok().json(serde_json::json!({
+                "code": 200,
+                "message": "更新成功",
+                "data": user_info
+            }))
+        }
         Err(e) => {
-            log::warn!("更新用户资料失败: {}", e);
+            log::warn!("[User] 更新用户资料失败 | user_id={}, error={}", user.id, e);
             let (code, message) = match e {
                 UserError::UserNotFound(_) => (404, e.to_string()),
                 UserError::UserExists(_) => (409, e.to_string()),
@@ -114,7 +119,7 @@ pub async fn verify_user(
             ) {
                 Ok(token) => token,
                 Err(e) => {
-                    log::error!("生成访问令牌失败: {}", e);
+                    log::error!("[Auth] 生成访问令牌失败 | user_id={}, error={}", user_info.id, e);
                     return HttpResponse::Ok().json(serde_json::json!({
                         "code": 500,
                         "message": "认证成功但生成令牌失败，请重新登录",
@@ -132,7 +137,7 @@ pub async fn verify_user(
             ) {
                 Ok(token) => token,
                 Err(e) => {
-                    log::error!("生成刷新令牌失败: {}", e);
+                    log::error!("[Auth] 生成刷新令牌失败 | user_id={}, error={}", user_info.id, e);
                     return HttpResponse::Ok().json(serde_json::json!({
                         "code": 500,
                         "message": "认证成功但生成令牌失败，请重新登录",
@@ -158,7 +163,7 @@ pub async fn verify_user(
             }))
         }
         Err(e) => {
-            log::warn!("实名认证失败: {}", e);
+            log::warn!("[User] 实名认证失败 | user_id={}, error={}", user.id, e);
             let (code, message) = match e {
                 UserError::UserNotFound(_) => (404, e.to_string()),
                 UserError::ValidationError(_) => (400, e.to_string()),
@@ -188,7 +193,7 @@ pub async fn get_user_profile(
             "data": profile
         })),
         Err(e) => {
-            log::warn!("获取用户资料失败: {}", e);
+            log::warn!("[User] 获取用户资料失败 | user_id={}, error={}", user_id, e);
             let (code, message) = match e {
                 UserError::UserNotFound(_) => (404, e.to_string()),
                 _ => (500, "获取用户资料失败".to_string()),
@@ -219,7 +224,7 @@ pub async fn get_user_homepage(
             "data": homepage
         })),
         Err(e) => {
-            log::warn!("获取用户主页失败: {}", e);
+            log::warn!("[User] 获取用户主页失败 | user_id={}, error={}", user_id, e);
             let (code, message) = match e {
                 UserError::UserNotFound(_) => (404, e.to_string()),
                 _ => (500, "获取用户主页失败".to_string()),

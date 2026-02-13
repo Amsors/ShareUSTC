@@ -24,7 +24,7 @@ fn handle_admin_error(err: AdminError) -> HttpResponse {
         AdminError::ValidationError(msg) => (400, msg),
         AdminError::Forbidden(msg) => (403, msg),
         AdminError::DatabaseError(msg) => {
-            log::error!("数据库错误: {}", msg);
+            log::error!("[Admin] 数据库错误 | error={}", msg);
             (500, "服务器内部错误".to_string())
         }
     };
@@ -43,6 +43,7 @@ async fn get_dashboard(
     current_user: actix_web::web::ReqData<CurrentUser>,
 ) -> impl Responder {
     let user = current_user.into_inner();
+    log::info!("[Admin] 获取仪表盘数据 | admin_id={}", user.id);
 
     if let Err(e) = check_admin(&user) {
         return handle_admin_error(e);
@@ -66,6 +67,7 @@ async fn get_user_list(
     query: web::Query<std::collections::HashMap<String, String>>,
 ) -> impl Responder {
     let user = current_user.into_inner();
+    log::info!("[Admin] 获取用户列表 | admin_id={}", user.id);
 
     if let Err(e) = check_admin(&user) {
         return handle_admin_error(e);
@@ -105,10 +107,13 @@ async fn update_user_status(
     }
 
     let user_id = path.into_inner();
+    log::info!("[Admin] 更新用户状态 | admin_id={}, target_user_id={}, is_active={}",
+        user.id, user_id, req.is_active);
 
     // 禁止禁用自己
     if user_id == user.id {
-        return HttpResponse::BadRequest().json(serde_json::json!({
+        log::warn!("[Admin] 管理员尝试禁用自己 | admin_id={}", user.id);
+        return HttpResponse::Ok().json(serde_json::json!({
             "code": 400,
             "message": "不能禁用自己的账号",
             "data": null
@@ -117,11 +122,14 @@ async fn update_user_status(
 
     match AdminService::update_user_status(&data.pool, user_id, req.is_active
     ).await {
-        Ok(_) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "用户状态已更新",
-            "data": null
-        })),
+        Ok(_) => {
+            log::info!("[Admin] 用户状态更新成功 | admin_id={}, target_user_id={}", user.id, user_id);
+            HttpResponse::Ok().json(serde_json::json!({
+                "code": 200,
+                "message": "用户状态已更新",
+                "data": null
+            }))
+        }
         Err(e) => handle_admin_error(e),
     }
 }
@@ -134,6 +142,7 @@ async fn get_pending_resources(
     query: web::Query<std::collections::HashMap<String, String>>,
 ) -> impl Responder {
     let user = current_user.into_inner();
+    log::info!("[Admin] 获取待审核资源列表 | admin_id={}", user.id);
 
     if let Err(e) = check_admin(&user) {
         return handle_admin_error(e);
@@ -174,6 +183,8 @@ async fn audit_resource(
     }
 
     let resource_id = path.into_inner();
+    log::info!("[Admin] 审核资源 | admin_id={}, resource_id={}, status={}",
+        user.id, resource_id, req.status);
 
     match AdminService::audit_resource(
         &data.pool,
@@ -181,11 +192,14 @@ async fn audit_resource(
         req.status.clone(),
         req.reason.clone(),
     ).await {
-        Ok(_) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "资源审核完成",
-            "data": null
-        })),
+        Ok(_) => {
+            log::info!("[Admin] 资源审核完成 | admin_id={}, resource_id={}", user.id, resource_id);
+            HttpResponse::Ok().json(serde_json::json!({
+                "code": 200,
+                "message": "资源审核完成",
+                "data": null
+            }))
+        }
         Err(e) => handle_admin_error(e),
     }
 }
@@ -198,6 +212,7 @@ async fn get_comment_list(
     query: web::Query<std::collections::HashMap<String, String>>,
 ) -> impl Responder {
     let user = current_user.into_inner();
+    log::info!("[Admin] 获取评论列表 | admin_id={}", user.id);
 
     if let Err(e) = check_admin(&user) {
         return handle_admin_error(e);
@@ -239,13 +254,17 @@ async fn delete_comment(
     }
 
     let comment_id = path.into_inner();
+    log::info!("[Admin] 删除评论 | admin_id={}, comment_id={}", user.id, comment_id);
 
     match AdminService::delete_comment(&data.pool, comment_id).await {
-        Ok(_) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "评论已删除",
-            "data": null
-        })),
+        Ok(_) => {
+            log::info!("[Admin] 评论删除成功 | admin_id={}, comment_id={}", user.id, comment_id);
+            HttpResponse::Ok().json(serde_json::json!({
+                "code": 200,
+                "message": "评论已删除",
+                "data": null
+            }))
+        }
         Err(e) => handle_admin_error(e),
     }
 }
@@ -266,14 +285,20 @@ async fn audit_comment(
 
     let comment_id = path.into_inner();
     let status = req.get("status").cloned().unwrap_or_default();
+    log::info!("[Admin] 审核评论 | admin_id={}, comment_id={}, status={}",
+        user.id, comment_id, status);
 
-    match AdminService::audit_comment(&data.pool, comment_id, status
+    match AdminService::audit_comment(
+        &data.pool, comment_id, status
     ).await {
-        Ok(_) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "评论审核完成",
-            "data": null
-        })),
+        Ok(_) => {
+            log::info!("[Admin] 评论审核完成 | admin_id={}, comment_id={}", user.id, comment_id);
+            HttpResponse::Ok().json(serde_json::json!({
+                "code": 200,
+                "message": "评论审核完成",
+                "data": null
+            }))
+        }
         Err(e) => handle_admin_error(e),
     }
 }
@@ -286,17 +311,21 @@ async fn send_notification(
     req: web::Json<crate::services::SendNotificationRequest>,
 ) -> impl Responder {
     let user = current_user.into_inner();
+    log::info!("[Admin] 发送系统通知 | admin_id={}, title={}", user.id, req.title);
 
     if let Err(e) = check_admin(&user) {
         return handle_admin_error(e);
     }
 
     match AdminService::send_notification(&data.pool, req.into_inner()).await {
-        Ok(_) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "通知发送成功",
-            "data": null
-        })),
+        Ok(_) => {
+            log::info!("[Admin] 系统通知发送成功 | admin_id={}", user.id);
+            HttpResponse::Ok().json(serde_json::json!({
+                "code": 200,
+                "message": "通知发送成功",
+                "data": null
+            }))
+        }
         Err(e) => handle_admin_error(e),
     }
 }
@@ -308,6 +337,7 @@ async fn get_detailed_stats(
     current_user: actix_web::web::ReqData<CurrentUser>,
 ) -> impl Responder {
     let user = current_user.into_inner();
+    log::info!("[Admin] 获取详细统计数据 | admin_id={}", user.id);
 
     if let Err(e) = check_admin(&user) {
         return handle_admin_error(e);
@@ -331,6 +361,7 @@ async fn get_audit_logs(
     query: web::Query<AuditLogQuery>,
 ) -> impl Responder {
     let user = current_user.into_inner();
+    log::info!("[Admin] 获取审计日志 | admin_id={}", user.id);
 
     if let Err(e) = check_admin(&user) {
         return handle_admin_error(e);

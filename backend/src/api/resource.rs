@@ -27,7 +27,7 @@ pub async fn upload_resource(
         let mut field = match item {
             Ok(field) => field,
             Err(e) => {
-                log::warn!("解析上传数据失败: {}", e);
+                log::warn!("[Resource] 解析上传数据失败 | user_id={}, error={}", user.id, e);
                 return HttpResponse::Ok().json(serde_json::json!({
                     "code": 400,
                     "message": "解析上传数据失败",
@@ -49,7 +49,7 @@ pub async fn upload_resource(
                     match chunk {
                         Ok(bytes) => data.extend_from_slice(&bytes),
                         Err(e) => {
-                            log::warn!("读取元数据失败: {}", e);
+                            log::warn!("[Resource] 读取元数据失败 | user_id={}, error={}", user.id, e);
                             return HttpResponse::Ok().json(serde_json::json!({
                                 "code": 400,
                                 "message": "读取元数据失败",
@@ -63,7 +63,7 @@ pub async fn upload_resource(
                 match serde_json::from_slice::<UploadResourceRequest>(&data) {
                     Ok(req) => metadata = Some(req),
                     Err(e) => {
-                        log::warn!("解析元数据 JSON 失败: {}", e);
+                        log::warn!("[Resource] 解析元数据 JSON 失败 | user_id={}, error={}", user.id, e);
                         return HttpResponse::Ok().json(serde_json::json!({
                             "code": 400,
                             "message": format!("元数据格式错误: {}", e),
@@ -88,7 +88,7 @@ pub async fn upload_resource(
                     match chunk {
                         Ok(bytes) => data.extend_from_slice(&bytes),
                         Err(e) => {
-                            log::warn!("读取文件数据失败: {}", e);
+                            log::warn!("[Resource] 读取文件数据失败 | user_id={}, error={}", user.id, e);
                             return HttpResponse::Ok().json(serde_json::json!({
                                 "code": 400,
                                 "message": "读取文件数据失败",
@@ -157,6 +157,9 @@ pub async fn upload_resource(
                 ip_address.as_deref(),
             ).await;
 
+            log::info!("[Resource] 资源上传成功 | resource_id={}, user_id={}, title={}",
+                response.id, user.id, response.title);
+
             HttpResponse::Ok().json(serde_json::json!({
                 "code": 200,
                 "message": "上传成功",
@@ -164,7 +167,7 @@ pub async fn upload_resource(
             }))
         }
         Err(e) => {
-            log::error!("上传资源失败: {:?}", e);
+            log::error!("[Resource] 资源上传失败 | user_id={}, error={:?}", user.id, e);
             let (code, message) = match e {
                 crate::services::ResourceError::ValidationError(msg) => (400, msg),
                 crate::services::ResourceError::FileError(msg) => (500, msg),
@@ -201,7 +204,7 @@ pub async fn get_resource_list(
             "data": response
         })),
         Err(e) => {
-            log::warn!("获取资源列表失败: {}", e);
+            log::warn!("[Resource] 获取资源列表失败 | error={}", e);
             HttpResponse::Ok().json(serde_json::json!({
                 "code": 500,
                 "message": "获取资源列表失败",
@@ -236,7 +239,7 @@ pub async fn search_resources(
             "data": response
         })),
         Err(e) => {
-            log::warn!("搜索资源失败: {}", e);
+            log::warn!("[Resource] 搜索资源失败 | error={}", e);
             HttpResponse::Ok().json(serde_json::json!({
                 "code": 500,
                 "message": "搜索资源失败",
@@ -264,7 +267,7 @@ pub async fn get_resource_detail(
             "data": response
         })),
         Err(e) => {
-            log::warn!("获取资源详情失败: {}", e);
+            log::warn!("[Resource] 获取资源详情失败 | resource_id={}, error={}", resource_id, e);
             let (code, message) = match e {
                 crate::services::ResourceError::NotFound(msg) => (404, msg),
                 _ => (500, "获取资源详情失败".to_string()),
@@ -288,6 +291,8 @@ pub async fn delete_resource(
 ) -> impl Responder {
     let resource_id = path.into_inner();
 
+    log::info!("[Resource] 删除资源 | resource_id={}, user_id={}", resource_id, user.id);
+
     match ResourceService::delete_resource(&state.pool, &user, resource_id).await {
         Ok(title) => {
             // 获取 IP 地址
@@ -304,6 +309,8 @@ pub async fn delete_resource(
                 ip_address.as_deref(),
             ).await;
 
+            log::info!("[Resource] 资源删除成功 | resource_id={}, user_id={}", resource_id, user.id);
+
             HttpResponse::Ok().json(serde_json::json!({
                 "code": 200,
                 "message": "删除成功",
@@ -311,7 +318,7 @@ pub async fn delete_resource(
             }))
         }
         Err(e) => {
-            log::warn!("删除资源失败: {}", e);
+            log::warn!("[Resource] 删除资源失败 | resource_id={}, user_id={}, error={}", resource_id, user.id, e);
             let (code, message) = match e {
                 crate::services::ResourceError::NotFound(msg) => (404, msg),
                 crate::services::ResourceError::Unauthorized(msg) => (403, msg),
@@ -343,7 +350,7 @@ pub async fn get_my_resources(
             "data": response
         })),
         Err(e) => {
-            log::warn!("获取我的资源列表失败: {}", e);
+            log::warn!("[Resource] 获取我的资源列表失败 | user_id={}, error={}", user.id, e);
             HttpResponse::Ok().json(serde_json::json!({
                 "code": 500,
                 "message": "获取资源列表失败",
@@ -409,6 +416,9 @@ pub async fn download_resource(
                     // 构建 Content-Disposition 头
                     let content_disposition = build_content_disposition(&filename);
 
+                    log::info!("[Resource] 资源下载成功 | resource_id={}, user_id={:?}",
+                        resource_id, user.as_ref().map(|u| u.id));
+
                     HttpResponse::Ok()
                         .content_type(content_type)
                         .insert_header((
@@ -418,7 +428,7 @@ pub async fn download_resource(
                         .body(file_content)
                 }
                 Err(e) => {
-                    log::warn!("读取资源文件失败: {}", e);
+                    log::warn!("[Resource] 读取资源文件失败(下载) | resource_id={}, error={}", resource_id, e);
                     HttpResponse::Ok().json(serde_json::json!({
                         "code": 500,
                         "message": "文件读取失败",
@@ -428,7 +438,7 @@ pub async fn download_resource(
             }
         }
         Err(e) => {
-            log::warn!("获取资源文件路径失败: {}", e);
+            log::warn!("[Resource] 获取资源文件路径失败(下载) | resource_id={}, error={}", resource_id, e);
             let (code, message) = match e {
                 crate::services::ResourceError::NotFound(msg) => (404, msg),
                 _ => (500, "获取资源失败".to_string()),
@@ -516,7 +526,7 @@ pub async fn get_resource_content(
                     // 获取 MIME 类型 - 优先使用 resource_type，因为它更准确
                     let content_type = crate::services::FileService::get_mime_type_by_type(&resource_type);
 
-                    log::debug!("预览资源 {}: 文件路径={}, 类型={}, MIME={}",
+                    log::debug!("[Resource] 预览资源 | resource_id={}, path={}, type={}, mime={}",
                         resource_id, file_path, resource_type, content_type);
 
                     // 返回文件内容（inline 显示，不是下载）
@@ -526,7 +536,7 @@ pub async fn get_resource_content(
                         .body(file_content)
                 }
                 Err(e) => {
-                    log::warn!("读取资源文件失败: {}", e);
+                    log::warn!("[Resource] 读取资源文件失败(预览) | resource_id={}, error={}", resource_id, e);
                     HttpResponse::Ok().json(serde_json::json!({
                         "code": 500,
                         "message": "文件读取失败",
@@ -536,7 +546,7 @@ pub async fn get_resource_content(
             }
         }
         Err(e) => {
-            log::warn!("获取资源文件路径失败: {}", e);
+            log::warn!("[Resource] 获取资源文件路径失败(预览) | resource_id={}, error={}", resource_id, e);
             let (code, message) = match e {
                 crate::services::ResourceError::NotFound(msg) => (404, msg),
                 _ => (500, "获取资源失败".to_string()),
@@ -568,7 +578,7 @@ pub async fn get_resource_raw_content(
             }
         })),
         Err(e) => {
-            log::warn!("获取资源原始内容失败: {}", e);
+            log::warn!("[Resource] 获取资源原始内容失败 | resource_id={}, user_id={}, error={}", resource_id, user.id, e);
             let (code, message) = match e {
                 crate::services::ResourceError::NotFound(msg) => (404, msg),
                 crate::services::ResourceError::Unauthorized(msg) => (403, msg),
@@ -609,7 +619,7 @@ pub async fn update_resource_content(
             "data": response
         })),
         Err(e) => {
-            log::warn!("更新资源内容失败: {}", e);
+            log::warn!("[Resource] 更新资源内容失败 | resource_id={}, user_id={}, error={}", resource_id, user.id, e);
             let (code, message) = match e {
                 crate::services::ResourceError::NotFound(msg) => (404, msg),
                 crate::services::ResourceError::Unauthorized(msg) => (403, msg),
@@ -653,7 +663,7 @@ pub async fn rate_resource(
             "data": rating
         })),
         Err(e) => {
-            log::warn!("评分失败: {}", e);
+            log::warn!("[Resource] 评分失败 | resource_id={}, user_id={}, error={}", resource_id, user.id, e);
             HttpResponse::Ok().json(serde_json::json!({
                 "code": 400,
                 "message": "评分失败",
@@ -679,7 +689,7 @@ pub async fn get_my_rating(
             "data": rating
         })),
         Err(e) => {
-            log::warn!("获取评分失败: {}", e);
+            log::warn!("[Resource] 获取评分失败 | resource_id={}, user_id={}, error={}", resource_id, user.id, e);
             HttpResponse::Ok().json(serde_json::json!({
                 "code": 500,
                 "message": "获取失败",
@@ -705,7 +715,7 @@ pub async fn delete_rating(
             "data": null
         })),
         Err(e) => {
-            log::warn!("删除评分失败: {}", e);
+            log::warn!("[Resource] 删除评分失败 | resource_id={}, user_id={}, error={}", resource_id, user.id, e);
             HttpResponse::Ok().json(serde_json::json!({
                 "code": 500,
                 "message": "删除失败",
@@ -739,7 +749,7 @@ pub async fn toggle_like(
             }))
         }
         Err(e) => {
-            log::warn!("点赞操作失败: {}", e);
+            log::warn!("[Resource] 点赞操作失败 | resource_id={}, user_id={}, error={}", resource_id, user.id, e);
             HttpResponse::Ok().json(serde_json::json!({
                 "code": 500,
                 "message": "操作失败",
@@ -763,7 +773,7 @@ pub async fn get_like_status(
         match LikeService::check_like_status(&state.pool, resource_id, user.id).await {
             Ok(status) => (status.is_liked, status.like_count),
             Err(e) => {
-                log::warn!("获取点赞状态失败: {}", e);
+                log::warn!("[Resource] 获取点赞状态失败 | resource_id={}, user_id={}, error={}", resource_id, user.id, e);
                 (false, 0)
             }
         }
@@ -772,7 +782,7 @@ pub async fn get_like_status(
         match LikeService::get_like_count(&state.pool, resource_id).await {
             Ok(count) => (false, count),
             Err(e) => {
-                log::warn!("获取点赞数失败: {}", e);
+                log::warn!("[Resource] 获取点赞数失败 | resource_id={}, error={}", resource_id, e);
                 (false, 0)
             }
         }
@@ -807,7 +817,7 @@ pub async fn get_comments(
             "data": comments
         })),
         Err(e) => {
-            log::warn!("获取评论失败: {}", e);
+            log::warn!("[Resource] 获取评论失败 | resource_id={}, error={}", resource_id, e);
             let message = match e {
                 crate::services::ResourceError::NotFound(msg) => msg,
                 _ => "获取评论失败".to_string(),
@@ -838,7 +848,7 @@ pub async fn create_comment(
             "data": comment
         })),
         Err(e) => {
-            log::warn!("评论失败: {}", e);
+            log::warn!("[Resource] 发表评论失败 | resource_id={}, user_id={}, error={}", resource_id, user.id, e);
             let (code, message) = match e {
                 crate::services::ResourceError::ValidationError(msg) => (400, msg),
                 crate::services::ResourceError::NotFound(msg) => (404, msg),

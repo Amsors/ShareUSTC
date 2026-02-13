@@ -18,6 +18,7 @@ import { ref, onMounted } from 'vue';
 import { Star } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { toggleLike, getLikeStatus } from '../../api/like';
+import logger from '../../utils/logger';
 
 const props = defineProps<{
   resourceId: string;
@@ -44,7 +45,7 @@ const loadLikeStatus = async () => {
     isLoaded.value = true;
     emit('update', isLiked.value, likeCount.value);
   } catch (error) {
-    console.error('加载收藏状态失败:', error);
+    logger.error('[LikeButton]', '加载点赞状态失败', error);
   }
 };
 

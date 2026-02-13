@@ -56,6 +56,7 @@
 import { ref, watch } from 'vue';
 import { ZoomIn, ZoomOut, FullScreen } from '@element-plus/icons-vue';
 import { getResourceContent } from '../../api/resource';
+import logger from '../../utils/logger';
 
 const props = defineProps<{
   resourceId: string;
@@ -72,9 +73,9 @@ const loadImage = async () => {
   loading.value = true;
   error.value = false;
   try {
-    console.log('[ImageViewer] 开始加载图片, resourceId:', props.resourceId);
+    logger.debug('[ImageViewer]', `开始加载图片 | resourceId=${props.resourceId}`);
     const blob = await getResourceContent(props.resourceId);
-    console.log('[ImageViewer] 获取到blob:', blob.type, blob.size);
+    logger.debug('[ImageViewer]', `获取到blob | type=${blob.type}, size=${blob.size}`);
 
     // 确保blob类型正确
     let imageBlob = blob;
@@ -86,17 +87,17 @@ const loadImage = async () => {
       } else if (ext === 'jpg' || ext === 'jpeg') {
         imageBlob = new Blob([blob], { type: 'image/jpeg' });
       }
-      console.log('[ImageViewer] 修正后的blob类型:', imageBlob.type);
+      logger.debug('[ImageViewer]', `修正后的blob类型 | type=${imageBlob.type}`);
     }
 
     const url = URL.createObjectURL(imageBlob);
-    console.log('[ImageViewer] 创建的URL:', url);
+    logger.debug('[ImageViewer]', `创建的URL | url=${url}`);
     imageUrl.value = url;
     // 对于 blob URL，图片加载事件可能不可靠，这里直接设置 loading 为 false
     // 实际图片加载状态由 img 的 @load 和 @error 处理
     loading.value = false;
   } catch (err: any) {
-    console.error('[ImageViewer] 加载失败:', err);
+    logger.error('[ImageViewer]', '加载图片失败', err);
     error.value = true;
     loading.value = false;
   }
