@@ -420,3 +420,23 @@ pub struct UpdateResourceContentResponse {
     pub id: Uuid,
     pub updated_at: chrono::NaiveDateTime,
 }
+
+/// 热门资源查询参数
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HotResourcesQuery {
+    pub limit: Option<i32>,
+}
+
+/// 热门资源列表项 DTO
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HotResourceItem {
+    pub id: Uuid,
+    pub title: String,
+    pub course_name: Option<String>,
+    pub resource_type: String,
+    pub downloads: i32,
+    pub views: i32,
+    pub likes: i32,
+}
