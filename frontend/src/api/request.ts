@@ -5,8 +5,11 @@ import router from '../router';
 import logger from '../utils/logger';
 
 // 创建 axios 实例
+const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api';
+console.log('[API] Base URL:', baseURL);
+
 const request: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api',
+  baseURL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
