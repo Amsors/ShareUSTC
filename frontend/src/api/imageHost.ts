@@ -1,4 +1,5 @@
 import request from './request';
+import logger from '../utils/logger';
 import type { Image, ImageUploadResponse, ImageListResponse, ImageListQuery } from '../types/image';
 
 /**
@@ -96,7 +97,7 @@ export const copyToClipboard = async (text: string): Promise<boolean> => {
     await navigator.clipboard.writeText(text);
     return true;
   } catch (err) {
-    console.error('复制失败:', err);
+    logger.error('[ImageHost]', '复制到剪贴板失败', err);
     return false;
   }
 };

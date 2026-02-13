@@ -359,6 +359,7 @@ import { ref, reactive, onMounted, watch, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import MarkdownIt from 'markdown-it';
 import { useAuthStore } from '../stores/auth';
+import logger from '../utils/logger';
 import { getCurrentUser, updateProfile, verifyUser, getUserProfile } from '../api/user';
 import MarkdownEditor from '../components/editor/MarkdownEditor.vue';
 import type { UpdateProfileRequest, VerificationRequest } from '../api/user';
@@ -679,7 +680,7 @@ const loadUserStats = async () => {
     userStats.totalLikes = profile.totalLikes;
     userStats.totalDownloads = profile.totalDownloads;
   } catch (error) {
-    console.error('加载用户统计数据失败:', error);
+    logger.error('[Profile]', '加载用户统计数据失败', error);
   }
 };
 
@@ -692,7 +693,7 @@ const refreshUserInfo = async () => {
     // 获取用户统计数据
     await loadUserStats();
   } catch (error) {
-    console.error('刷新用户信息失败:', error);
+    logger.error('[Profile]', '刷新用户信息失败', error);
   }
 };
 

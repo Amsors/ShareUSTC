@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import logger from '../utils/logger';
 
 // 导入管理后台组件
 import AdminLayout from '../layouts/AdminLayout.vue';
@@ -179,22 +180,22 @@ router.beforeEach((to, _from, next) => {
   const isAdmin = authStore.isAdmin;
   const user = authStore.user;
 
-  console.log(`[Router] Navigating to: ${to.path}`);
-  console.log(`[Router] Authenticated: ${isAuthenticated}, IsAdmin: ${isAdmin}`);
-  console.log(`[Router] User:`, user);
+  logger.debug('[Router]', `Navigating to: ${to.path}`);
+  logger.debug('[Router]', `Authenticated: ${isAuthenticated}, IsAdmin: ${isAdmin}`);
+  logger.debug('[Router]', `User: ${user?.username || 'null'}`);
 
   // 1. 检查是否需要管理员权限
   if (to.meta.requiresAdmin) {
-    console.log(`[Router] Route requires admin, isAdmin=${isAdmin}`);
+    logger.debug('[Router]', `Route requires admin, isAdmin=${isAdmin}`);
     if (!isAdmin) {
-      console.log('[Router] Admin required but user is not admin, redirecting to home');
+      logger.warn('[Router]', 'Admin required but user is not admin, redirecting to home');
       return next('/');
     }
   }
 
   // 2. 检查是否需要认证
   if (to.meta.requiresAuth && !isAuthenticated) {
-    console.log('[Router] Auth required, redirecting to login');
+    logger.info('[Router]', 'Auth required, redirecting to login');
     return next({
       path: '/login',
       query: { redirect: to.fullPath }
@@ -203,11 +204,11 @@ router.beforeEach((to, _from, next) => {
 
   // 3. 检查是否只允许未登录用户访问（如登录页、注册页）
   if (to.meta.guestOnly && isAuthenticated) {
-    console.log('[Router] Already authenticated, redirecting to home');
+    logger.info('[Router]', 'Already authenticated, redirecting to home');
     return next('/');
   }
 
-  console.log('[Router] Allowing access to:', to.path);
+  logger.debug('[Router]', `Allowing access to: ${to.path}`);
   // 4. 允许访问
   next();
 });

@@ -58,13 +58,19 @@ pub async fn create_favorite(
     user: web::ReqData<CurrentUser>,
     request: web::Json<CreateFavoriteRequest>,
 ) -> impl Responder {
+    log::info!("[Favorite] 创建收藏夹 | user_id={}, name={}", user.id, request.name);
+
     match FavoriteService::create_favorite(&state.pool, user.id, request.into_inner()).await {
-        Ok(response) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "创建成功",
-            "data": response
-        })),
+        Ok(response) => {
+            log::info!("[Favorite] 收藏夹创建成功 | favorite_id={}, user_id={}", response.id, user.id);
+            HttpResponse::Ok().json(serde_json::json!({
+                "code": 200,
+                "message": "创建成功",
+                "data": response
+            }))
+        }
         Err(e) => {
+            log::warn!("[Favorite] 创建收藏夹失败 | user_id={}, error={}", user.id, e);
             let (code, message) = match e {
                 crate::services::ResourceError::ValidationError(msg) => (400, msg),
                 crate::services::ResourceError::NotFound(msg) => (404, msg),
@@ -85,6 +91,8 @@ pub async fn get_my_favorites(
     state: web::Data<AppState>,
     user: web::ReqData<CurrentUser>,
 ) -> impl Responder {
+    log::debug!("[Favorite] 获取收藏夹列表 | user_id={}", user.id);
+
     match FavoriteService::get_user_favorites(&state.pool, user.id).await {
         Ok(response) => HttpResponse::Ok().json(serde_json::json!({
             "code": 200,
@@ -92,7 +100,7 @@ pub async fn get_my_favorites(
             "data": response
         })),
         Err(e) => {
-            log::warn!("获取收藏夹列表失败: {}", e);
+            log::warn!("[Favorite] 获取收藏夹列表失败 | user_id={}, error={}", user.id, e);
             HttpResponse::Ok().json(serde_json::json!({
                 "code": 500,
                 "message": "获取收藏夹列表失败",
@@ -111,6 +119,8 @@ pub async fn get_favorite_detail(
 ) -> impl Responder {
     let favorite_id = path.into_inner();
 
+    log::debug!("[Favorite] 获取收藏夹详情 | favorite_id={}, user_id={}", favorite_id, user.id);
+
     match FavoriteService::get_favorite_detail(&state.pool, favorite_id, user.id).await {
         Ok(response) => HttpResponse::Ok().json(serde_json::json!({
             "code": 200,
@@ -118,6 +128,8 @@ pub async fn get_favorite_detail(
             "data": response
         })),
         Err(e) => {
+            log::warn!("[Favorite] 获取收藏夹详情失败 | favorite_id={}, user_id={}, error={}",
+                favorite_id, user.id, e);
             let (code, message) = match e {
                 crate::services::ResourceError::NotFound(msg) => (404, msg),
                 _ => (500, "获取收藏夹详情失败".to_string()),
@@ -141,13 +153,20 @@ pub async fn update_favorite(
 ) -> impl Responder {
     let favorite_id = path.into_inner();
 
+    log::info!("[Favorite] 更新收藏夹 | favorite_id={}, user_id={}", favorite_id, user.id);
+
     match FavoriteService::update_favorite(&state.pool, favorite_id, user.id, request.into_inner()).await {
-        Ok(_) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "更新成功",
-            "data": null
-        })),
+        Ok(_) => {
+            log::info!("[Favorite] 收藏夹更新成功 | favorite_id={}, user_id={}", favorite_id, user.id);
+            HttpResponse::Ok().json(serde_json::json!({
+                "code": 200,
+                "message": "更新成功",
+                "data": null
+            }))
+        }
         Err(e) => {
+            log::warn!("[Favorite] 收藏夹更新失败 | favorite_id={}, user_id={}, error={}",
+                favorite_id, user.id, e);
             let (code, message) = match e {
                 crate::services::ResourceError::ValidationError(msg) => (400, msg),
                 crate::services::ResourceError::NotFound(msg) => (404, msg),
@@ -171,13 +190,20 @@ pub async fn delete_favorite(
 ) -> impl Responder {
     let favorite_id = path.into_inner();
 
+    log::info!("[Favorite] 删除收藏夹 | favorite_id={}, user_id={}", favorite_id, user.id);
+
     match FavoriteService::delete_favorite(&state.pool, favorite_id, user.id).await {
-        Ok(_) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "删除成功",
-            "data": null
-        })),
+        Ok(_) => {
+            log::info!("[Favorite] 收藏夹删除成功 | favorite_id={}, user_id={}", favorite_id, user.id);
+            HttpResponse::Ok().json(serde_json::json!({
+                "code": 200,
+                "message": "删除成功",
+                "data": null
+            }))
+        }
         Err(e) => {
+            log::warn!("[Favorite] 收藏夹删除失败 | favorite_id={}, user_id={}, error={}",
+                favorite_id, user.id, e);
             let (code, message) = match e {
                 crate::services::ResourceError::NotFound(msg) => (404, msg),
                 _ => (500, "删除失败".to_string()),
@@ -201,13 +227,22 @@ pub async fn add_resource_to_favorite(
 ) -> impl Responder {
     let favorite_id = path.into_inner();
 
+    log::info!("[Favorite] 添加资源到收藏夹 | favorite_id={}, user_id={}, resource_id={}",
+        favorite_id, user.id, request.resource_id);
+
     match FavoriteService::add_resource_to_favorite(&state.pool, favorite_id, user.id, request.into_inner()).await {
-        Ok(_) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "添加成功",
-            "data": null
-        })),
+        Ok(_) => {
+            log::info!("[Favorite] 资源添加到收藏夹成功 | favorite_id={}, user_id={}",
+                favorite_id, user.id);
+            HttpResponse::Ok().json(serde_json::json!({
+                "code": 200,
+                "message": "添加成功",
+                "data": null
+            }))
+        }
         Err(e) => {
+            log::warn!("[Favorite] 添加资源到收藏夹失败 | favorite_id={}, user_id={}, error={}",
+                favorite_id, user.id, e);
             let (code, message) = match e {
                 crate::services::ResourceError::ValidationError(msg) => (400, msg),
                 crate::services::ResourceError::NotFound(msg) => (404, msg),
@@ -230,14 +265,22 @@ pub async fn remove_resource_from_favorite(
     path: web::Path<(Uuid, Uuid)>,
 ) -> impl Responder {
     let (favorite_id, resource_id) = path.into_inner();
+    log::info!("[Favorite] 从收藏夹移除资源 | favorite_id={}, resource_id={}, user_id={}",
+        favorite_id, resource_id, user.id);
 
     match FavoriteService::remove_resource_from_favorite(&state.pool, favorite_id, resource_id, user.id).await {
-        Ok(_) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "移除成功",
-            "data": null
-        })),
+        Ok(_) => {
+            log::info!("[Favorite] 资源从收藏夹移除成功 | favorite_id={}, resource_id={}, user_id={}",
+                favorite_id, resource_id, user.id);
+            HttpResponse::Ok().json(serde_json::json!({
+                "code": 200,
+                "message": "移除成功",
+                "data": null
+            }))
+        }
         Err(e) => {
+            log::warn!("[Favorite] 从收藏夹移除资源失败 | favorite_id={}, resource_id={}, user_id={}, error={}",
+                favorite_id, resource_id, user.id, e);
             let (code, message) = match e {
                 crate::services::ResourceError::NotFound(msg) => (404, msg),
                 _ => (500, "移除失败".to_string()),
@@ -295,13 +338,13 @@ pub async fn download_favorite(
         Err(e) => {
             return match e {
                 crate::services::ResourceError::NotFound(msg) => {
-                    HttpResponse::NotFound().json(serde_json::json!({
+                    HttpResponse::Ok().json(serde_json::json!({
                         "code": 404,
                         "message": msg,
                         "data": null
                     }))
                 }
-                _ => HttpResponse::InternalServerError().json(serde_json::json!({
+                _ => HttpResponse::Ok().json(serde_json::json!({
                     "code": 500,
                     "message": "获取收藏夹信息失败".to_string(),
                     "data": null
@@ -324,27 +367,27 @@ pub async fn download_favorite(
         Err(e) => {
             match e {
                 crate::services::ResourceError::ValidationError(msg) => {
-                    HttpResponse::BadRequest().json(serde_json::json!({
+                    HttpResponse::Ok().json(serde_json::json!({
                         "code": 400,
                         "message": msg,
                         "data": null
                     }))
                 }
                 crate::services::ResourceError::NotFound(msg) => {
-                    HttpResponse::NotFound().json(serde_json::json!({
+                    HttpResponse::Ok().json(serde_json::json!({
                         "code": 404,
                         "message": msg,
                         "data": null
                     }))
                 }
                 crate::services::ResourceError::FileError(msg) => {
-                    HttpResponse::InternalServerError().json(serde_json::json!({
+                    HttpResponse::Ok().json(serde_json::json!({
                         "code": 500,
                         "message": msg,
                         "data": null
                     }))
                 }
-                _ => HttpResponse::InternalServerError().json(serde_json::json!({
+                _ => HttpResponse::Ok().json(serde_json::json!({
                     "code": 500,
                     "message": "打包下载失败".to_string(),
                     "data": null

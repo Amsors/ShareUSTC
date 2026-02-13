@@ -90,6 +90,7 @@ import { ArrowLeft, ArrowRight, ZoomIn, ZoomOut, FullScreen } from '@element-plu
 import * as pdfjsLib from 'pdfjs-dist';
 import PDFWorker from 'pdfjs-dist/build/pdf.worker.mjs?worker';
 import { getResourceContent } from '../../api/resource';
+import logger from '../../utils/logger';
 
 // 设置 PDF.js worker - 使用 Vite 的 worker 导入
 pdfjsLib.GlobalWorkerOptions.workerPort = new PDFWorker();
@@ -113,23 +114,19 @@ const loadPdf = async () => {
   loading.value = true;
   error.value = false;
   try {
-    console.log('[PdfViewer] 开始加载PDF, resourceId:', props.resourceId);
+    logger.debug('[PdfViewer]', `开始加载PDF | resourceId=${props.resourceId}`);
     const blob = await getResourceContent(props.resourceId);
-    console.log('[PdfViewer] 获取到blob:', blob.type, blob.size);
+    logger.debug('[PdfViewer]', `获取到blob | type=${blob.type}, size=${blob.size}`);
 
     // 确保blob类型正确
     let pdfBlob = blob;
     if (!blob.type || blob.type === 'application/octet-stream') {
-      console.log('[PdfViewer] Blob类型不正确，强制设置为application/pdf');
+      logger.debug('[PdfViewer]', 'Blob类型不正确，强制设置为application/pdf');
       pdfBlob = new Blob([blob], { type: 'application/pdf' });
     }
 
     const arrayBuffer = await pdfBlob.arrayBuffer();
-    console.log('[PdfViewer] 转换为ArrayBuffer, 大小:', arrayBuffer.byteLength);
-
-    // 检查PDF.js worker是否配置正确
-    console.log('[PdfViewer] PDF.js version:', pdfjsLib.version);
-    console.log('[PdfViewer] Worker src:', pdfjsLib.GlobalWorkerOptions.workerSrc);
+    logger.debug('[PdfViewer]', `转换为ArrayBuffer | size=${arrayBuffer.byteLength}`);
 
     const loadingTask = pdfjsLib.getDocument({
       data: arrayBuffer,
@@ -143,11 +140,11 @@ const loadPdf = async () => {
       maxImageSize: 1024 * 1024,
     });
     loadingTask.onProgress = (progress: any) => {
-      console.log('[PdfViewer] 加载进度:', progress);
+      logger.debug('[PdfViewer]', `加载进度 | loaded=${progress.loaded}, total=${progress.total}`);
     };
 
     pdfDoc = await loadingTask.promise;
-    console.log('[PdfViewer] PDF文档加载成功, 页数:', pdfDoc.numPages);
+    logger.info('[PdfViewer]', `PDF文档加载成功 | pages=${pdfDoc.numPages}`);
 
     totalPages.value = pdfDoc.numPages;
     currentPage.value = 1;
@@ -156,8 +153,7 @@ const loadPdf = async () => {
     await nextTick();
     await renderPage();
   } catch (err: any) {
-    console.error('[PdfViewer] PDF加载失败:', err);
-    console.error('[PdfViewer] 错误详情:', err.message, err.stack);
+    logger.error('[PdfViewer]', 'PDF加载失败', { message: err.message, stack: err.stack });
     error.value = true;
     loading.value = false;
   }
@@ -165,15 +161,15 @@ const loadPdf = async () => {
 
 const renderPage = async () => {
   if (!pdfDoc || !canvasRef.value) {
-    console.warn('[PdfViewer] renderPage: pdfDoc 或 canvasRef 不存在');
+    logger.warn('[PdfViewer]', 'renderPage: pdfDoc 或 canvasRef 不存在');
     return;
   }
 
-  console.log('[PdfViewer] 开始渲染页面:', currentPage.value, '缩放:', scale.value);
+  logger.debug('[PdfViewer]', `开始渲染页面 | page=${currentPage.value}, scale=${scale.value}`);
 
   try {
     const page = await pdfDoc.getPage(currentPage.value);
-    console.log('[PdfViewer] 获取页面成功, 页面尺寸:', page.view);
+    logger.debug('[PdfViewer]', `获取页面成功 | view=${JSON.stringify(page.view)}`);
 
     // 获取页面文本内容信息（用于调试字体问题）
     try {
@@ -184,20 +180,20 @@ const renderPage = async () => {
           fontNames.add(item.fontName);
         }
       });
-      console.log('[PdfViewer] 页面使用的字体:', Array.from(fontNames));
+      logger.debug('[PdfViewer]', `页面使用的字体 | fonts=${Array.from(fontNames).join(', ')}`);
     } catch (e) {
-      console.log('[PdfViewer] 无法获取文本内容:', e);
+      logger.debug('[PdfViewer]', '无法获取文本内容', e);
     }
 
     const canvas = canvasRef.value;
     const context = canvas.getContext('2d');
     if (!context) {
-      console.error('[PdfViewer] 无法获取 canvas context');
+      logger.error('[PdfViewer]', '无法获取 canvas context');
       return;
     }
 
     const viewport = page.getViewport({ scale: scale.value });
-    console.log('[PdfViewer] viewport 尺寸:', viewport.width, 'x', viewport.height);
+    logger.debug('[PdfViewer]', `viewport 尺寸 | width=${viewport.width}, height=${viewport.height}`);
 
     // 设置 canvas 的实际像素尺寸
     canvas.height = viewport.height;
@@ -207,8 +203,8 @@ const renderPage = async () => {
     canvas.style.height = `${viewport.height}px`;
     canvas.style.width = `${viewport.width}px`;
 
-    console.log('[PdfViewer] canvas 尺寸设置:', canvas.width, 'x', canvas.height);
-    console.log('[PdfViewer] canvas 样式尺寸:', canvas.style.width, 'x', canvas.style.height);
+    logger.debug('[PdfViewer]', `canvas 尺寸 | width=${canvas.width}, height=${canvas.height}`);
+    logger.debug('[PdfViewer]', `canvas 样式尺寸 | styleWidth=${canvas.style.width}, styleHeight=${canvas.style.height}`);
 
     const renderContext = {
       canvasContext: context,
@@ -217,12 +213,12 @@ const renderPage = async () => {
       background: 'white',
     };
 
-    console.log('[PdfViewer] 开始 render 操作');
+    logger.debug('[PdfViewer]', '开始 render 操作');
     const renderTask = page.render(renderContext);
     await renderTask.promise;
-    console.log('[PdfViewer] 渲染完成');
+    logger.debug('[PdfViewer]', '渲染完成');
   } catch (err: any) {
-    console.error('[PdfViewer] 渲染页面失败:', err);
+    logger.error('[PdfViewer]', '渲染页面失败', err);
   }
 };
 

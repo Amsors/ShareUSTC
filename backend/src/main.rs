@@ -71,8 +71,8 @@ async fn serve_image(
                         .body(file_content)
                 }
                 Err(e) => {
-                    log::warn!("无法读取图片文件 {}: {}", file_path, e);
-                    HttpResponse::NotFound().json(serde_json::json!({
+                    log::warn!("[Image] 读取图片文件失败 | image_id={}, path={}, error={}", image_id, file_path, e);
+                    HttpResponse::Ok().json(serde_json::json!({
                         "code": 404,
                         "message": "图片文件不存在",
                         "data": null
@@ -81,8 +81,8 @@ async fn serve_image(
             }
         }
         Err(e) => {
-            log::warn!("获取图片路径失败: {}", e);
-            HttpResponse::NotFound().json(serde_json::json!({
+            log::warn!("[Image] 获取图片路径失败 | image_id={}, error={}", image_id, e);
+            HttpResponse::Ok().json(serde_json::json!({
                 "code": 404,
                 "message": "图片不存在",
                 "data": null
@@ -109,89 +109,89 @@ async fn main() -> std::io::Result<()> {
 
     // 确保上传目录存在
     std::fs::create_dir_all(&config.image_upload_path).unwrap_or_else(|e| {
-        log::warn!("创建图片上传目录失败: {}", e);
+        log::warn!("[System] 创建图片上传目录失败 | error={}", e);
     });
     std::fs::create_dir_all(&config.resource_upload_path).unwrap_or_else(|e| {
-        log::warn!("创建资源上传目录失败: {}", e);
+        log::warn!("[System] 创建资源上传目录失败 | error={}", e);
     });
 
-    log::info!("Starting ShareUSTC backend server...");
-    log::info!("Server address: http://{}", server_addr);
-    log::info!("Image upload directory: {}", config.image_upload_path);
-    log::info!("Resource upload directory: {}", config.resource_upload_path);
+    log::info!("[System] Starting ShareUSTC backend server...");
+    log::info!("[System] Server address: http://{}", server_addr);
+    log::info!("[System] Image upload directory: {}", config.image_upload_path);
+    log::info!("[System] Resource upload directory: {}", config.resource_upload_path);
 
     // 创建数据库连接池
     let pool = match db::create_pool_from_env().await {
         Ok(pool) => {
-            log::info!("数据库连接池创建成功");
+            log::info!("[System] 数据库连接池创建成功");
             pool
         }
         Err(e) => {
-            log::error!("数据库连接失败: {}", e);
-            log::warn!("请检查 DATABASE_URL 环境变量是否正确设置");
-            log::warn!("示例: DATABASE_URL=postgres://username:password@localhost:5432/shareustc");
+            log::error!("[System] 数据库连接失败 | error={}", e);
+            log::warn!("[System] 请检查 DATABASE_URL 环境变量是否正确设置");
+            log::warn!("[System] 示例: DATABASE_URL=postgres://username:password@localhost:5432/shareustc");
             std::process::exit(1);
         }
     };
 
     // 同步管理员权限（根据环境变量配置）
     if !config.admin_usernames.is_empty() {
-        log::info!("正在同步管理员权限，配置的管理员: {:?}", config.admin_usernames);
+        log::info!("[Admin] 正在同步管理员权限 | admins={:?}", config.admin_usernames);
         match services::AdminService::sync_admin_roles(&pool, &config.admin_usernames).await {
             Ok((granted, revoked)) => {
-                log::info!("管理员权限同步完成: 新增 {} 个, 取消 {} 个", granted, revoked);
+                log::info!("[Admin] 管理员权限同步完成 | granted={}, revoked={}", granted, revoked);
             }
             Err(e) => {
-                log::warn!("管理员权限同步失败: {}", e);
+                log::warn!("[Admin] 管理员权限同步失败 | error={}", e);
             }
         }
     } else {
-        log::info!("未配置管理员用户名列表 (ADMIN_USERNAMES)，跳过权限同步");
+        log::info!("[Admin] 未配置管理员用户名列表 (ADMIN_USERNAMES)，跳过权限同步");
     }
 
     // 创建应用状态
     let app_state = web::Data::new(AppState::new(pool, config.jwt_secret.clone()));
 
-    log::info!("Server starting at http://{}", server_addr);
-    log::debug!("Debug logging enabled");
-    log::debug!("API endpoints:");
-    log::debug!("  POST /api/auth/register - 用户注册");
-    log::debug!("  POST /api/auth/login    - 用户登录");
-    log::debug!("  POST /api/auth/refresh  - 刷新Token");
-    log::debug!("  POST /api/auth/logout   - 用户登出");
-    log::debug!("  GET  /api/users/me      - 获取当前用户");
-    log::debug!("  PUT  /api/users/me      - 更新用户资料");
-    log::debug!("  POST /api/users/verify  - 实名认证");
-    log::debug!("  GET  /api/users/{{user_id}} - 获取用户资料");
-    log::debug!("  POST /api/images/upload - 上传图片");
-    log::debug!("  GET  /api/images        - 获取我的图片列表");
-    log::debug!("  GET  /api/images/{{id}}   - 获取图片信息");
-    log::debug!("  DEL  /api/images/{{id}}   - 删除图片");
-    log::debug!("  GET  /images/{{id}}       - 访问图片文件（公开）");
-    log::debug!("  POST /api/resources     - 上传资源");
-    log::debug!("  GET  /api/resources     - 获取资源列表");
-    log::debug!("  GET  /api/resources/search - 搜索资源");
-    log::debug!("  GET  /api/resources/my  - 获取我的资源列表");
-    log::debug!("  GET  /api/resources/{{id}} - 获取资源详情");
-    log::debug!("  GET  /api/resources/{{id}}/download - 下载资源");
-    log::debug!("  DEL  /api/resources/{{id}} - 删除资源");
-    log::debug!("  POST /api/favorites     - 创建收藏夹");
-    log::debug!("  GET  /api/favorites     - 获取我的收藏夹列表");
-    log::debug!("  GET  /api/favorites/{{id}} - 获取收藏夹详情");
-    log::debug!("  PUT  /api/favorites/{{id}} - 更新收藏夹");
-    log::debug!("  DEL  /api/favorites/{{id}} - 删除收藏夹");
-    log::debug!("  POST /api/favorites/{{id}}/resources - 添加资源到收藏夹");
-    log::debug!("  DEL  /api/favorites/{{id}}/resources/{{rid}} - 从收藏夹移除资源");
-    log::debug!("  GET  /api/favorites/check/{{rid}} - 检查资源收藏状态");
-    log::debug!("  GET  /api/health        - 健康检查");
-    log::debug!("  GET  /api/hello         - 测试接口");
+    log::info!("[System] Server starting at http://{}", server_addr);
+    log::debug!("[System] Debug logging enabled");
+    log::debug!("[System] API endpoints:");
+    log::debug!("[System]   POST /api/auth/register - 用户注册");
+    log::debug!("[System]   POST /api/auth/login    - 用户登录");
+    log::debug!("[System]   POST /api/auth/refresh  - 刷新Token");
+    log::debug!("[System]   POST /api/auth/logout   - 用户登出");
+    log::debug!("[System]   GET  /api/users/me      - 获取当前用户");
+    log::debug!("[System]   PUT  /api/users/me      - 更新用户资料");
+    log::debug!("[System]   POST /api/users/verify  - 实名认证");
+    log::debug!("[System]   GET  /api/users/{{user_id}} - 获取用户资料");
+    log::debug!("[System]   POST /api/images/upload - 上传图片");
+    log::debug!("[System]   GET  /api/images        - 获取我的图片列表");
+    log::debug!("[System]   GET  /api/images/{{id}}   - 获取图片信息");
+    log::debug!("[System]   DEL  /api/images/{{id}}   - 删除图片");
+    log::debug!("[System]   GET  /images/{{id}}       - 访问图片文件（公开）");
+    log::debug!("[System]   POST /api/resources     - 上传资源");
+    log::debug!("[System]   GET  /api/resources     - 获取资源列表");
+    log::debug!("[System]   GET  /api/resources/search - 搜索资源");
+    log::debug!("[System]   GET  /api/resources/my  - 获取我的资源列表");
+    log::debug!("[System]   GET  /api/resources/{{id}} - 获取资源详情");
+    log::debug!("[System]   GET  /api/resources/{{id}}/download - 下载资源");
+    log::debug!("[System]   DEL  /api/resources/{{id}} - 删除资源");
+    log::debug!("[System]   POST /api/favorites     - 创建收藏夹");
+    log::debug!("[System]   GET  /api/favorites     - 获取我的收藏夹列表");
+    log::debug!("[System]   GET  /api/favorites/{{id}} - 获取收藏夹详情");
+    log::debug!("[System]   PUT  /api/favorites/{{id}} - 更新收藏夹");
+    log::debug!("[System]   DEL  /api/favorites/{{id}} - 删除收藏夹");
+    log::debug!("[System]   POST /api/favorites/{{id}}/resources - 添加资源到收藏夹");
+    log::debug!("[System]   DEL  /api/favorites/{{id}}/resources/{{rid}} - 从收藏夹移除资源");
+    log::debug!("[System]   GET  /api/favorites/check/{{rid}} - 检查资源收藏状态");
+    log::debug!("[System]   GET  /api/health        - 健康检查");
+    log::debug!("[System]   GET  /api/hello         - 测试接口");
 
     // 克隆配置数据用于闭包
     let jwt_secret = config.jwt_secret.clone();
     let cors_origins = config.cors_allowed_origins.clone();
 
     // 记录 CORS 配置信息
-    log::info!("CORS allowed origins: {:?}", cors_origins);
+    log::info!("[System] CORS allowed origins: {:?}", cors_origins);
 
     HttpServer::new(move || {
         // 克隆 CORS 域名列表供此 worker 线程使用

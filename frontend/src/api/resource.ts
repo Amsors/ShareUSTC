@@ -1,4 +1,5 @@
 import request from './request';
+import logger from '../utils/logger';
 import type {
   ResourceListResponse,
   ResourceListQuery,
@@ -183,7 +184,7 @@ export const downloadResource = async (resourceId: string, fileName?: string): P
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
   } catch (error) {
-    console.error('下载失败:', error);
+    logger.error('[Resource]', '下载失败', error);
     throw error;
   }
 };
@@ -223,7 +224,7 @@ export const getResourceContent = async (resourceId: string): Promise<Blob> => {
 
   // 获取响应的 Content-Type
   const contentType = response.headers.get('content-type') || 'application/octet-stream';
-  console.log('[getResourceContent] Content-Type:', contentType);
+  logger.debug('[Resource]', `获取资源内容 | contentType=${contentType}`);
 
   const blob = await response.blob();
   // 创建带有正确 MIME 类型的 Blob

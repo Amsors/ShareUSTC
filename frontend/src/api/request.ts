@@ -2,6 +2,7 @@ import axios, { type AxiosError, type AxiosInstance, type AxiosResponse } from '
 import { useAuthStore } from '../stores/auth';
 import { ElMessage } from 'element-plus';
 import router from '../router';
+import logger from '../utils/logger';
 
 // 创建 axios 实例
 const request: AxiosInstance = axios.create({
@@ -27,11 +28,11 @@ request.interceptors.request.use(
       delete config.headers['Content-Type'];
     }
 
-    console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, config.data);
+    logger.debug('[API]', `Request ${config.method?.toUpperCase()} ${config.url}`, config.data);
     return config;
   },
   (error) => {
-    console.error('[API Request Error]', error);
+    logger.error('[API]', 'Request Error', error);
     return Promise.reject(error);
   }
 );
@@ -48,7 +49,7 @@ class ApiError extends Error {
 // 响应拦截器
 request.interceptors.response.use(
   (response: AxiosResponse) => {
-    console.log(`[API Response] ${response.config.url}`, response.data);
+    logger.debug('[API]', `Response ${response.config.url}`, response.data);
 
     const { code, message, data } = response.data;
 
@@ -61,7 +62,7 @@ request.interceptors.response.use(
     return data;
   },
   async (error: AxiosError) => {
-    console.error('[API Error]', error);
+    logger.error('[API]', 'Response Error', error);
 
     const { response } = error;
 
