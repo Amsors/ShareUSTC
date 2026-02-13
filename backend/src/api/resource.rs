@@ -625,6 +625,31 @@ pub async fn update_resource_content(
     }
 }
 
+/// 获取热门资源列表
+#[get("/resources/hot")]
+pub async fn get_hot_resources(
+    state: web::Data<AppState>,
+    query: web::Query<crate::models::HotResourcesQuery>,
+) -> impl Responder {
+    let limit = query.limit.unwrap_or(10);
+
+    match ResourceService::get_hot_resources(&state.pool, limit).await {
+        Ok(resources) => HttpResponse::Ok().json(serde_json::json!({
+            "code": 200,
+            "message": "获取成功",
+            "data": resources
+        })),
+        Err(e) => {
+            log::warn!("获取热门资源失败: {}", e);
+            HttpResponse::Ok().json(serde_json::json!({
+                "code": 500,
+                "message": "获取热门资源失败",
+                "data": null
+            }))
+        }
+    }
+}
+
 /// 配置公开资源路由（不需要认证）
 pub fn config_public(cfg: &mut web::ServiceConfig) {
     cfg.service(get_resource_list)
@@ -633,7 +658,8 @@ pub fn config_public(cfg: &mut web::ServiceConfig) {
         .service(download_resource)
         .service(get_resource_content)
         .service(get_like_status)  // 获取点赞状态（支持未登录用户）
-        .service(get_comments);    // 获取评论列表（公开）
+        .service(get_comments)     // 获取评论列表（公开）
+        .service(get_hot_resources); // 热门资源（公开）
 }
 
 /// 提交评分

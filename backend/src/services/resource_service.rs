@@ -829,4 +829,58 @@ impl ResourceService {
 
         Ok(content)
     }
+
+    /// 获取热门资源列表
+    /// 按浏览量降序排序（主要），下载量次之
+    /// 返回所有资源（包括待审核的），只要浏览量>0或按创建时间排序
+    pub async fn get_hot_resources(
+        pool: &PgPool,
+        limit: i32,
+    ) -> Result<Vec<crate::models::HotResourceItem>, ResourceError> {
+        let limit = limit.max(1).min(20);
+
+        log::debug!("获取热门资源，限制数量: {}", limit);
+
+        // 先尝试获取有浏览量的资源
+        let rows = sqlx::query(
+            r#"
+            SELECT 
+                r.id,
+                r.title,
+                r.course_name,
+                r.resource_type,
+                COALESCE(rs.downloads, 0) as downloads,
+                COALESCE(rs.views, 0) as views,
+                COALESCE(rs.likes, 0) as likes
+            FROM resources r
+            LEFT JOIN resource_stats rs ON r.id = rs.resource_id
+            ORDER BY COALESCE(rs.views, 0) DESC, COALESCE(rs.downloads, 0) DESC, r.created_at DESC
+            LIMIT $1
+            "#
+        )
+        .bind(limit as i64)
+        .fetch_all(pool)
+        .await
+        .map_err(|e| {
+            log::error!("获取热门资源查询失败: {}", e);
+            ResourceError::DatabaseError(e.to_string())
+        })?;
+
+        log::info!("获取到 {} 条热门资源", rows.len());
+
+        let mut resources = Vec::new();
+        for row in rows {
+            resources.push(crate::models::HotResourceItem {
+                id: row.try_get("id").map_err(|e| ResourceError::DatabaseError(e.to_string()))?,
+                title: row.try_get("title").map_err(|e| ResourceError::DatabaseError(e.to_string()))?,
+                course_name: row.try_get("course_name").ok(),
+                resource_type: row.try_get("resource_type").map_err(|e| ResourceError::DatabaseError(e.to_string()))?,
+                downloads: row.try_get::<i32, _>("downloads").unwrap_or(0),
+                views: row.try_get::<i32, _>("views").unwrap_or(0),
+                likes: row.try_get::<i32, _>("likes").unwrap_or(0),
+            });
+        }
+
+        Ok(resources)
+    }
 }

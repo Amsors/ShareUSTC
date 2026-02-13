@@ -253,3 +253,14 @@ export interface UpdateResourceContentResponse {
 export interface GetResourceRawContentResponse {
   content: string;
 }
+
+// 热门资源列表项
+export interface HotResourceItem {
+  id: string;
+  title: string;
+  courseName?: string;
+  resourceType: string;
+  downloads: number;
+  views: number;
+  likes: number;
+}

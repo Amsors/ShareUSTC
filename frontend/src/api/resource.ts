@@ -8,7 +8,8 @@ import type {
   UploadResourceResponse,
   UpdateResourceContentRequest,
   UpdateResourceContentResponse,
-  GetResourceRawContentResponse
+  GetResourceRawContentResponse,
+  HotResourceItem
 } from '../types/resource';
 
 /**
@@ -257,4 +258,17 @@ export const updateResourceContent = async (
     method: 'put',
     data
   }) as Promise<UpdateResourceContentResponse>;
+};
+
+/**
+ * 获取热门资源列表
+ * @param limit 返回数量限制（默认10，最大20）
+ * @returns 热门资源列表
+ */
+export const getHotResources = async (limit?: number): Promise<HotResourceItem[]> => {
+  return request({
+    url: '/resources/hot',
+    method: 'get',
+    params: { limit }
+  }) as Promise<HotResourceItem[]>;
 };
