@@ -38,7 +38,7 @@ impl UserService {
     /// 获取当前用户信息
     pub async fn get_current_user(pool: &PgPool, user_id: Uuid) -> Result<UserInfo, UserError> {
         let user: User = sqlx::query_as::<_, User>(
-            "SELECT id, username, password_hash, email, role, bio,
+            "SELECT id, sn, username, password_hash, email, role, bio,
                     CASE WHEN social_links = '{}'::jsonb THEN NULL ELSE social_links END as social_links,
                     CASE WHEN real_info = '{}'::jsonb THEN NULL ELSE real_info END as real_info,
                     is_verified, is_active, created_at, updated_at
@@ -57,7 +57,7 @@ impl UserService {
     pub async fn get_user_profile(pool: &PgPool, user_id: Uuid) -> Result<UserProfileResponse, UserError> {
         // 获取用户基本信息
         let user: User = sqlx::query_as::<_, User>(
-            "SELECT id, username, password_hash, email, role, bio,
+            "SELECT id, sn, username, password_hash, email, role, bio,
                     CASE WHEN social_links = '{}'::jsonb THEN NULL ELSE social_links END as social_links,
                     CASE WHEN real_info = '{}'::jsonb THEN NULL ELSE real_info END as real_info,
                     is_verified, is_active, created_at, updated_at
@@ -102,6 +102,7 @@ impl UserService {
 
         Ok(UserProfileResponse {
             id: user.id,
+            sn: user.sn,
             username: user.username,
             bio: user.bio,
             role: user.role,
@@ -171,7 +172,7 @@ impl UserService {
                 social_links = $4,
                 updated_at = NOW()
             WHERE id = $5 AND is_active = true
-            RETURNING id, username, password_hash, email, role, bio, social_links, real_info, is_verified, is_active, created_at, updated_at
+            RETURNING id, sn, username, password_hash, email, role, bio, social_links, real_info, is_verified, is_active, created_at, updated_at
             "#
         )
         .bind(username)
@@ -197,7 +198,7 @@ impl UserService {
     ) -> Result<UserInfo, UserError> {
         // 获取当前用户
         let user: User = sqlx::query_as::<_, User>(
-            "SELECT id, username, password_hash, email, role, bio,
+            "SELECT id, sn, username, password_hash, email, role, bio,
                     CASE WHEN social_links = '{}'::jsonb THEN NULL ELSE social_links END as social_links,
                     CASE WHEN real_info = '{}'::jsonb THEN NULL ELSE real_info END as real_info,
                     is_verified, is_active, created_at, updated_at
@@ -230,7 +231,7 @@ impl UserService {
                 real_info = $1,
                 updated_at = NOW()
             WHERE id = $2 AND is_active = true
-            RETURNING id, username, password_hash, email, role, bio, social_links, real_info, is_verified, is_active, created_at, updated_at
+            RETURNING id, sn, username, password_hash, email, role, bio, social_links, real_info, is_verified, is_active, created_at, updated_at
             "#
         )
         .bind(real_info)
@@ -253,7 +254,7 @@ impl UserService {
     ) -> Result<UserHomepageResponse, UserError> {
         // 获取用户基本信息
         let user: User = sqlx::query_as::<_, User>(
-            "SELECT id, username, password_hash, email, role, bio,
+            "SELECT id, sn, username, password_hash, email, role, bio,
                     CASE WHEN social_links = '{}'::jsonb THEN NULL ELSE social_links END as social_links,
                     CASE WHEN real_info = '{}'::jsonb THEN NULL ELSE real_info END as real_info,
                     is_verified, is_active, created_at, updated_at
@@ -354,6 +355,7 @@ impl UserService {
 
         Ok(UserHomepageResponse {
             id: user.id,
+            sn: user.sn,
             username: user.username,
             bio: user.bio,
             email: user.email,

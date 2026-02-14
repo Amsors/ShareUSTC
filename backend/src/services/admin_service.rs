@@ -43,6 +43,7 @@ pub struct DashboardStats {
 #[serde(rename_all = "camelCase")]
 pub struct AdminUserListItem {
     pub id: Uuid,
+    pub sn: Option<i64>,
     pub username: String,
     pub email: Option<String>,
     pub role: String,
@@ -263,6 +264,7 @@ impl AdminService {
             r#"
             SELECT
                 u.id,
+                u.sn,
                 u.username,
                 u.email,
                 u.role,

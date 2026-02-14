@@ -74,6 +74,7 @@
               </el-button>
             </template>
             <el-descriptions :column="2">
+              <el-descriptions-item label="用户编号">#{{ authStore.user?.sn ?? '-' }}</el-descriptions-item>
               <el-descriptions-item label="用户名">{{ authStore.user?.username ?? '未知用户' }}</el-descriptions-item>
               <el-descriptions-item label="邮箱">{{ authStore.user?.email || '未设置' }}</el-descriptions-item>
               <el-descriptions-item label="注册时间">{{ formatDate(authStore.user?.createdAt) || '-' }}</el-descriptions-item>
