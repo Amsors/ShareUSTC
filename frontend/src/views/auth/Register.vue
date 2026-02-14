@@ -182,7 +182,7 @@ const handleSubmit = async () => {
     }
   } catch (error) {
     // 验证失败，不执行注册
-    console.log('表单验证失败');
+    logger.debug('表单验证失败');
   }
 };
 </script>
