@@ -98,6 +98,12 @@ impl ResourceService {
             serde_json::to_value(tags).unwrap_or(serde_json::Value::Array(vec![]))
         });
 
+        // 开启事务
+        let mut tx = pool.begin().await.map_err(|e| {
+            log::error!("开启事务失败: {:?}", e);
+            ResourceError::DatabaseError(format!("开启事务失败: {}", e))
+        })?;
+
         // 插入资源记录
         log::debug!("准备插入资源记录: title={}, resource_type={}", request.title, resource_type.to_string());
         log::debug!("content_accuracy={:?}", ai_result.accuracy_score);
@@ -121,14 +127,14 @@ impl ResourceService {
         .bind(resource_type.to_string())
         .bind(request.category.to_string())
         .bind(tags_json)
-        .bind(file_path)
+        .bind(&file_path)
         .bind(None::<String>) // source_file_path 暂不处理源文件
-        .bind(file_hash)
+        .bind(&file_hash)
         .bind(file_size)
         .bind(ai_result.accuracy_score)
         .bind(audit_status.to_string())
-        .bind(if ai_result.passed { None } else { ai_result.reason })
-        .fetch_one(pool)
+        .bind(if ai_result.passed { None } else { ai_result.reason.as_deref() })
+        .fetch_one(&mut *tx)
         .await
         .map_err(|e| {
             log::error!("数据库插入失败: {:?}", e);
@@ -142,10 +148,21 @@ impl ResourceService {
             "INSERT INTO resource_stats (resource_id, views, downloads, likes, rating_count) VALUES ($1, 0, 0, 0, 0)"
         )
         .bind(resource_id)
-        .execute(pool)
+        .execute(&mut *tx)
         .await
         .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
 
+        // 提交事务
+        if let Err(e) = tx.commit().await {
+            log::error!("提交事务失败: {:?}", e);
+
+            // 事务提交失败时尝试清理已保存的文件，避免产生孤立文件
+            if let Err(cleanup_err) = FileService::delete_file(&resource.file_path).await {
+                log::error!("事务提交失败后清理文件出错: {:?}", cleanup_err);
+            }
+
+            return Err(ResourceError::DatabaseError(format!("提交事务失败: {}", e)));
+        }
         Ok(UploadResourceResponse {
             id: resource.id,
             title: resource.title,
@@ -759,9 +776,9 @@ impl ResourceService {
         // 更新文件内容
         FileService::write_resource_file(&resource.file_path, content.as_bytes()).await?;
 
-        // 计算新的文件哈希和大小
+        // 计算新的文件哈希和大小（使用字节长度而非字符长度）
         let file_hash = crate::services::FileService::calculate_hash(content.as_bytes());
-        let file_size = content.len() as i64;
+        let file_size = content.as_bytes().len() as i64;
 
         // 确定审核状态
         let audit_status = if ai_result.passed {

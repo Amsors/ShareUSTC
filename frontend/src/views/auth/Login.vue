@@ -85,20 +85,24 @@ const rules: FormRules = {
 const handleSubmit = async () => {
   if (!formRef.value) return;
 
-  await formRef.value.validate(async (valid) => {
-    if (valid) {
-      const success = await authStore.loginUser({
-        username: form.username,
-        password: form.password
-      });
+  try {
+    const valid = await formRef.value.validate();
+    if (!valid) return;
 
-      if (success) {
-        // 登录成功，跳转到首页或之前尝试访问的页面
-        const redirect = route.query.redirect as string;
-        router.push(redirect || '/');
-      }
+    const success = await authStore.loginUser({
+      username: form.username,
+      password: form.password
+    });
+
+    if (success) {
+      // 登录成功，跳转到首页或之前尝试访问的页面
+      const redirect = route.query.redirect as string;
+      router.push(redirect || '/');
     }
-  });
+  } catch (error) {
+    // 验证失败，不执行登录
+    console.log('表单验证失败');
+  }
 };
 </script>
 
