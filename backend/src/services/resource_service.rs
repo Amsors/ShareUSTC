@@ -153,10 +153,15 @@ impl ResourceService {
         .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
 
         // 提交事务
-        tx.commit().await.map_err(|e| {
+        if let Err(e) = tx.commit().await {
             log::error!("提交事务失败: {:?}", e);
-            ResourceError::DatabaseError(format!("提交事务失败: {}", e))
-        })?;
+            // 事务提交失败时尝试清理已保存的文件，避免产生孤立文件
+            if let Err(cleanup_err) = FileService::delete_file(&resource.file_path).await {
+                log::error!("事务提交失败后清理文件出错: {:?}", cleanup_err);
+            }
+
+            return Err(ResourceError::DatabaseError(format!("提交事务失败: {}", e)));
+        }
 
         Ok(UploadResourceResponse {
             id: resource.id,

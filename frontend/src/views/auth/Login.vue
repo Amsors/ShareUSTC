@@ -101,7 +101,7 @@ const handleSubmit = async () => {
     }
   } catch (error) {
     // 验证失败，不执行登录
-    console.log('表单验证失败');
+       console.log('表单验证失败');
   }
 };
 </script>
