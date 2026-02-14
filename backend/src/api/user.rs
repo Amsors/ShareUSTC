@@ -2,7 +2,7 @@ use actix_web::{get, put, post, web, HttpResponse, Responder};
 use crate::db::AppState;
 use crate::models::{CurrentUser, UpdateProfileRequest, VerificationRequest, AuthResponse, TokenResponse, UserRole, UserHomepageQuery};
 use crate::services::{UserError, UserService};
-use crate::utils::{generate_access_token, generate_refresh_token};
+use crate::utils::{generate_access_token, generate_refresh_token, bad_request, forbidden, not_found, internal_error};
 use uuid::Uuid;
 
 /// 获取当前用户信息
@@ -16,23 +16,14 @@ pub async fn get_current_user(
     match UserService::get_current_user(&state.pool, user.id).await {
         Ok(user_info) => {
             log::info!("[User] 获取当前用户信息成功 | user_id={}, username={}", user.id, user_info.username);
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": 200,
-                "message": "获取成功",
-                "data": user_info
-            }))
+            HttpResponse::Ok().json(user_info)
         }
         Err(e) => {
             log::warn!("[User] 获取当前用户信息失败 | user_id={}, error={}", user.id, e);
-            let (code, message) = match e {
-                UserError::UserNotFound(_) => (404, e.to_string()),
-                _ => (500, "获取用户信息失败".to_string()),
-            };
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": code,
-                "message": message,
-                "data": null
-            }))
+            match e {
+                UserError::UserNotFound(msg) => not_found(&msg),
+                _ => internal_error("获取用户信息失败"),
+            }
         }
     }
 }
@@ -50,11 +41,7 @@ pub async fn update_profile(
 
     // 未实名用户尝试修改个人简介时，返回错误
     if !is_verified && req.bio.is_some() {
-        return HttpResponse::Ok().json(serde_json::json!({
-            "code": 403,
-            "message": "实名认证后才可修改个人简介",
-            "data": null
-        }));
+        return forbidden("实名认证后才可修改个人简介");
     }
 
     log::info!("[User] 更新用户资料 | user_id={}", user.id);
@@ -62,25 +49,19 @@ pub async fn update_profile(
     match UserService::update_profile(&state.pool, user.id, req.into_inner(), is_verified).await {
         Ok(user_info) => {
             log::info!("[User] 用户资料更新成功 | user_id={}", user.id);
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": 200,
-                "message": "更新成功",
-                "data": user_info
-            }))
+            HttpResponse::Ok().json(user_info)
         }
         Err(e) => {
             log::warn!("[User] 更新用户资料失败 | user_id={}, error={}", user.id, e);
-            let (code, message) = match e {
-                UserError::UserNotFound(_) => (404, e.to_string()),
-                UserError::UserExists(_) => (409, e.to_string()),
-                UserError::ValidationError(_) => (400, e.to_string()),
-                _ => (500, "更新失败".to_string()),
-            };
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": code,
-                "message": message,
-                "data": null
-            }))
+            match e {
+                UserError::UserNotFound(msg) => not_found(&msg),
+                UserError::UserExists(msg) => HttpResponse::Conflict().json(serde_json::json!({
+                    "error": "Conflict",
+                    "message": msg
+                })),
+                UserError::ValidationError(msg) => bad_request(&msg),
+                _ => internal_error("更新失败"),
+            }
         }
     }
 }
@@ -94,11 +75,7 @@ pub async fn verify_user(
 ) -> impl Responder {
     // 检查是否已经完成实名认证（通过 is_verified 字段判断）
     if user.is_verified {
-        return HttpResponse::Ok().json(serde_json::json!({
-            "code": 400,
-            "message": "用户已完成实名认证",
-            "data": null
-        }));
+        return bad_request("用户已完成实名认证");
     }
 
     match UserService::verify_user(&state.pool, user.id, req.into_inner()).await {
@@ -120,11 +97,7 @@ pub async fn verify_user(
                 Ok(token) => token,
                 Err(e) => {
                     log::error!("[Auth] 生成访问令牌失败 | user_id={}, error={}", user_info.id, e);
-                    return HttpResponse::Ok().json(serde_json::json!({
-                        "code": 500,
-                        "message": "认证成功但生成令牌失败，请重新登录",
-                        "data": null
-                    }));
+                    return internal_error("认证成功但生成令牌失败，请重新登录");
                 }
             };
 
@@ -138,11 +111,7 @@ pub async fn verify_user(
                 Ok(token) => token,
                 Err(e) => {
                     log::error!("[Auth] 生成刷新令牌失败 | user_id={}, error={}", user_info.id, e);
-                    return HttpResponse::Ok().json(serde_json::json!({
-                        "code": 500,
-                        "message": "认证成功但生成令牌失败，请重新登录",
-                        "data": null
-                    }));
+                    return internal_error("认证成功但生成令牌失败，请重新登录");
                 }
             };
 
@@ -156,24 +125,15 @@ pub async fn verify_user(
                 },
             };
 
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": 200,
-                "message": "实名认证成功",
-                "data": auth_response
-            }))
+            HttpResponse::Ok().json(auth_response)
         }
         Err(e) => {
             log::warn!("[User] 实名认证失败 | user_id={}, error={}", user.id, e);
-            let (code, message) = match e {
-                UserError::UserNotFound(_) => (404, e.to_string()),
-                UserError::ValidationError(_) => (400, e.to_string()),
-                _ => (500, "认证失败".to_string()),
-            };
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": code,
-                "message": message,
-                "data": null
-            }))
+            match e {
+                UserError::UserNotFound(msg) => not_found(&msg),
+                UserError::ValidationError(msg) => bad_request(&msg),
+                _ => internal_error("认证失败"),
+            }
         }
     }
 }
@@ -187,22 +147,13 @@ pub async fn get_user_profile(
     let user_id = path.into_inner();
 
     match UserService::get_user_profile(&state.pool, user_id).await {
-        Ok(profile) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "获取成功",
-            "data": profile
-        })),
+        Ok(profile) => HttpResponse::Ok().json(profile),
         Err(e) => {
             log::warn!("[User] 获取用户资料失败 | user_id={}, error={}", user_id, e);
-            let (code, message) = match e {
-                UserError::UserNotFound(_) => (404, e.to_string()),
-                _ => (500, "获取用户资料失败".to_string()),
-            };
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": code,
-                "message": message,
-                "data": null
-            }))
+            match e {
+                UserError::UserNotFound(msg) => not_found(&msg),
+                _ => internal_error("获取用户资料失败"),
+            }
         }
     }
 }
@@ -218,22 +169,13 @@ pub async fn get_user_homepage(
     let user_id = path.into_inner();
 
     match UserService::get_user_homepage(&state.pool, user_id, &query.into_inner()).await {
-        Ok(homepage) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "获取成功",
-            "data": homepage
-        })),
+        Ok(homepage) => HttpResponse::Ok().json(homepage),
         Err(e) => {
             log::warn!("[User] 获取用户主页失败 | user_id={}, error={}", user_id, e);
-            let (code, message) = match e {
-                UserError::UserNotFound(_) => (404, e.to_string()),
-                _ => (500, "获取用户主页失败".to_string()),
-            };
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": code,
-                "message": message,
-                "data": null
-            }))
+            match e {
+                UserError::UserNotFound(msg) => not_found(&msg),
+                _ => internal_error("获取用户主页失败"),
+            }
         }
     }
 }

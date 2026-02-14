@@ -99,16 +99,22 @@ impl ResourceService {
         });
 
         // 开启事务
-        let mut tx = pool.begin().await.map_err(|e| {
-            log::error!("开启事务失败: {:?}", e);
-            ResourceError::DatabaseError(format!("开启事务失败: {}", e))
-        })?;
+        let mut tx = match pool.begin().await {
+            Ok(t) => t,
+            Err(e) => {
+                log::error!("[Resource] 开启事务失败 | resource_id={}, error={}", resource_id, e);
+                // 开启事务失败时清理已保存的文件
+                if let Err(cleanup_err) = FileService::delete_resource_file(&file_path).await {
+                    log::error!("[Resource] 开启事务失败后清理文件出错 | path={}, error={}", file_path, cleanup_err);
+                }
+                return Err(ResourceError::DatabaseError(format!("开启事务失败: {}", e)));
+            }
+        };
 
         // 插入资源记录
-        log::debug!("准备插入资源记录: title={}, resource_type={}", request.title, resource_type.to_string());
-        log::debug!("content_accuracy={:?}", ai_result.accuracy_score);
+        log::debug!("[Resource] 准备插入资源记录 | title={}, resource_type={}", request.title, resource_type.to_string());
 
-        let resource: Resource = sqlx::query_as::<_, Resource>(
+        let resource: Resource = match sqlx::query_as::<_, Resource>(
             r#"
             INSERT INTO resources (
                 id, title, author_id, uploader_id, course_name,
@@ -135,30 +141,45 @@ impl ResourceService {
         .bind(audit_status.to_string())
         .bind(if ai_result.passed { None } else { ai_result.reason.as_deref() })
         .fetch_one(&mut *tx)
-        .await
-        .map_err(|e| {
-            log::error!("数据库插入失败: {:?}", e);
-            ResourceError::DatabaseError(format!("插入资源失败: {}", e))
-        })?;
+        .await {
+            Ok(r) => r,
+            Err(e) => {
+                log::error!("[Resource] 数据库插入失败 | resource_id={}, error={}", resource_id, e);
+                // 数据库插入失败时清理已保存的文件
+                if let Err(cleanup_err) = FileService::delete_resource_file(&file_path).await {
+                    log::error!("[Resource] 数据库插入失败后清理文件出错 | path={}, error={}", file_path, cleanup_err);
+                }
+                return Err(ResourceError::DatabaseError(format!("插入资源失败: {}", e)));
+            }
+        };
 
-        log::debug!("资源记录插入成功: id={}", resource.id);
+        log::debug!("[Resource] 资源记录插入成功 | resource_id={}", resource.id);
 
         // 创建资源统计记录
-        sqlx::query(
+        if let Err(e) = sqlx::query(
             "INSERT INTO resource_stats (resource_id, views, downloads, likes, rating_count) VALUES ($1, 0, 0, 0, 0)"
         )
         .bind(resource_id)
         .execute(&mut *tx)
-        .await
-        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+        .await {
+            log::error!("[Resource] 创建统计记录失败 | resource_id={}, error={}", resource_id, e);
+            // 统计记录创建失败时，回滚事务并清理文件
+            if let Err(rollback_err) = tx.rollback().await {
+                log::error!("[Resource] 回滚事务失败 | error={}", rollback_err);
+            }
+            if let Err(cleanup_err) = FileService::delete_resource_file(&file_path).await {
+                log::error!("[Resource] 创建统计记录失败后清理文件出错 | path={}, error={}", file_path, cleanup_err);
+            }
+            return Err(ResourceError::DatabaseError(format!("创建统计记录失败: {}", e)));
+        }
 
         // 提交事务
         if let Err(e) = tx.commit().await {
-            log::error!("提交事务失败: {:?}", e);
+            log::error!("[Resource] 提交事务失败 | resource_id={}, error={}", resource_id, e);
 
             // 事务提交失败时尝试清理已保存的文件，避免产生孤立文件
-            if let Err(cleanup_err) = FileService::delete_file(&resource.file_path).await {
-                log::error!("事务提交失败后清理文件出错: {:?}", cleanup_err);
+            if let Err(cleanup_err) = FileService::delete_resource_file(&file_path).await {
+                log::error!("[Resource] 事务提交失败后清理文件出错 | path={}, error={}", file_path, cleanup_err);
             }
 
             return Err(ResourceError::DatabaseError(format!("提交事务失败: {}", e)));
@@ -496,11 +517,16 @@ impl ResourceService {
         }
 
         // 删除文件
-        FileService::delete_resource_file(&resource.file_path).await.ok();
+        if let Err(e) = FileService::delete_resource_file(&resource.file_path).await {
+            log::warn!("[Resource] 删除资源文件失败 | resource_id={}, path={}, error={}", resource_id, resource.file_path, e);
+            // 继续执行，即使文件删除失败也要删除数据库记录
+        }
 
         // 删除源文件（如果存在）
         if let Some(source_path) = &resource.source_file_path {
-            FileService::delete_resource_file(source_path).await.ok();
+            if let Err(e) = FileService::delete_resource_file(source_path).await {
+                log::warn!("[Resource] 删除源文件失败 | resource_id={}, path={}, error={}", resource_id, source_path, e);
+            }
         }
 
         // 保存资源标题用于返回

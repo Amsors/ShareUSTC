@@ -54,15 +54,8 @@ request.interceptors.response.use(
   (response: AxiosResponse) => {
     logger.debug('[API]', `Response ${response.config.url}`, response.data);
 
-    const { code, message, data } = response.data;
-
-    // 如果 code 不是 200，视为错误
-    if (code !== 200) {
-      ElMessage.error(message || '请求失败');
-      return Promise.reject(new ApiError(message || '请求失败', true));
-    }
-
-    return data;
+    // 直接返回响应数据（后端不再包装 {code, message, data}）
+    return response.data;
   },
   async (error: AxiosError) => {
     logger.error('[API]', 'Response Error', error);
@@ -74,6 +67,9 @@ request.interceptors.response.use(
       const message = data?.message || '请求失败';
 
       switch (status) {
+        case 400:
+          ElMessage.error(message);
+          break;
         case 401:
           // Token 过期，尝试刷新
           const authStore = useAuthStore();
@@ -103,6 +99,12 @@ request.interceptors.response.use(
         case 404:
           ElMessage.error('请求的资源不存在');
           break;
+        case 409:
+          ElMessage.error(message); // 如"用户名已存在"
+          break;
+        case 422:
+          ElMessage.error(message);
+          break;
         case 500:
           ElMessage.error('服务器错误');
           break;
@@ -110,7 +112,7 @@ request.interceptors.response.use(
           ElMessage.error(message);
       }
 
-      return Promise.reject(new ApiError(message, true));
+      return Promise.reject(error);
     } else {
       ElMessage.error('网络错误，请检查网络连接');
       return Promise.reject(new ApiError('网络错误', true));

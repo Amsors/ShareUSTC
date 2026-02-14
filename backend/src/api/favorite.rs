@@ -5,7 +5,8 @@ use crate::db::AppState;
 use crate::models::{
     AddToFavoriteRequest, CreateFavoriteRequest, CurrentUser, UpdateFavoriteRequest,
 };
-use crate::services::FavoriteService;
+use crate::services::{FavoriteService, ResourceError};
+use crate::utils::{bad_request, forbidden, not_found, internal_error};
 
 /// 对文件名进行 RFC 5987 编码，用于支持中文等非 ASCII 字符
 /// 参考: https://datatracker.ietf.org/doc/html/rfc5987
@@ -63,24 +64,16 @@ pub async fn create_favorite(
     match FavoriteService::create_favorite(&state.pool, user.id, request.into_inner()).await {
         Ok(response) => {
             log::info!("[Favorite] 收藏夹创建成功 | favorite_id={}, user_id={}", response.id, user.id);
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": 200,
-                "message": "创建成功",
-                "data": response
-            }))
+            HttpResponse::Created().json(response)
         }
         Err(e) => {
             log::warn!("[Favorite] 创建收藏夹失败 | user_id={}, error={}", user.id, e);
-            let (code, message) = match e {
-                crate::services::ResourceError::ValidationError(msg) => (400, msg),
-                crate::services::ResourceError::NotFound(msg) => (404, msg),
-                _ => (500, "创建失败".to_string()),
-            };
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": code,
-                "message": message,
-                "data": null
-            }))
+            match e {
+                ResourceError::ValidationError(msg) => bad_request(&msg),
+                ResourceError::NotFound(msg) => not_found(&msg),
+                ResourceError::Unauthorized(msg) => forbidden(&msg),
+                _ => internal_error("创建失败"),
+            }
         }
     }
 }
@@ -94,18 +87,10 @@ pub async fn get_my_favorites(
     log::debug!("[Favorite] 获取收藏夹列表 | user_id={}", user.id);
 
     match FavoriteService::get_user_favorites(&state.pool, user.id).await {
-        Ok(response) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "success",
-            "data": response
-        })),
+        Ok(response) => HttpResponse::Ok().json(response),
         Err(e) => {
             log::warn!("[Favorite] 获取收藏夹列表失败 | user_id={}, error={}", user.id, e);
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": 500,
-                "message": "获取收藏夹列表失败",
-                "data": null
-            }))
+            internal_error("获取收藏夹列表失败")
         }
     }
 }
@@ -122,23 +107,15 @@ pub async fn get_favorite_detail(
     log::debug!("[Favorite] 获取收藏夹详情 | favorite_id={}, user_id={}", favorite_id, user.id);
 
     match FavoriteService::get_favorite_detail(&state.pool, favorite_id, user.id).await {
-        Ok(response) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "success",
-            "data": response
-        })),
+        Ok(response) => HttpResponse::Ok().json(response),
         Err(e) => {
             log::warn!("[Favorite] 获取收藏夹详情失败 | favorite_id={}, user_id={}, error={}",
                 favorite_id, user.id, e);
-            let (code, message) = match e {
-                crate::services::ResourceError::NotFound(msg) => (404, msg),
-                _ => (500, "获取收藏夹详情失败".to_string()),
-            };
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": code,
-                "message": message,
-                "data": null
-            }))
+            match e {
+                ResourceError::NotFound(msg) => not_found(&msg),
+                ResourceError::Unauthorized(msg) => forbidden(&msg),
+                _ => internal_error("获取收藏夹详情失败"),
+            }
         }
     }
 }
@@ -158,25 +135,17 @@ pub async fn update_favorite(
     match FavoriteService::update_favorite(&state.pool, favorite_id, user.id, request.into_inner()).await {
         Ok(_) => {
             log::info!("[Favorite] 收藏夹更新成功 | favorite_id={}, user_id={}", favorite_id, user.id);
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": 200,
-                "message": "更新成功",
-                "data": null
-            }))
+            HttpResponse::NoContent().finish()
         }
         Err(e) => {
             log::warn!("[Favorite] 收藏夹更新失败 | favorite_id={}, user_id={}, error={}",
                 favorite_id, user.id, e);
-            let (code, message) = match e {
-                crate::services::ResourceError::ValidationError(msg) => (400, msg),
-                crate::services::ResourceError::NotFound(msg) => (404, msg),
-                _ => (500, "更新失败".to_string()),
-            };
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": code,
-                "message": message,
-                "data": null
-            }))
+            match e {
+                ResourceError::ValidationError(msg) => bad_request(&msg),
+                ResourceError::NotFound(msg) => not_found(&msg),
+                ResourceError::Unauthorized(msg) => forbidden(&msg),
+                _ => internal_error("更新失败"),
+            }
         }
     }
 }
@@ -195,24 +164,16 @@ pub async fn delete_favorite(
     match FavoriteService::delete_favorite(&state.pool, favorite_id, user.id).await {
         Ok(_) => {
             log::info!("[Favorite] 收藏夹删除成功 | favorite_id={}, user_id={}", favorite_id, user.id);
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": 200,
-                "message": "删除成功",
-                "data": null
-            }))
+            HttpResponse::NoContent().finish()
         }
         Err(e) => {
             log::warn!("[Favorite] 收藏夹删除失败 | favorite_id={}, user_id={}, error={}",
                 favorite_id, user.id, e);
-            let (code, message) = match e {
-                crate::services::ResourceError::NotFound(msg) => (404, msg),
-                _ => (500, "删除失败".to_string()),
-            };
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": code,
-                "message": message,
-                "data": null
-            }))
+            match e {
+                ResourceError::NotFound(msg) => not_found(&msg),
+                ResourceError::Unauthorized(msg) => forbidden(&msg),
+                _ => internal_error("删除失败"),
+            }
         }
     }
 }
@@ -234,25 +195,17 @@ pub async fn add_resource_to_favorite(
         Ok(_) => {
             log::info!("[Favorite] 资源添加到收藏夹成功 | favorite_id={}, user_id={}",
                 favorite_id, user.id);
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": 200,
-                "message": "添加成功",
-                "data": null
-            }))
+            HttpResponse::Created().finish()
         }
         Err(e) => {
             log::warn!("[Favorite] 添加资源到收藏夹失败 | favorite_id={}, user_id={}, error={}",
                 favorite_id, user.id, e);
-            let (code, message) = match e {
-                crate::services::ResourceError::ValidationError(msg) => (400, msg),
-                crate::services::ResourceError::NotFound(msg) => (404, msg),
-                _ => (500, "添加失败".to_string()),
-            };
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": code,
-                "message": message,
-                "data": null
-            }))
+            match e {
+                ResourceError::ValidationError(msg) => bad_request(&msg),
+                ResourceError::NotFound(msg) => not_found(&msg),
+                ResourceError::Unauthorized(msg) => forbidden(&msg),
+                _ => internal_error("添加失败"),
+            }
         }
     }
 }
@@ -272,24 +225,16 @@ pub async fn remove_resource_from_favorite(
         Ok(_) => {
             log::info!("[Favorite] 资源从收藏夹移除成功 | favorite_id={}, resource_id={}, user_id={}",
                 favorite_id, resource_id, user.id);
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": 200,
-                "message": "移除成功",
-                "data": null
-            }))
+            HttpResponse::NoContent().finish()
         }
         Err(e) => {
             log::warn!("[Favorite] 从收藏夹移除资源失败 | favorite_id={}, resource_id={}, user_id={}, error={}",
                 favorite_id, resource_id, user.id, e);
-            let (code, message) = match e {
-                crate::services::ResourceError::NotFound(msg) => (404, msg),
-                _ => (500, "移除失败".to_string()),
-            };
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": code,
-                "message": message,
-                "data": null
-            }))
+            match e {
+                ResourceError::NotFound(msg) => not_found(&msg),
+                ResourceError::Unauthorized(msg) => forbidden(&msg),
+                _ => internal_error("移除失败"),
+            }
         }
     }
 }
@@ -304,21 +249,12 @@ pub async fn check_resource_in_favorite(
     let resource_id = path.into_inner();
 
     match FavoriteService::check_resource_in_favorites(&state.pool, user.id, resource_id).await {
-        Ok(response) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "success",
-            "data": response
-        })),
+        Ok(response) => HttpResponse::Ok().json(response),
         Err(e) => {
-            let (code, message) = match e {
-                crate::services::ResourceError::NotFound(msg) => (404, msg),
-                _ => (500, "检查失败".to_string()),
-            };
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": code,
-                "message": message,
-                "data": null
-            }))
+            match e {
+                ResourceError::NotFound(msg) => not_found(&msg),
+                _ => internal_error("检查失败"),
+            }
         }
     }
 }
@@ -337,18 +273,9 @@ pub async fn download_favorite(
         Ok(detail) => detail.name,
         Err(e) => {
             return match e {
-                crate::services::ResourceError::NotFound(msg) => {
-                    HttpResponse::Ok().json(serde_json::json!({
-                        "code": 404,
-                        "message": msg,
-                        "data": null
-                    }))
-                }
-                _ => HttpResponse::Ok().json(serde_json::json!({
-                    "code": 500,
-                    "message": "获取收藏夹信息失败".to_string(),
-                    "data": null
-                }))
+                ResourceError::NotFound(msg) => not_found(&msg),
+                ResourceError::Unauthorized(msg) => forbidden(&msg),
+                _ => internal_error("获取收藏夹信息失败"),
             };
         }
     };
@@ -366,32 +293,11 @@ pub async fn download_favorite(
         }
         Err(e) => {
             match e {
-                crate::services::ResourceError::ValidationError(msg) => {
-                    HttpResponse::Ok().json(serde_json::json!({
-                        "code": 400,
-                        "message": msg,
-                        "data": null
-                    }))
-                }
-                crate::services::ResourceError::NotFound(msg) => {
-                    HttpResponse::Ok().json(serde_json::json!({
-                        "code": 404,
-                        "message": msg,
-                        "data": null
-                    }))
-                }
-                crate::services::ResourceError::FileError(msg) => {
-                    HttpResponse::Ok().json(serde_json::json!({
-                        "code": 500,
-                        "message": msg,
-                        "data": null
-                    }))
-                }
-                _ => HttpResponse::Ok().json(serde_json::json!({
-                    "code": 500,
-                    "message": "打包下载失败".to_string(),
-                    "data": null
-                }))
+                ResourceError::ValidationError(msg) => bad_request(&msg),
+                ResourceError::NotFound(msg) => not_found(&msg),
+                ResourceError::Unauthorized(msg) => forbidden(&msg),
+                ResourceError::FileError(msg) => internal_error(&msg),
+                _ => internal_error("打包下载失败"),
             }
         }
     }

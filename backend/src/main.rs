@@ -14,6 +14,7 @@ mod db;
 use config::Config;
 use db::AppState;
 use middleware::{JwtAuth, PublicPathRule};
+use crate::utils::{not_found, internal_error};
 
 #[derive(Serialize)]
 struct HelloResponse {
@@ -72,21 +73,13 @@ async fn serve_image(
                 }
                 Err(e) => {
                     log::warn!("[Image] 读取图片文件失败 | image_id={}, path={}, error={}", image_id, file_path, e);
-                    HttpResponse::Ok().json(serde_json::json!({
-                        "code": 404,
-                        "message": "图片文件不存在",
-                        "data": null
-                    }))
+                    not_found("图片文件不存在")
                 }
             }
         }
         Err(e) => {
             log::warn!("[Image] 获取图片路径失败 | image_id={}, error={}", image_id, e);
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": 404,
-                "message": "图片不存在",
-                "data": null
-            }))
+            not_found("图片不存在")
         }
     }
 }

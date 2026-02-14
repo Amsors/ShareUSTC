@@ -3,7 +3,8 @@ use uuid::Uuid;
 
 use crate::db::AppState;
 use crate::models::{CurrentUser, UserRole};
-use crate::services::CommentService;
+use crate::services::{CommentService, ResourceError};
+use crate::utils::{forbidden, not_found, internal_error};
 
 /// 删除评论
 #[delete("/comments/{comment_id}")]
@@ -16,27 +17,12 @@ pub async fn delete_comment(
     let is_admin = user.role == UserRole::Admin;
 
     match CommentService::delete_comment(&state.pool, comment_id, user.id, is_admin).await {
-        Ok(true) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "删除成功",
-            "data": null
-        })),
-        Ok(false) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 403,
-            "message": "无权删除该评论",
-            "data": null
-        })),
+        Ok(true) => HttpResponse::NoContent().finish(),
+        Ok(false) => forbidden("无权删除该评论"),
+        Err(ResourceError::NotFound(msg)) => not_found(&msg),
         Err(e) => {
             log::warn!("删除评论失败: {}", e);
-            let message = match e {
-                crate::services::ResourceError::NotFound(msg) => msg,
-                _ => "删除失败".to_string(),
-            };
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": 500,
-                "message": message,
-                "data": null
-            }))
+            internal_error("删除失败")
         }
     }
 }

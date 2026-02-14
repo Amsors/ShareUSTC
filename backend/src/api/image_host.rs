@@ -6,6 +6,7 @@ use uuid::Uuid;
 use crate::db::AppState;
 use crate::models::CurrentUser;
 use crate::services::{ImageError, ImageService};
+use crate::utils::{bad_request, created, forbidden, internal_error, no_content, not_found};
 
 /// 上传图片
 #[post("/images/upload")]
@@ -22,11 +23,7 @@ pub async fn upload_image(
             Ok(field) => field,
             Err(e) => {
                 log::warn!("解析上传数据失败: {}", e);
-                return HttpResponse::Ok().json(serde_json::json!({
-                    "code": 400,
-                    "message": "解析上传数据失败",
-                    "data": null
-                }));
+                return bad_request("解析上传数据失败");
             }
         };
 
@@ -52,11 +49,7 @@ pub async fn upload_image(
                     Ok(bytes) => data.extend_from_slice(&bytes),
                     Err(e) => {
                         log::warn!("读取文件数据失败: {}", e);
-                        return HttpResponse::Ok().json(serde_json::json!({
-                            "code": 400,
-                            "message": "读取文件数据失败",
-                            "data": null
-                        }));
+                        return bad_request("读取文件数据失败");
                     }
                 }
             }
@@ -69,11 +62,7 @@ pub async fn upload_image(
     let (filename, data, mime_type) = match file_data {
         Some(data) => data,
         None => {
-            return HttpResponse::Ok().json(serde_json::json!({
-                "code": 400,
-                "message": "请选择要上传的图片",
-                "data": null
-            }));
+            return bad_request("请选择要上传的图片");
         }
     };
 
@@ -87,24 +76,15 @@ pub async fn upload_image(
     )
     .await
     {
-        Ok(response) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "上传成功",
-            "data": response
-        })),
+        Ok(response) => created(response),
         Err(e) => {
             log::warn!("上传图片失败: {}", e);
-            let (code, message) = match e {
-                ImageError::ValidationError(msg) => (400, msg),
-                ImageError::FileError(msg) => (500, msg),
-                ImageError::DatabaseError(msg) => (500, msg),
-                _ => (500, "上传失败".to_string()),
-            };
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": code,
-                "message": message,
-                "data": null
-            }))
+            match e {
+                ImageError::ValidationError(msg) => bad_request(&msg),
+                ImageError::FileError(msg) => internal_error(&msg),
+                ImageError::DatabaseError(msg) => internal_error(&msg),
+                _ => internal_error("上传失败"),
+            }
         }
     }
 }
@@ -120,18 +100,10 @@ pub async fn get_my_images(
     let per_page = query.per_page.unwrap_or(20).min(100);
 
     match ImageService::get_user_images(&state.pool, user.id, page, per_page).await {
-        Ok(response) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "获取成功",
-            "data": response
-        })),
+        Ok(response) => HttpResponse::Ok().json(response),
         Err(e) => {
             log::warn!("获取图片列表失败: {}", e);
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": 500,
-                "message": "获取图片列表失败",
-                "data": null
-            }))
+            internal_error("获取图片列表失败")
         }
     }
 }
@@ -145,22 +117,13 @@ pub async fn get_image_info(
     let image_id = path.into_inner();
 
     match ImageService::get_image_by_id(&state.pool, image_id).await {
-        Ok(response) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "获取成功",
-            "data": response
-        })),
+        Ok(response) => HttpResponse::Ok().json(response),
         Err(e) => {
             log::warn!("获取图片信息失败: {}", e);
-            let (code, message) = match e {
-                ImageError::NotFound(msg) => (404, msg),
-                _ => (500, "获取图片信息失败".to_string()),
-            };
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": code,
-                "message": message,
-                "data": null
-            }))
+            match e {
+                ImageError::NotFound(msg) => not_found(&msg),
+                _ => internal_error("获取图片信息失败"),
+            }
         }
     }
 }
@@ -175,23 +138,14 @@ pub async fn delete_image(
     let image_id = path.into_inner();
 
     match ImageService::delete_image(&state.pool, &user, image_id).await {
-        Ok(_) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "删除成功",
-            "data": null
-        })),
+        Ok(_) => no_content(),
         Err(e) => {
             log::warn!("删除图片失败: {}", e);
-            let (code, message) = match e {
-                ImageError::NotFound(msg) => (404, msg),
-                ImageError::Unauthorized(msg) => (403, msg),
-                _ => (500, "删除失败".to_string()),
-            };
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": code,
-                "message": message,
-                "data": null
-            }))
+            match e {
+                ImageError::NotFound(msg) => not_found(&msg),
+                ImageError::Unauthorized(msg) => forbidden(&msg),
+                _ => internal_error("删除失败"),
+            }
         }
     }
 }

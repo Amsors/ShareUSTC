@@ -25,6 +25,19 @@ impl CommentService {
             return Err(ResourceError::ValidationError("评论内容不能超过1000字".to_string()));
         }
 
+        // 验证资源是否存在
+        let resource_exists: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM resources WHERE id = $1)"
+        )
+        .bind(resource_id)
+        .fetch_one(pool)
+        .await
+        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+
+        if !resource_exists {
+            return Err(ResourceError::NotFound(format!("资源 {} 不存在", resource_id)));
+        }
+
         log::debug!("[CommentService] 开始创建评论: resource_id={}, user_id={}, content={}", resource_id, user_id, content);
 
         // 直接插入不使用事务（简化排查）

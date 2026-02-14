@@ -94,7 +94,7 @@
 
         <!-- 页脚 -->
         <div class="home-footer">
-          <p>© 2024 ShareUSTC · 中国科学技术大学学习资源分享平台</p>
+          <p>© 2024 ShareUSTC · 学习资源分享平台</p>
           <el-link type="primary" @click="$router.push('/about')">关于我们</el-link>
         </div>
       </main>

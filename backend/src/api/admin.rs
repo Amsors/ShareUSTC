@@ -7,6 +7,7 @@ use crate::services::{
     AdminService, AdminError, AuditResourceRequest, UpdateUserStatusRequest,
     AuditLogQuery,
 };
+use crate::utils::{bad_request, forbidden, not_found, internal_error, no_content};
 
 /// 检查用户是否是管理员
 fn check_admin(current_user: &CurrentUser) -> Result<(), AdminError> {
@@ -16,24 +17,18 @@ fn check_admin(current_user: &CurrentUser) -> Result<(), AdminError> {
     Ok(())
 }
 
-/// 将AdminError转换为统一格式的HttpResponse
-/// 统一返回 HTTP 200，业务错误码通过 JSON 中的 code 字段传递
+/// 将AdminError转换为HttpResponse
+/// 使用正确的 HTTP 状态码
 fn handle_admin_error(err: AdminError) -> HttpResponse {
-    let (code, message) = match err {
-        AdminError::NotFound(msg) => (404, msg),
-        AdminError::ValidationError(msg) => (400, msg),
-        AdminError::Forbidden(msg) => (403, msg),
+    match err {
+        AdminError::NotFound(msg) => not_found(&msg),
+        AdminError::ValidationError(msg) => bad_request(&msg),
+        AdminError::Forbidden(msg) => forbidden(&msg),
         AdminError::DatabaseError(msg) => {
             log::error!("[Admin] 数据库错误 | error={}", msg);
-            (500, "服务器内部错误".to_string())
+            internal_error("服务器内部错误")
         }
-    };
-
-    HttpResponse::Ok().json(serde_json::json!({
-        "code": code,
-        "message": message,
-        "data": null
-    }))
+    }
 }
 
 /// 获取仪表盘统计数据
@@ -50,11 +45,7 @@ async fn get_dashboard(
     }
 
     match AdminService::get_dashboard_stats(&data.pool).await {
-        Ok(stats) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "success",
-            "data": stats
-        })),
+        Ok(stats) => HttpResponse::Ok().json(stats),
         Err(e) => handle_admin_error(e),
     }
 }
@@ -83,11 +74,7 @@ async fn get_user_list(
         .unwrap_or(20);
 
     match AdminService::get_user_list(&data.pool, page, per_page).await {
-        Ok(response) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "success",
-            "data": response
-        })),
+        Ok(response) => HttpResponse::Ok().json(response),
         Err(e) => handle_admin_error(e),
     }
 }
@@ -113,11 +100,7 @@ async fn update_user_status(
     // 禁止禁用自己
     if user_id == user.id {
         log::warn!("[Admin] 管理员尝试禁用自己 | admin_id={}", user.id);
-        return HttpResponse::Ok().json(serde_json::json!({
-            "code": 400,
-            "message": "不能禁用自己的账号",
-            "data": null
-        }));
+        return bad_request("不能禁用自己的账号");
     }
 
     match AdminService::update_user_status(&data.pool, user_id, req.is_active
@@ -125,9 +108,7 @@ async fn update_user_status(
         Ok(_) => {
             log::info!("[Admin] 用户状态更新成功 | admin_id={}, target_user_id={}", user.id, user_id);
             HttpResponse::Ok().json(serde_json::json!({
-                "code": 200,
-                "message": "用户状态已更新",
-                "data": null
+                "message": "用户状态已更新"
             }))
         }
         Err(e) => handle_admin_error(e),
@@ -159,11 +140,7 @@ async fn get_pending_resources(
 
     match AdminService::get_pending_resources(&data.pool, page, per_page
     ).await {
-        Ok(response) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "success",
-            "data": response
-        })),
+        Ok(response) => HttpResponse::Ok().json(response),
         Err(e) => handle_admin_error(e),
     }
 }
@@ -195,9 +172,7 @@ async fn audit_resource(
         Ok(_) => {
             log::info!("[Admin] 资源审核完成 | admin_id={}, resource_id={}", user.id, resource_id);
             HttpResponse::Ok().json(serde_json::json!({
-                "code": 200,
-                "message": "资源审核完成",
-                "data": null
+                "message": "资源审核完成"
             }))
         }
         Err(e) => handle_admin_error(e),
@@ -231,11 +206,7 @@ async fn get_comment_list(
     match AdminService::get_comment_list(
         &data.pool, page, per_page, audit_status
     ).await {
-        Ok(response) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "success",
-            "data": response
-        })),
+        Ok(response) => HttpResponse::Ok().json(response),
         Err(e) => handle_admin_error(e),
     }
 }
@@ -259,11 +230,7 @@ async fn delete_comment(
     match AdminService::delete_comment(&data.pool, comment_id).await {
         Ok(_) => {
             log::info!("[Admin] 评论删除成功 | admin_id={}, comment_id={}", user.id, comment_id);
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": 200,
-                "message": "评论已删除",
-                "data": null
-            }))
+            no_content()
         }
         Err(e) => handle_admin_error(e),
     }
@@ -294,9 +261,7 @@ async fn audit_comment(
         Ok(_) => {
             log::info!("[Admin] 评论审核完成 | admin_id={}, comment_id={}", user.id, comment_id);
             HttpResponse::Ok().json(serde_json::json!({
-                "code": 200,
-                "message": "评论审核完成",
-                "data": null
+                "message": "评论审核完成"
             }))
         }
         Err(e) => handle_admin_error(e),
@@ -320,10 +285,8 @@ async fn send_notification(
     match AdminService::send_notification(&data.pool, req.into_inner()).await {
         Ok(_) => {
             log::info!("[Admin] 系统通知发送成功 | admin_id={}", user.id);
-            HttpResponse::Ok().json(serde_json::json!({
-                "code": 200,
-                "message": "通知发送成功",
-                "data": null
+            HttpResponse::Created().json(serde_json::json!({
+                "message": "通知发送成功"
             }))
         }
         Err(e) => handle_admin_error(e),
@@ -344,11 +307,7 @@ async fn get_detailed_stats(
     }
 
     match AdminService::get_detailed_stats(&data.pool).await {
-        Ok(stats) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "success",
-            "data": stats
-        })),
+        Ok(stats) => HttpResponse::Ok().json(stats),
         Err(e) => handle_admin_error(e),
     }
 }
@@ -377,11 +336,7 @@ async fn get_audit_logs(
     };
 
     match AdminService::get_audit_logs(&data.pool, query_params).await {
-        Ok(response) => HttpResponse::Ok().json(serde_json::json!({
-            "code": 200,
-            "message": "success",
-            "data": response
-        })),
+        Ok(response) => HttpResponse::Ok().json(response),
         Err(e) => handle_admin_error(e),
     }
 }

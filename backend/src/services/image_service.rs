@@ -86,13 +86,17 @@ impl ImageService {
                 .map_err(|e| ImageError::FileError(format!("创建目录失败: {}", e)))?;
         }
 
+        // 先保存文件到临时路径，等数据库插入成功后再确认
         tokio::fs::write(&file_path, &file_data)
             .await
             .map_err(|e| ImageError::FileError(format!("保存文件失败: {}", e)))?;
 
         let file_size = file_data.len() as i32;
 
-        let image: Image = sqlx::query_as::<_, Image>(
+        // 将文件路径转换为字符串（用于错误处理中的清理）
+        let file_path_str = file_path.to_string_lossy().to_string();
+
+        let image: Image = match sqlx::query_as::<_, Image>(
             r#"
             INSERT INTO images (id, uploader_id, file_path, original_name, file_size, mime_type)
             VALUES ($1, $2, $3, $4, $5, $6)
@@ -101,13 +105,22 @@ impl ImageService {
         )
         .bind(image_id)
         .bind(user.id)
-        .bind(file_path.to_string_lossy().to_string())
+        .bind(&file_path_str)
         .bind(file_name)
         .bind(file_size)
         .bind(detected_mime)
         .fetch_one(pool)
-        .await
-        .map_err(|e| ImageError::DatabaseError(e.to_string()))?;
+        .await {
+            Ok(img) => img,
+            Err(e) => {
+                // 数据库插入失败时清理已保存的文件
+                log::warn!("[Image] 数据库插入失败，清理文件 | image_id={}, path={}, error={}", image_id, file_path_str, e);
+                if let Err(cleanup_err) = tokio::fs::remove_file(&file_path).await {
+                    log::error!("[Image] 清理文件失败 | path={}, error={}", file_path_str, cleanup_err);
+                }
+                return Err(ImageError::DatabaseError(e.to_string()));
+            }
+        };
 
         let base_url = std::env::var("IMAGE_BASE_URL")
             .unwrap_or_else(|_| "http://localhost:8080".to_string());
