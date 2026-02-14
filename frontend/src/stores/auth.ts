@@ -16,6 +16,36 @@ const TOKEN_KEY = 'access_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
 const USER_KEY = 'user';
 
+// 安全的 localStorage 操作函数
+const safeStorage = {
+  setItem(key: string, value: string): boolean {
+    try {
+      localStorage.setItem(key, value);
+      return true;
+    } catch (e) {
+      logger.error('[Storage]', `设置 ${key} 失败`, e);
+      return false;
+    }
+  },
+  getItem(key: string): string | null {
+    try {
+      return localStorage.getItem(key);
+    } catch (e) {
+      logger.error('[Storage]', `读取 ${key} 失败`, e);
+      return null;
+    }
+  },
+  removeItem(key: string): boolean {
+    try {
+      localStorage.removeItem(key);
+      return true;
+    } catch (e) {
+      logger.error('[Storage]', `删除 ${key} 失败`, e);
+      return false;
+    }
+  }
+};
+
 // 创建一个独立的 axios 实例用于初始化验证（不经过响应拦截器的处理）
 const verifyRequest = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api',
@@ -25,8 +55,8 @@ const verifyRequest = axios.create({
 export const useAuthStore = defineStore('auth', () => {
   // State
   const user = ref<User | null>(null);
-  const accessToken = ref<string | null>(localStorage.getItem(TOKEN_KEY));
-  const refreshTokenValue = ref<string | null>(localStorage.getItem(REFRESH_TOKEN_KEY));
+  const accessToken = ref<string | null>(safeStorage.getItem(TOKEN_KEY));
+  const refreshTokenValue = ref<string | null>(safeStorage.getItem(REFRESH_TOKEN_KEY));
   const isLoading = ref(false);
   const isAuthChecked = ref(false); // 标记是否已完成认证状态检查
 
@@ -39,9 +69,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   // 初始化（从 localStorage 恢复并验证 Token）
   const initialize = async (): Promise<boolean> => {
-    const storedToken = localStorage.getItem(TOKEN_KEY);
-    const storedUser = localStorage.getItem(USER_KEY);
-    const storedRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+    const storedToken = safeStorage.getItem(TOKEN_KEY);
+    const storedUser = safeStorage.getItem(USER_KEY);
+    const storedRefreshToken = safeStorage.getItem(REFRESH_TOKEN_KEY);
 
     if (!storedToken || !storedUser) {
       clearAuth();
@@ -63,7 +93,7 @@ export const useAuthStore = defineStore('auth', () => {
       if (response.data.code === 200 && response.data.data) {
         // Token 有效，更新用户信息
         user.value = response.data.data;
-        localStorage.setItem(USER_KEY, JSON.stringify(response.data.data));
+        safeStorage.setItem(USER_KEY, JSON.stringify(response.data.data));
         logger.info('[Auth]', `Token 验证成功 | username=${response.data.data.username}`);
         isAuthChecked.value = true;
         return true;
@@ -92,8 +122,8 @@ export const useAuthStore = defineStore('auth', () => {
               // 更新 Token
               accessToken.value = newAccessToken;
               refreshTokenValue.value = newRefreshToken;
-              localStorage.setItem(TOKEN_KEY, newAccessToken);
-              localStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
+              safeStorage.setItem(TOKEN_KEY, newAccessToken);
+              safeStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
 
               // 用新 Token 获取用户信息
               const userResponse = await verifyRequest.get('/users/me', {
@@ -102,7 +132,7 @@ export const useAuthStore = defineStore('auth', () => {
 
               if (userResponse.data.code === 200 && userResponse.data.data) {
                 user.value = userResponse.data.data;
-                localStorage.setItem(USER_KEY, JSON.stringify(userResponse.data.data));
+                safeStorage.setItem(USER_KEY, JSON.stringify(userResponse.data.data));
                 logger.info('[Auth]', `Token 刷新成功 | username=${userResponse.data.data.username}`);
                 isAuthChecked.value = true;
                 return true;
@@ -198,8 +228,8 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await refreshToken({ refreshToken: currentRefreshToken });
       accessToken.value = response.accessToken;
       refreshTokenValue.value = response.refreshToken;
-      localStorage.setItem(TOKEN_KEY, response.accessToken);
-      localStorage.setItem(REFRESH_TOKEN_KEY, response.refreshToken);
+      safeStorage.setItem(TOKEN_KEY, response.accessToken);
+      safeStorage.setItem(REFRESH_TOKEN_KEY, response.refreshToken);
       return true;
     } catch (error) {
       logger.error('[Auth]', '刷新 Token 失败', error);
@@ -227,9 +257,9 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = response.user;
 
     // 保存到 localStorage
-    localStorage.setItem(TOKEN_KEY, response.tokens.accessToken);
-    localStorage.setItem(REFRESH_TOKEN_KEY, response.tokens.refreshToken);
-    localStorage.setItem(USER_KEY, JSON.stringify(response.user));
+    safeStorage.setItem(TOKEN_KEY, response.tokens.accessToken);
+    safeStorage.setItem(REFRESH_TOKEN_KEY, response.tokens.refreshToken);
+    safeStorage.setItem(USER_KEY, JSON.stringify(response.user));
 
     logger.info('[Auth]', `用户登录成功 | username=${response.user.username}, role=${response.user.role}`);
   };
@@ -244,16 +274,16 @@ export const useAuthStore = defineStore('auth', () => {
 
   // 清除 localStorage
   const clearStorage = () => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+    safeStorage.removeItem(TOKEN_KEY);
+    safeStorage.removeItem(REFRESH_TOKEN_KEY);
+    safeStorage.removeItem(USER_KEY);
   };
 
   // 更新用户信息（用于资料修改后同步）
   const updateUserInfo = (userData: Partial<User>) => {
     if (user.value) {
       user.value = { ...user.value, ...userData };
-      localStorage.setItem(USER_KEY, JSON.stringify(user.value));
+      safeStorage.setItem(USER_KEY, JSON.stringify(user.value));
     }
   };
 

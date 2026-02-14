@@ -5,7 +5,7 @@
       <aside class="sidebar">
         <div class="user-card">
           <el-avatar :size="80" :icon="UserFilled" class="user-avatar" />
-          <h3 class="username">{{ authStore.user?.username }}</h3>
+          <h3 class="username">{{ authStore.user?.username ?? '未知用户' }}</h3>
           <el-tag :type="getUserTagType()" size="small">
             {{ getUserTagText() }}
           </el-tag>
@@ -74,9 +74,9 @@
               </el-button>
             </template>
             <el-descriptions :column="2">
-              <el-descriptions-item label="用户名">{{ authStore.user?.username }}</el-descriptions-item>
+              <el-descriptions-item label="用户名">{{ authStore.user?.username ?? '未知用户' }}</el-descriptions-item>
               <el-descriptions-item label="邮箱">{{ authStore.user?.email || '未设置' }}</el-descriptions-item>
-              <el-descriptions-item label="注册时间">{{ formatDate(authStore.user?.createdAt) }}</el-descriptions-item>
+              <el-descriptions-item label="注册时间">{{ formatDate(authStore.user?.createdAt) || '-' }}</el-descriptions-item>
               <el-descriptions-item label="认证状态">
                 <el-tag :type="authStore.isVerified ? 'success' : 'info'">
                   {{ authStore.isVerified ? '已认证' : '未认证' }}

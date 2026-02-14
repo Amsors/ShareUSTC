@@ -166,20 +166,24 @@ const rules: FormRules = {
 const handleSubmit = async () => {
   if (!formRef.value) return;
 
-  await formRef.value.validate(async (valid) => {
-    if (valid) {
-      const success = await authStore.registerUser({
-        username: form.username,
-        password: form.password,
-        email: form.email || undefined
-      });
+  try {
+    const valid = await formRef.value.validate();
+    if (!valid) return;
 
-      if (success) {
-        // 注册成功，跳转到首页
-        router.push('/');
-      }
+    const success = await authStore.registerUser({
+      username: form.username,
+      password: form.password,
+      email: form.email || undefined
+    });
+
+    if (success) {
+      // 注册成功，跳转到首页
+      router.push('/');
     }
-  });
+  } catch (error) {
+    // 验证失败，不执行注册
+    console.log('表单验证失败');
+  }
 };
 </script>
 
