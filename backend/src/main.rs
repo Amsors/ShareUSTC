@@ -142,6 +142,21 @@ async fn main() -> std::io::Result<()> {
         log::info!("[Admin] 未配置管理员用户名列表 (ADMIN_USERNAMES)，跳过权限同步");
     }
 
+    // 初始化用户 sn（为没有 sn 的用户分配编号）
+    log::info!("[System] 正在初始化用户 sn...");
+    match initialize_user_sn(&pool).await {
+        Ok(count) => {
+            if count > 0 {
+                log::info!("[System] 已为 {} 个用户分配 sn", count);
+            } else {
+                log::info!("[System] 所有用户都已分配 sn");
+            }
+        }
+        Err(e) => {
+            log::warn!("[System] 初始化用户 sn 失败 | error={}", e);
+        }
+    }
+
     // 创建应用状态
     let app_state = web::Data::new(AppState::new(pool, config.jwt_secret.clone()));
 
@@ -257,4 +272,59 @@ async fn main() -> std::io::Result<()> {
         .bind(&server_addr)?
         .run()
         .await
+}
+
+/// 初始化用户 sn
+/// 为没有 sn 的用户按创建时间顺序分配 sn
+async fn initialize_user_sn(pool: &sqlx::PgPool) -> Result<usize, sqlx::Error> {
+    // 确保序列存在（从1开始）
+    sqlx::query(
+        "CREATE SEQUENCE IF NOT EXISTS user_sn_seq START 1"
+    )
+    .execute(pool)
+    .await
+    .ok();
+
+    // 获取当前最大的 sn 值
+    let max_sn: Option<i64> = sqlx::query_scalar("SELECT MAX(sn) FROM users")
+        .fetch_one(pool)
+        .await?;
+
+    // 如果有用户已有 sn，将序列设置为该值，这样 nextval 会从下一个开始
+    if let Some(max) = max_sn {
+        sqlx::query("SELECT setval('user_sn_seq', $1, true)")
+            .bind(max)
+            .fetch_optional(pool)
+            .await
+            .ok();
+    }
+
+    // 获取没有 sn 的用户列表
+    let rows: Vec<(uuid::Uuid,)> = sqlx::query_as(
+        "SELECT id FROM users WHERE sn IS NULL ORDER BY created_at ASC"
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let count = rows.len();
+    if count == 0 {
+        return Ok(0);
+    }
+
+    // 为每个没有 sn 的用户分配 sn
+    let mut assigned = 0;
+    for (user_id,) in rows {
+        let result = sqlx::query(
+            "UPDATE users SET sn = nextval('user_sn_seq') WHERE id = $1 AND sn IS NULL"
+        )
+        .bind(user_id)
+        .execute(pool)
+        .await;
+
+        if result.is_ok() {
+            assigned += 1;
+        }
+    }
+
+    Ok(assigned)
 }

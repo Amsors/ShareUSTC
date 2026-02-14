@@ -22,6 +22,7 @@
             <el-avatar :size="100" :icon="UserFilled" class="user-avatar" />
             <div class="user-info">
               <h1 class="username">{{ homepage.username }}</h1>
+              <div class="user-id">用户编号: #{{ homepage.sn ?? '-' }}</div>
               <div class="user-tags">
                 <el-tag :type="getUserTagType()" size="default">
                   {{ getUserTagText() }}
@@ -284,6 +285,12 @@ onMounted(() => {
   margin: 0 0 8px;
   font-size: 28px;
   color: #303133;
+}
+
+.user-id {
+  font-size: 14px;
+  color: #909399;
+  margin-bottom: 8px;
 }
 
 .user-tags {

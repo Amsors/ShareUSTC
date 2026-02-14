@@ -57,6 +57,11 @@
         style="width: 100%"
         stripe
       >
+        <el-table-column prop="sn" label="编号" width="80">
+          <template #default="{ row }">
+            <span class="user-sn">#{{ row.sn ?? '-' }}</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="username" label="用户名" min-width="120">
           <template #default="{ row }">
             <div class="user-info">
@@ -133,6 +138,7 @@ import { adminApi } from '../../api/admin';
 
 interface User {
   id: string;
+  sn?: number;
   username: string;
   email: string | null;
   role: string;
@@ -297,6 +303,11 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.user-sn {
+  color: #909399;
+  font-family: 'Consolas', 'Monaco', monospace;
 }
 
 .pagination-container {

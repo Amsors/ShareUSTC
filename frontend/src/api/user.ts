@@ -21,6 +21,7 @@ export interface VerificationRequest {
 // 用户公开资料
 export interface UserProfile {
   id: string;
+  sn?: number;
   username: string;
   bio?: string;
   role: string;
@@ -34,6 +35,7 @@ export interface UserProfile {
 // 用户主页响应（包含资源列表）
 export interface UserHomepage {
   id: string;
+  sn?: number;
   username: string;
   bio?: string;
   email?: string;

@@ -81,13 +81,20 @@ impl AuthService {
             "user"
         };
 
+        // 获取下一个 sn 值
+        let sn: i64 = sqlx::query_scalar("SELECT nextval('user_sn_seq')")
+            .fetch_one(pool)
+            .await
+            .map_err(|e| AuthError::DatabaseError(format!("获取用户编号失败: {}", e)))?;
+
         sqlx::query(
             r#"
-            INSERT INTO users (id, username, password_hash, email, role, is_active, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, true, NOW(), NOW())
+            INSERT INTO users (id, sn, username, password_hash, email, role, is_active, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, true, NOW(), NOW())
             "#
         )
         .bind(user_id)
+        .bind(sn)
         .bind(&req.username)
         .bind(&password_hash)
         .bind(&req.email)
@@ -128,6 +135,7 @@ impl AuthService {
         Ok(AuthResponse {
             user: UserInfo {
                 id: user_id,
+                sn: Some(sn),
                 username: req.username,
                 email: req.email,
                 role: role.to_string(),
@@ -156,7 +164,7 @@ impl AuthService {
 
         // 查询用户
         let user: User = sqlx::query_as::<_, User>(
-            "SELECT id, username, password_hash, email, role, bio,
+            "SELECT id, sn, username, password_hash, email, role, bio,
                     CASE WHEN social_links = '{}'::jsonb THEN NULL ELSE social_links END as social_links,
                     CASE WHEN real_info = '{}'::jsonb THEN NULL ELSE real_info END as real_info,
                     is_verified, is_active, created_at, updated_at
@@ -214,6 +222,7 @@ impl AuthService {
         Ok(AuthResponse {
             user: UserInfo {
                 id: user.id,
+                sn: user.sn,
                 username: user.username,
                 email: user.email,
                 role: user.role,

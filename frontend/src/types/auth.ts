@@ -11,6 +11,7 @@ export type UserRoleType = typeof UserRole[keyof typeof UserRole];
 // 用户信息
 export interface User {
   id: string;
+  sn?: number;
   username: string;
   email?: string;
   role: UserRoleType;

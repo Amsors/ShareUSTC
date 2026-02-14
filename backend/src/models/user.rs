@@ -39,6 +39,7 @@ impl ToString for UserRole {
 #[derive(Debug, Clone, FromRow, Serialize)]
 pub struct User {
     pub id: Uuid,
+    pub sn: Option<i64>,
     pub username: String,
     #[serde(skip_serializing)]
     pub password_hash: String,
@@ -58,6 +59,7 @@ pub struct User {
 #[serde(rename_all = "camelCase")]
 pub struct UserInfo {
     pub id: Uuid,
+    pub sn: Option<i64>,
     pub username: String,
     pub email: Option<String>,
     pub role: String,
@@ -72,6 +74,7 @@ impl From<User> for UserInfo {
     fn from(user: User) -> Self {
         UserInfo {
             id: user.id,
+            sn: user.sn,
             username: user.username,
             email: user.email,
             role: user.role,
@@ -210,6 +213,7 @@ pub struct VerificationRequest {
 #[serde(rename_all = "camelCase")]
 pub struct UserProfileResponse {
     pub id: Uuid,
+    pub sn: Option<i64>,
     pub username: String,
     pub bio: Option<String>,
     pub role: String,
@@ -225,6 +229,7 @@ pub struct UserProfileResponse {
 #[serde(rename_all = "camelCase")]
 pub struct UserHomepageResponse {
     pub id: Uuid,
+    pub sn: Option<i64>,
     pub username: String,
     pub bio: Option<String>,
     pub email: Option<String>,
