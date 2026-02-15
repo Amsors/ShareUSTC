@@ -119,6 +119,10 @@
                 重新加载
               </el-button>
             </div>
+            <div v-else-if="contributorsComputing" class="contributors-computing">
+              <el-icon class="loading-icon"><Loading /></el-icon>
+              <span>计算中</span>
+            </div>
             <div v-else class="contributors-list">
               <div
                 v-for="(contributor, index) in contributors"
@@ -188,6 +192,7 @@ const repoStats = ref({
 const contributors = ref<Contributor[]>([]);
 const contributorsLoading = ref(true);
 const contributorsError = ref(false);
+const contributorsComputing = ref(false);
 
 const frontendTech = ['Vue 3', 'TypeScript', 'Vite', 'Pinia', 'Element Plus', 'Vue Router', 'Axios'];
 const backendTech = ['Rust', 'Actix-web', 'Tokio', 'SQLx'];
@@ -217,6 +222,7 @@ const fetchRepoStats = async () => {
 const fetchContributors = async (retryCount = 0): Promise<void> => {
   contributorsLoading.value = true;
   contributorsError.value = false;
+  contributorsComputing.value = false;
   try {
     // 使用 stats/contributors 端点获取详细的代码统计
     // 设置较长的超时时间（30秒）以应对中国访问 GitHub 较慢的情况
@@ -248,6 +254,12 @@ const fetchContributors = async (retryCount = 0): Promise<void> => {
         contributorsLoading.value = false;
         return;
       }
+
+      // 数据处理阶段，显示"计算中"
+      contributorsComputing.value = true;
+
+      // 使用 setTimeout 让 UI 有机会更新，显示"计算中"
+      await new Promise(resolve => setTimeout(resolve, 0));
 
       // 计算每个贡献者的总commits、additions和deletions
       const contributorMap = new Map<string, Contributor>();
@@ -282,11 +294,14 @@ const fetchContributors = async (retryCount = 0): Promise<void> => {
       // 转换为数组并按commits排序
       contributors.value = Array.from(contributorMap.values())
         .sort((a, b) => b.commits - a.commits);
+
+      contributorsComputing.value = false;
     } else {
       contributorsError.value = true;
     }
   } catch (err) {
     contributorsError.value = true;
+    contributorsComputing.value = false;
   } finally {
     contributorsLoading.value = false;
   }
@@ -589,6 +604,16 @@ const copyQQGroup = async () => {
   align-items: center;
   justify-content: center;
   gap: 12px;
+  height: 140px;
+  color: #586069;
+  font-size: 14px;
+}
+
+.contributors-computing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   height: 140px;
   color: #586069;
   font-size: 14px;
