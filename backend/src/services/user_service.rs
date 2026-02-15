@@ -305,8 +305,12 @@ impl UserService {
         // 获取用户上传的已通过审核资源列表
         let rows = sqlx::query(
             r#"
-            SELECT r.*, rs.views, rs.downloads, rs.likes, rs.avg_difficulty,
-                   rs.avg_quality, rs.avg_detail, rs.rating_count,
+            SELECT r.*, rs.views, rs.downloads, rs.likes,
+                   rs.difficulty_total, rs.difficulty_count,
+                   rs.overall_quality_total, rs.overall_quality_count,
+                   rs.answer_quality_total, rs.answer_quality_count,
+                   rs.format_quality_total, rs.format_quality_count,
+                   rs.detail_level_total, rs.detail_level_count,
                    u.username as uploader_name
             FROM resources r
             LEFT JOIN resource_stats rs ON r.id = rs.resource_id
@@ -331,6 +335,44 @@ impl UserService {
                 serde_json::from_value::<Vec<String>>(t).ok()
             });
 
+            // 计算各维度的平均分
+            let calc_avg = |total: Option<i32>, count: Option<i32>| -> Option<f64> {
+                match (total, count) {
+                    (Some(t), Some(c)) if c > 0 => Some(t as f64 / c as f64),
+                    _ => None,
+                }
+            };
+
+            let avg_difficulty = calc_avg(
+                row.try_get::<i32, _>("difficulty_total").ok(),
+                row.try_get::<i32, _>("difficulty_count").ok(),
+            );
+            let avg_overall_quality = calc_avg(
+                row.try_get::<i32, _>("overall_quality_total").ok(),
+                row.try_get::<i32, _>("overall_quality_count").ok(),
+            );
+            let avg_answer_quality = calc_avg(
+                row.try_get::<i32, _>("answer_quality_total").ok(),
+                row.try_get::<i32, _>("answer_quality_count").ok(),
+            );
+            let avg_format_quality = calc_avg(
+                row.try_get::<i32, _>("format_quality_total").ok(),
+                row.try_get::<i32, _>("format_quality_count").ok(),
+            );
+            let avg_detail_level = calc_avg(
+                row.try_get::<i32, _>("detail_level_total").ok(),
+                row.try_get::<i32, _>("detail_level_count").ok(),
+            );
+
+            // 评分人数取各维度中的最大值
+            let rating_count: i32 = [
+                row.try_get::<i32, _>("difficulty_count").unwrap_or(0),
+                row.try_get::<i32, _>("overall_quality_count").unwrap_or(0),
+                row.try_get::<i32, _>("answer_quality_count").unwrap_or(0),
+                row.try_get::<i32, _>("format_quality_count").unwrap_or(0),
+                row.try_get::<i32, _>("detail_level_count").unwrap_or(0),
+            ].iter().max().copied().unwrap_or(0);
+
             resources.push(ResourceListItem {
                 id: row.try_get("id").map_err(|e| UserError::DatabaseError(e.to_string()))?,
                 title: row.try_get("title").map_err(|e| UserError::DatabaseError(e.to_string()))?,
@@ -344,10 +386,12 @@ impl UserService {
                     views: row.try_get::<i32, _>("views").unwrap_or(0),
                     downloads: row.try_get::<i32, _>("downloads").unwrap_or(0),
                     likes: row.try_get::<i32, _>("likes").unwrap_or(0),
-                    avg_difficulty: row.try_get("avg_difficulty").ok(),
-                    avg_quality: row.try_get("avg_quality").ok(),
-                    avg_detail: row.try_get("avg_detail").ok(),
-                    rating_count: row.try_get::<i32, _>("rating_count").unwrap_or(0),
+                    avg_difficulty,
+                    avg_overall_quality,
+                    avg_answer_quality,
+                    avg_format_quality,
+                    avg_detail_level,
+                    rating_count,
                 },
                 uploader_name: row.try_get("uploader_name").ok(),
             });

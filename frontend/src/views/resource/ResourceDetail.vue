@@ -167,22 +167,7 @@
             </el-card>
 
             <!-- 评分信息 -->
-            <el-card v-if="resource.stats.ratingCount > 0" class="rating-card" shadow="never">
-              <template #header>
-                <span>评分</span>
-              </template>
-              <div class="rating-content">
-                <div v-if="resource.stats.avgQuality" class="rating-item">
-                  <span class="rating-label">质量</span>
-                  <el-rate
-                    :model-value="resource.stats.avgQuality / 2"
-                    disabled
-                    show-score
-                    :score-template="`${(resource.stats.avgQuality / 2).toFixed(1)}`"
-                  />
-                </div>
-              </div>
-            </el-card>
+            <RatingWidget :resource-id="resourceId" @update="onRatingUpdate" />
           </el-col>
         </el-row>
       </div>
@@ -220,6 +205,7 @@ import PreviewSwitch from '../../components/preview/PreviewSwitch.vue';
 import LikeButton from '../../components/interaction/LikeButton.vue';
 import CommentSection from '../../components/interaction/CommentSection.vue';
 import AddToFavoriteModal from '../../components/favorite/AddToFavoriteModal.vue';
+import RatingWidget from '../../components/interaction/RatingWidget.vue';
 import {
   ResourceTypeLabels,
   ResourceCategoryLabels,
@@ -227,6 +213,7 @@ import {
   type ResourceDetail,
   type ResourceCategoryType
 } from '../../types/resource';
+import type { ResourceRatingInfo } from '../../types/rating';
 
 const route = useRoute();
 const router = useRouter();
@@ -298,6 +285,11 @@ const onLikeUpdate = (_isLiked: boolean, count: number) => {
 // 添加到收藏夹成功回调
 const onAddToFavoriteSuccess = () => {
   // 可以在这里添加一些UI反馈，比如显示资源已被收藏的提示
+};
+
+// 评分更新回调
+const onRatingUpdate = (_info: ResourceRatingInfo) => {
+  // 评分信息已在组件内部更新，这里可以添加额外的处理
 };
 
 // 格式化日期（服务器返回的是 UTC 时间，需要转换为本地时间显示）

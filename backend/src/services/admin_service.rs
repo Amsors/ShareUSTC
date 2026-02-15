@@ -730,15 +730,15 @@ impl AdminService {
             .await
             .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
 
-        // 评分分布
+        // 评分分布 - 使用5个维度的平均值
         let rating_distribution: Vec<RatingDistribution> = sqlx::query_as(
             r#"
             SELECT
                 CASE
-                    WHEN (difficulty + quality + detail) / 3.0 >= 9 THEN 'excellent'
-                    WHEN (difficulty + quality + detail) / 3.0 >= 7 THEN 'good'
-                    WHEN (difficulty + quality + detail) / 3.0 >= 5 THEN 'average'
-                    WHEN (difficulty + quality + detail) / 3.0 >= 3 THEN 'poor'
+                    WHEN (difficulty + overall_quality + answer_quality + format_quality + detail_level) / 5.0 >= 9 THEN 'excellent'
+                    WHEN (difficulty + overall_quality + answer_quality + format_quality + detail_level) / 5.0 >= 7 THEN 'good'
+                    WHEN (difficulty + overall_quality + answer_quality + format_quality + detail_level) / 5.0 >= 5 THEN 'average'
+                    WHEN (difficulty + overall_quality + answer_quality + format_quality + detail_level) / 5.0 >= 3 THEN 'poor'
                     ELSE 'bad'
                 END as rating_range,
                 COUNT(*) as count

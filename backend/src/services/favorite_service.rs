@@ -2,6 +2,14 @@ use sqlx::PgPool;
 use uuid::Uuid;
 use std::io::Write;
 
+/// 计算平均分辅助函数
+fn calc_avg(total: Option<i32>, count: Option<i32>) -> Option<f64> {
+    match (total, count) {
+        (Some(t), Some(c)) if c > 0 => Some(t as f64 / c as f64),
+        _ => None,
+    }
+}
+
 use crate::models::{
     AddToFavoriteRequest, CheckResourceInFavoriteResponse, CreateFavoriteRequest,
     CreateFavoriteResponse, Favorite, FavoriteDetailResponse, FavoriteListItem,
@@ -134,10 +142,16 @@ impl FavoriteService {
                 rs.views,
                 rs.downloads,
                 rs.likes,
-                rs.avg_difficulty,
-                rs.avg_quality,
-                rs.avg_detail,
-                rs.rating_count
+                rs.difficulty_total,
+                rs.difficulty_count,
+                rs.overall_quality_total,
+                rs.overall_quality_count,
+                rs.answer_quality_total,
+                rs.answer_quality_count,
+                rs.format_quality_total,
+                rs.format_quality_count,
+                rs.detail_level_total,
+                rs.detail_level_count
             FROM favorite_resources fr
             JOIN resources r ON fr.resource_id = r.id
             LEFT JOIN resource_stats rs ON r.id = rs.resource_id
@@ -157,6 +171,22 @@ impl FavoriteService {
                     serde_json::from_value::<Vec<String>>(t).ok()
                 });
 
+                // 计算各维度的平均分
+                let avg_difficulty = calc_avg(row.difficulty_total, row.difficulty_count);
+                let avg_overall_quality = calc_avg(row.overall_quality_total, row.overall_quality_count);
+                let avg_answer_quality = calc_avg(row.answer_quality_total, row.answer_quality_count);
+                let avg_format_quality = calc_avg(row.format_quality_total, row.format_quality_count);
+                let avg_detail_level = calc_avg(row.detail_level_total, row.detail_level_count);
+
+                // 评分人数取各维度中的最大值
+                let rating_count = [
+                    row.difficulty_count.unwrap_or(0),
+                    row.overall_quality_count.unwrap_or(0),
+                    row.answer_quality_count.unwrap_or(0),
+                    row.format_quality_count.unwrap_or(0),
+                    row.detail_level_count.unwrap_or(0),
+                ].iter().max().copied().unwrap_or(0) as i32;
+
                 FavoriteResourceItem {
                     id: row.id,
                     title: row.title,
@@ -165,16 +195,18 @@ impl FavoriteService {
                     category: row.category.unwrap_or_default(),
                     tags,
                     file_size: row.file_size,
-                    added_at: row.added_at.map(|dt| dt.format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string())
+                    added_at: row.added_at.map(|dt: chrono::NaiveDateTime| dt.format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string())
                         .unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string()),
                     stats: FavoriteResourceStats {
                         views: row.views.unwrap_or(0),
                         downloads: row.downloads.unwrap_or(0),
                         likes: row.likes.unwrap_or(0),
-                        avg_difficulty: row.avg_difficulty,
-                        avg_quality: row.avg_quality,
-                        avg_detail: row.avg_detail,
-                        rating_count: row.rating_count.unwrap_or(0),
+                        avg_difficulty,
+                        avg_overall_quality,
+                        avg_answer_quality,
+                        avg_format_quality,
+                        avg_detail_level,
+                        rating_count,
                     },
                 }
             })

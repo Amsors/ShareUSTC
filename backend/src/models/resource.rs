@@ -221,10 +221,80 @@ pub struct ResourceStats {
     pub views: i32,
     pub downloads: i32,
     pub likes: i32,
-    pub avg_difficulty: Option<f64>,
-    pub avg_quality: Option<f64>,
-    pub avg_detail: Option<f64>,
-    pub rating_count: i32,
+    // 各维度评分统计：总得分(total)和评分次数(count)
+    // 数据库使用 INTEGER (INT4)
+    pub difficulty_total: i32,
+    pub difficulty_count: i32,
+    pub overall_quality_total: i32,
+    pub overall_quality_count: i32,
+    pub answer_quality_total: i32,
+    pub answer_quality_count: i32,
+    pub format_quality_total: i32,
+    pub format_quality_count: i32,
+    pub detail_level_total: i32,
+    pub detail_level_count: i32,
+}
+
+impl ResourceStats {
+    /// 计算难度平均分
+    pub fn avg_difficulty(&self) -> Option<f64> {
+        if self.difficulty_count > 0 {
+            Some(self.difficulty_total as f64 / self.difficulty_count as f64)
+        } else {
+            None
+        }
+    }
+
+    /// 计算总体质量平均分
+    pub fn avg_overall_quality(&self) -> Option<f64> {
+        if self.overall_quality_count > 0 {
+            Some(self.overall_quality_total as f64 / self.overall_quality_count as f64)
+        } else {
+            None
+        }
+    }
+
+    /// 计算参考答案质量平均分
+    pub fn avg_answer_quality(&self) -> Option<f64> {
+        if self.answer_quality_count > 0 {
+            Some(self.answer_quality_total as f64 / self.answer_quality_count as f64)
+        } else {
+            None
+        }
+    }
+
+    /// 计算格式质量平均分
+    pub fn avg_format_quality(&self) -> Option<f64> {
+        if self.format_quality_count > 0 {
+            Some(self.format_quality_total as f64 / self.format_quality_count as f64)
+        } else {
+            None
+        }
+    }
+
+    /// 计算知识点详细程度平均分
+    pub fn avg_detail_level(&self) -> Option<f64> {
+        if self.detail_level_count > 0 {
+            Some(self.detail_level_total as f64 / self.detail_level_count as f64)
+        } else {
+            None
+        }
+    }
+
+    /// 获取评分人数（取各维度中的最大值）
+    pub fn rating_count(&self) -> i32 {
+        [
+            self.difficulty_count,
+            self.overall_quality_count,
+            self.answer_quality_count,
+            self.format_quality_count,
+            self.detail_level_count,
+        ]
+        .iter()
+        .max()
+        .copied()
+        .unwrap_or(0)
+    }
 }
 
 /// 资源上传请求 DTO
@@ -308,9 +378,17 @@ pub struct ResourceStatsResponse {
     pub views: i32,
     pub downloads: i32,
     pub likes: i32,
+    /// 难度平均分
     pub avg_difficulty: Option<f64>,
-    pub avg_quality: Option<f64>,
-    pub avg_detail: Option<f64>,
+    /// 总体质量平均分
+    pub avg_overall_quality: Option<f64>,
+    /// 参考答案质量平均分
+    pub avg_answer_quality: Option<f64>,
+    /// 格式质量平均分
+    pub avg_format_quality: Option<f64>,
+    /// 知识点详细程度平均分
+    pub avg_detail_level: Option<f64>,
+    /// 评分人数
     pub rating_count: i32,
 }
 

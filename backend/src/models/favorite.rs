@@ -103,9 +103,17 @@ pub struct FavoriteResourceStats {
     pub views: i32,
     pub downloads: i32,
     pub likes: i32,
+    /// 难度平均分 (total / count)
     pub avg_difficulty: Option<f64>,
-    pub avg_quality: Option<f64>,
-    pub avg_detail: Option<f64>,
+    /// 总体质量平均分
+    pub avg_overall_quality: Option<f64>,
+    /// 参考答案质量平均分
+    pub avg_answer_quality: Option<f64>,
+    /// 格式质量平均分
+    pub avg_format_quality: Option<f64>,
+    /// 知识点详细程度平均分
+    pub avg_detail_level: Option<f64>,
+    /// 评分人数（取各维度中的最大值）
     pub rating_count: i32,
 }
 

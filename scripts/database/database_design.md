@@ -102,8 +102,8 @@ END $$;
 |-----|------|------|-----------|
 | 1 | users | 用户表 | 14 |
 | 2 | resources | 资源表 | 17 |
-| 3 | resource_stats | 资源统计表 | 8 |
-| 4 | ratings | 评分表 | 8 |
+| 3 | resource_stats | 资源统计表 | 14 |
+| 4 | ratings | 评分表 | 10 |
 | 5 | likes | 点赞表 | 3 |
 | 6 | comments | 评论表 | 7 |
 | 7 | favorites | 收藏夹表 | 4 |
@@ -170,10 +170,19 @@ END $$;
 | views | INTEGER | - | 0 | 浏览量 |
 | downloads | INTEGER | - | 0 | 下载量 |
 | likes | INTEGER | - | 0 | 点赞数 |
-| avg_difficulty | FLOAT8 | - | NULL | 平均难度评分(1-10) |
-| avg_quality | FLOAT8 | - | NULL | 平均质量评分(1-10) |
-| avg_detail | FLOAT8 | - | NULL | 平均详细度评分(1-10) |
-| rating_count | INTEGER | - | 0 | 评分人数 |
+| rating_count | INTEGER | - | 0 | 评分人数（冗余字段，用于快速查询） |
+| difficulty_total | INTEGER | - | 0 | 难度评分总分 |
+| difficulty_count | INTEGER | - | 0 | 难度评分次数 |
+| overall_quality_total | INTEGER | - | 0 | 总体质量评分总分 |
+| overall_quality_count | INTEGER | - | 0 | 总体质量评分次数 |
+| answer_quality_total | INTEGER | - | 0 | 参考答案质量评分总分 |
+| answer_quality_count | INTEGER | - | 0 | 参考答案质量评分次数 |
+| format_quality_total | INTEGER | - | 0 | 格式质量评分总分 |
+| format_quality_count | INTEGER | - | 0 | 格式质量评分次数 |
+| detail_level_total | INTEGER | - | 0 | 知识点详细程度评分总分 |
+| detail_level_count | INTEGER | - | 0 | 知识点详细程度评分次数 |
+
+**说明**：评分统计采用总分+计数方式存储，便于增量更新和实时计算平均分。
 
 #### 3.2.4 评分表 (ratings)
 
@@ -182,13 +191,17 @@ END $$;
 | id | UUID | PRIMARY KEY | gen_random_uuid() | 主键 |
 | resource_id | UUID | FOREIGN KEY -> resources(id) ON DELETE CASCADE, NOT NULL | - | 资源ID |
 | user_id | UUID | FOREIGN KEY -> users(id) ON DELETE CASCADE, NOT NULL | - | 用户ID |
-| difficulty | INTEGER | CHECK (1-10) | NULL | 难度评分 |
-| quality | INTEGER | CHECK (1-10) | NULL | 质量评分 |
-| detail | INTEGER | CHECK (1-10) | NULL | 详细度评分 |
+| difficulty | INTEGER | CHECK (1-10) | NULL | 难度评分(1-10) |
+| overall_quality | INTEGER | CHECK (1-10) | NULL | 总体质量评分(1-10) |
+| answer_quality | INTEGER | CHECK (1-10) | NULL | 参考答案质量(1-10) |
+| format_quality | INTEGER | CHECK (1-10) | NULL | 格式质量/排版清晰度(1-10) |
+| detail_level | INTEGER | CHECK (1-10) | NULL | 知识点详细程度(1-10) |
 | created_at | TIMESTAMP | - | CURRENT_TIMESTAMP | 创建时间 |
 | updated_at | TIMESTAMP | - | CURRENT_TIMESTAMP | 更新时间 |
 
 **唯一约束**：UNIQUE(resource_id, user_id)
+
+**说明**：评分系统采用5维度设计，每个维度1-10分。旧版的 `quality` 和 `detail` 字段已弃用，分别由 `overall_quality` 和 `detail_level` 替代。
 
 #### 3.2.5 点赞表 (likes)
 

@@ -250,20 +250,50 @@ BEGIN
         ALTER TABLE resource_stats ADD COLUMN likes INTEGER DEFAULT 0;
     END IF;
 
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resource_stats' AND column_name = 'avg_difficulty') THEN
-        ALTER TABLE resource_stats ADD COLUMN avg_difficulty FLOAT8;
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resource_stats' AND column_name = 'avg_quality') THEN
-        ALTER TABLE resource_stats ADD COLUMN avg_quality FLOAT8;
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resource_stats' AND column_name = 'avg_detail') THEN
-        ALTER TABLE resource_stats ADD COLUMN avg_detail FLOAT8;
-    END IF;
-
+    -- 评分人数（冗余字段，用于快速查询）
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resource_stats' AND column_name = 'rating_count') THEN
         ALTER TABLE resource_stats ADD COLUMN rating_count INTEGER DEFAULT 0;
+    END IF;
+
+    -- 评分统计：每个维度独立记录总分和评分次数
+    -- 难度维度
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resource_stats' AND column_name = 'difficulty_total') THEN
+        ALTER TABLE resource_stats ADD COLUMN difficulty_total INTEGER DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resource_stats' AND column_name = 'difficulty_count') THEN
+        ALTER TABLE resource_stats ADD COLUMN difficulty_count INTEGER DEFAULT 0;
+    END IF;
+
+    -- 总体质量维度
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resource_stats' AND column_name = 'overall_quality_total') THEN
+        ALTER TABLE resource_stats ADD COLUMN overall_quality_total INTEGER DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resource_stats' AND column_name = 'overall_quality_count') THEN
+        ALTER TABLE resource_stats ADD COLUMN overall_quality_count INTEGER DEFAULT 0;
+    END IF;
+
+    -- 参考答案质量维度
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resource_stats' AND column_name = 'answer_quality_total') THEN
+        ALTER TABLE resource_stats ADD COLUMN answer_quality_total INTEGER DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resource_stats' AND column_name = 'answer_quality_count') THEN
+        ALTER TABLE resource_stats ADD COLUMN answer_quality_count INTEGER DEFAULT 0;
+    END IF;
+
+    -- 格式质量维度
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resource_stats' AND column_name = 'format_quality_total') THEN
+        ALTER TABLE resource_stats ADD COLUMN format_quality_total INTEGER DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resource_stats' AND column_name = 'format_quality_count') THEN
+        ALTER TABLE resource_stats ADD COLUMN format_quality_count INTEGER DEFAULT 0;
+    END IF;
+
+    -- 知识点详细程度维度
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resource_stats' AND column_name = 'detail_level_total') THEN
+        ALTER TABLE resource_stats ADD COLUMN detail_level_total INTEGER DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resource_stats' AND column_name = 'detail_level_count') THEN
+        ALTER TABLE resource_stats ADD COLUMN detail_level_count INTEGER DEFAULT 0;
     END IF;
 END $$;
 
@@ -299,12 +329,22 @@ BEGIN
         ALTER TABLE ratings ADD COLUMN difficulty INTEGER CHECK (difficulty BETWEEN 1 AND 10);
     END IF;
 
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'ratings' AND column_name = 'quality') THEN
-        ALTER TABLE ratings ADD COLUMN quality INTEGER CHECK (quality BETWEEN 1 AND 10);
+    -- 注意：quality 和 detail 字段已移除，使用 overall_quality 和 detail_level 替代
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'ratings' AND column_name = 'overall_quality') THEN
+        ALTER TABLE ratings ADD COLUMN overall_quality INTEGER CHECK (overall_quality BETWEEN 1 AND 10);
     END IF;
 
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'ratings' AND column_name = 'detail') THEN
-        ALTER TABLE ratings ADD COLUMN detail INTEGER CHECK (detail BETWEEN 1 AND 10);
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'ratings' AND column_name = 'answer_quality') THEN
+        ALTER TABLE ratings ADD COLUMN answer_quality INTEGER CHECK (answer_quality BETWEEN 1 AND 10);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'ratings' AND column_name = 'format_quality') THEN
+        ALTER TABLE ratings ADD COLUMN format_quality INTEGER CHECK (format_quality BETWEEN 1 AND 10);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'ratings' AND column_name = 'detail_level') THEN
+        ALTER TABLE ratings ADD COLUMN detail_level INTEGER CHECK (detail_level BETWEEN 1 AND 10);
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'ratings' AND column_name = 'updated_at') THEN

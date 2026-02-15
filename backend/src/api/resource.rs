@@ -539,7 +539,8 @@ pub fn config_public(cfg: &mut web::ServiceConfig) {
         .service(download_resource)
         .service(get_resource_content)
         .service(get_like_status)     // 获取点赞状态（支持未登录用户）
-        .service(get_comments);       // 获取评论列表（公开）
+        .service(get_comments)        // 获取评论列表（公开）
+        .service(get_resource_ratings); // 获取资源评分信息（支持未登录用户）
 }
 
 /// 提交评分
@@ -575,6 +576,25 @@ pub async fn get_my_rating(
         Err(e) => {
             log::warn!("[Resource] 获取评分失败 | resource_id={}, user_id={}, error={}", resource_id, user.id, e);
             internal_error("获取失败")
+        }
+    }
+}
+
+/// 获取资源评分信息（包含所有维度的平均分，支持未登录用户）
+#[get("/resources/{resource_id}/ratings")]
+pub async fn get_resource_ratings(
+    state: web::Data<AppState>,
+    user: Option<web::ReqData<CurrentUser>>,
+    path: web::Path<Uuid>,
+) -> impl Responder {
+    let resource_id = path.into_inner();
+    let user_id = user.map(|u| u.id);
+
+    match RatingService::get_resource_rating_info(&state.pool, resource_id, user_id).await {
+        Ok(info) => HttpResponse::Ok().json(info),
+        Err(e) => {
+            log::warn!("[Resource] 获取资源评分信息失败 | resource_id={}, error={}", resource_id, e);
+            internal_error("获取评分信息失败")
         }
     }
 }
