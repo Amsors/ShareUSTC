@@ -170,7 +170,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, nextTick } from 'vue';
 import { Upload, Search, Star, HomeFilled, Trophy, Loading } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 
@@ -258,8 +258,8 @@ const fetchContributors = async (retryCount = 0): Promise<void> => {
       // 数据处理阶段，显示"计算中"
       contributorsComputing.value = true;
 
-      // 使用 setTimeout 让 UI 有机会更新，显示"计算中"
-      await new Promise(resolve => setTimeout(resolve, 0));
+      // 使用 nextTick 确保 Vue 完成 DOM 更新，显示"计算中"
+      await nextTick();
 
       // 计算每个贡献者的总commits、additions和deletions
       const contributorMap = new Map<string, Contributor>();
