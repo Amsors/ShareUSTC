@@ -12,6 +12,7 @@ pub struct Config {
     pub resource_upload_path: String,
     pub cors_allowed_origins: Vec<String>,
     pub admin_usernames: Vec<String>,
+    pub cookie_secure: bool,
 }
 
 impl Config {
@@ -54,6 +55,9 @@ impl Config {
                 .unwrap_or_else(|_| "./uploads/resources".to_string()),
             cors_allowed_origins: cors_origins,
             admin_usernames,
+            cookie_secure: env::var("COOKIE_SECURE")
+                .map(|v| v == "true" || v == "1")
+                .unwrap_or(false),
         }
     }
 

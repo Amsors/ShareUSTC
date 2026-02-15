@@ -65,8 +65,8 @@ export const updateProfile = (data: UpdateProfileRequest): Promise<User> => {
   return request.put('/users/me', data);
 };
 
-// 实名认证（返回 AuthResponse 包含新的 Token）
-export const verifyUser = (data: VerificationRequest): Promise<AuthResponse> => {
+// 实名认证（后端会设置新的 HttpOnly Cookie）
+export const verifyUser = (data: VerificationRequest): Promise<{ user: User }> => {
   return request.post('/users/verify', data);
 };
 

@@ -15,6 +15,9 @@ use std::{
 use crate::models::CurrentUser;
 use crate::utils::{extract_current_user, verify_token};
 
+/// Cookie 名称常量
+const ACCESS_TOKEN_COOKIE: &str = "access_token";
+
 /// 公开路径规则
 #[derive(Clone)]
 pub struct PublicPathRule {
@@ -101,6 +104,28 @@ impl JwtAuth {
     fn is_public_path(&self, path: &str, method: &Method) -> bool {
         self.public_paths.iter().any(|rule| rule.matches(path, method))
     }
+
+    /// 从请求中提取 Token（从 Authorization 头或 Cookie）
+    fn extract_token(&self, req: &ServiceRequest) -> Option<String> {
+        // 首先尝试从 Authorization 头中提取
+        let auth_header = req
+            .headers()
+            .get(header::AUTHORIZATION)
+            .and_then(|h| h.to_str().ok());
+
+        if let Some(header) = auth_header {
+            if header.starts_with("Bearer ") {
+                return Some(header.trim_start_matches("Bearer ").to_string());
+            }
+        }
+
+        // 然后尝试从 Cookie 中提取
+        if let Some(cookie) = req.cookie(ACCESS_TOKEN_COOKIE) {
+            return Some(cookie.value().to_string());
+        }
+
+        None
+    }
 }
 
 impl<S, B> Transform<S, ServiceRequest> for JwtAuth
@@ -156,52 +181,42 @@ where
             // 检查是否是公开路径
             let is_public = public_paths.iter().any(|rule| rule.matches(&path, &method));
 
-            // 从请求头中提取Authorization（公开路径也可能有认证信息）
-            let auth_header = req
-                .headers()
-                .get(header::AUTHORIZATION)
-                .and_then(|h| h.to_str().ok());
+            // 从请求中提取 Token（从 Authorization 头或 Cookie）
+            let token = Self::extract_token_from_request(&req);
 
             // 如果不是公开路径，必须有认证信息
-            if !is_public && auth_header.is_none() {
-                log::debug!("非公开路径缺少Authorization头: {} {}", method, path);
+            if !is_public && token.is_none() {
+                log::debug!("非公开路径缺少认证信息: {} {}", method, path);
                 return Err(ErrorUnauthorized("缺少认证信息"));
             }
 
-            // 如果有认证信息，尝试验证（无论是否是公开路径）
-            if let Some(header) = auth_header {
-                if header.starts_with("Bearer ") {
-                    let token = header.trim_start_matches("Bearer ").to_string();
-
-                    // 验证Token
-                    match verify_token(&token, &jwt_secret, Some("access")) {
-                        Ok(claims) => {
-                            match extract_current_user(claims) {
-                                Ok(current_user) => {
-                                    log::debug!("用户认证成功: {}, 角色: {:?}", current_user.username, current_user.role);
-                                    // 将用户信息存入请求扩展
-                                    req.extensions_mut().insert(current_user);
-                                }
-                                Err(e) => {
-                                    log::warn!("提取用户信息失败: {}", e);
-                                    // 非公开路径需要返回错误
-                                    if !is_public {
-                                        return Err(ErrorUnauthorized("无效的认证信息"));
-                                    }
-                                }
+            // 如果有认证信息，尝试验证
+            if let Some(token) = token {
+                // 验证Token
+                match verify_token(&token, &jwt_secret, Some("access")) {
+                    Ok(claims) => {
+                        match extract_current_user(claims) {
+                            Ok(current_user) => {
+                                log::debug!("用户认证成功: {}, 角色: {:?}", current_user.username, current_user.role);
+                                // 将用户信息存入请求扩展
+                                req.extensions_mut().insert(current_user);
                             }
-                        }
-                        Err(e) => {
-                            log::warn!("Token验证失败: {}", e);
-                            // 非公开路径需要返回错误
-                            if !is_public {
-                                return Err(ErrorUnauthorized("认证已过期或无效"));
+                            Err(e) => {
+                                log::warn!("提取用户信息失败: {}", e);
+                                // 非公开路径需要返回错误
+                                if !is_public {
+                                    return Err(ErrorUnauthorized("无效的认证信息"));
+                                }
                             }
                         }
                     }
-                } else if !is_public {
-                    log::debug!("无效的Authorization头格式");
-                    return Err(ErrorUnauthorized("无效的认证信息格式"));
+                    Err(e) => {
+                        log::warn!("Token验证失败: {}", e);
+                        // 非公开路径需要返回错误
+                        if !is_public {
+                            return Err(ErrorUnauthorized("认证已过期或无效"));
+                        }
+                    }
                 }
             }
 
@@ -221,6 +236,30 @@ where
             // 继续处理请求
             service.call(req).await
         })
+    }
+}
+
+impl<S> JwtAuthMiddleware<S> {
+    /// 从请求中提取 Token（从 Authorization 头或 Cookie）
+    fn extract_token_from_request(req: &ServiceRequest) -> Option<String> {
+        // 首先尝试从 Authorization 头中提取
+        let auth_header = req
+            .headers()
+            .get(header::AUTHORIZATION)
+            .and_then(|h| h.to_str().ok());
+
+        if let Some(header) = auth_header {
+            if header.starts_with("Bearer ") {
+                return Some(header.trim_start_matches("Bearer ").to_string());
+            }
+        }
+
+        // 然后尝试从 Cookie 中提取
+        if let Some(cookie) = req.cookie(ACCESS_TOKEN_COOKIE) {
+            return Some(cookie.value().to_string());
+        }
+
+        None
     }
 }
 

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { login, register, refreshToken, logout } from '../api/auth';
+import { getCurrentUser } from '../api/user';
 import axios from 'axios';
 import type {
   User,
@@ -12,169 +13,87 @@ import { UserRole } from '../types/auth';
 import { ElMessage } from 'element-plus';
 import logger from '../utils/logger';
 
-const TOKEN_KEY = 'access_token';
-const REFRESH_TOKEN_KEY = 'refresh_token';
 const USER_KEY = 'user';
-
-// 安全的 localStorage 操作函数
-const safeStorage = {
-  setItem(key: string, value: string): boolean {
-    try {
-      localStorage.setItem(key, value);
-      return true;
-    } catch (e) {
-      logger.error('[Storage]', `设置 ${key} 失败`, e);
-      return false;
-    }
-  },
-  getItem(key: string): string | null {
-    try {
-      return localStorage.getItem(key);
-    } catch (e) {
-      logger.error('[Storage]', `读取 ${key} 失败`, e);
-      return null;
-    }
-  },
-  removeItem(key: string): boolean {
-    try {
-      localStorage.removeItem(key);
-      return true;
-    } catch (e) {
-      logger.error('[Storage]', `删除 ${key} 失败`, e);
-      return false;
-    }
-  }
-};
 
 // 创建一个独立的 axios 实例用于初始化验证（不经过响应拦截器的处理）
 const verifyRequest = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api',
   timeout: 5000,
+  withCredentials: true, // 启用 Cookie 支持
 });
 
 export const useAuthStore = defineStore('auth', () => {
   // State
   const user = ref<User | null>(null);
-  const accessToken = ref<string | null>(safeStorage.getItem(TOKEN_KEY));
-  const refreshTokenValue = ref<string | null>(safeStorage.getItem(REFRESH_TOKEN_KEY));
+  // accessToken 仅用于内存中的临时存储（如文件下载等场景）
+  // 实际认证通过 HttpOnly Cookie 完成
+  const accessToken = ref<string | null>(null);
   const isLoading = ref(false);
   const isAuthChecked = ref(false); // 标记是否已完成认证状态检查
 
   // Getters
-  const isAuthenticated = computed(() => !!accessToken.value && !!user.value);
+  const isAuthenticated = computed(() => !!user.value);
   const isAdmin = computed(() => user.value?.role === UserRole.Admin);
   const isVerified = computed(() => user.value?.isVerified || false);
 
   // Actions
 
-  // 初始化（从 localStorage 恢复并验证 Token）
+  // 初始化（验证会话状态并获取用户信息）
   const initialize = async (): Promise<boolean> => {
-    const storedToken = safeStorage.getItem(TOKEN_KEY);
-    const storedUser = safeStorage.getItem(USER_KEY);
-    const storedRefreshToken = safeStorage.getItem(REFRESH_TOKEN_KEY);
-
-    if (!storedToken || !storedUser) {
-      clearAuth();
-      isAuthChecked.value = true;
-      return false;
-    }
-
-    // 先设置 token（用于 API 调用），但不在 UI 显示用户信息
-    accessToken.value = storedToken;
-    refreshTokenValue.value = storedRefreshToken;
-
-    // 验证 Token 有效性
     try {
-      // 使用独立实例发送验证请求，避免触发响应拦截器的自动处理
-      const response = await verifyRequest.get('/users/me', {
-        headers: { Authorization: `Bearer ${storedToken}` }
-      });
+      // 使用独立的 axios 实例进行验证，跳过主请求拦截器的错误处理
+      // 这样 401 不会触发弹窗和跳转
+      const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api';
+      const response = await axios.get(`${baseURL}/users/me`, {
+        withCredentials: true,
+        timeout: 5000,
+        // 标记此请求跳过认证错误处理
+        skipAuthError: true,
+      } as any);
 
-      if (response.data.code === 200 && response.data.data) {
-        // Token 有效，更新用户信息
-        user.value = response.data.data;
-        safeStorage.setItem(USER_KEY, JSON.stringify(response.data.data));
-        logger.info('[Auth]', `Token 验证成功 | username=${response.data.data.username}`);
-        isAuthChecked.value = true;
-        return true;
-      } else {
-        // 响应格式不正确，保留登录状态
-        logger.warn('[Auth]', 'Token 验证响应格式不正确，保留登录状态');
+      const userData = response.data;
+      if (userData) {
+        user.value = userData;
+        logger.info('[Auth]', `会话验证成功 | username=${userData.username}`);
         isAuthChecked.value = true;
         return true;
       }
     } catch (error: any) {
       if (error.response?.status === 401) {
+        // Token 过期，尝试刷新（刷新请求也跳过错误处理）
         logger.warn('[Auth]', 'Access Token 已过期，尝试刷新...');
-        // 立即清除用户信息，避免 UI 上继续显示已登录状态
-        user.value = null;
+        try {
+          const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api';
+          await axios.post(`${baseURL}/auth/refresh`, {}, {
+            withCredentials: true,
+            timeout: 5000,
+            skipAuthError: true,
+          } as any);
 
-        // 尝试用 Refresh Token 刷新
-        if (storedRefreshToken) {
-          try {
-            const refreshResponse = await verifyRequest.post('/auth/refresh', {
-              refreshToken: storedRefreshToken
-            });
+          // 刷新成功，重新获取用户信息
+          const response = await axios.get(`${baseURL}/users/me`, {
+            withCredentials: true,
+            timeout: 5000,
+            skipAuthError: true,
+          } as any);
 
-            if (refreshResponse.data.code === 200 && refreshResponse.data.data) {
-              const { accessToken: newAccessToken, refreshToken: newRefreshToken } = refreshResponse.data.data;
-
-              // 更新 Token
-              accessToken.value = newAccessToken;
-              refreshTokenValue.value = newRefreshToken;
-              safeStorage.setItem(TOKEN_KEY, newAccessToken);
-              safeStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
-
-              // 用新 Token 获取用户信息
-              const userResponse = await verifyRequest.get('/users/me', {
-                headers: { Authorization: `Bearer ${newAccessToken}` }
-              });
-
-              if (userResponse.data.code === 200 && userResponse.data.data) {
-                user.value = userResponse.data.data;
-                safeStorage.setItem(USER_KEY, JSON.stringify(userResponse.data.data));
-                logger.info('[Auth]', `Token 刷新成功 | username=${userResponse.data.data.username}`);
-                isAuthChecked.value = true;
-                return true;
-              }
-            }
-          } catch (refreshError: any) {
-            logger.warn('[Auth]', 'Refresh Token 也已过期');
-            ElMessage.warning('登录已失效，请重新登录');
-          }
+          const userData = response.data;
+          user.value = userData;
+          logger.info('[Auth]', `Token 刷新成功 | username=${userData.username}`);
+          isAuthChecked.value = true;
+          return true;
+        } catch (refreshError) {
+          logger.warn('[Auth]', 'Token 刷新失败或用户未登录');
         }
-
-        // 只有确定是 401 且刷新失败时，才清除登录状态
-        logger.warn('[Auth]', '认证已失效，清除登录状态');
-        user.value = null;
-        accessToken.value = null;
-        refreshTokenValue.value = null;
-        clearStorage();
-        ElMessage.warning('登录已失效，请重新登录');
-        isAuthChecked.value = true;
-        return false;
-      } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        // 请求超时，清除登录状态（因为无法确定token是否有效）
-        logger.warn('[Auth]', 'Token 验证请求超时，清除登录状态');
-        user.value = null;
-        accessToken.value = null;
-        refreshTokenValue.value = null;
-        clearStorage();
-        ElMessage.warning('登录验证超时，请重新登录');
-        isAuthChecked.value = true;
-        return false;
       } else {
-        // 其他错误（网络错误、服务器错误等），清除登录状态
-        logger.warn('[Auth]', `Token 验证请求失败 | error=${error.message || error}`);
-        user.value = null;
-        accessToken.value = null;
-        refreshTokenValue.value = null;
-        clearStorage();
-        ElMessage.warning('登录验证失败，请重新登录');
-        isAuthChecked.value = true;
-        return false;
+        logger.warn('[Auth]', `会话验证失败 | error=${error.message || error}`);
       }
     }
+
+    // 认证失败或未登录，清除状态
+    clearAuth();
+    isAuthChecked.value = true;
+    return false;
   };
 
   // 登录
@@ -219,17 +138,10 @@ export const useAuthStore = defineStore('auth', () => {
 
   // 刷新 Access Token
   const refreshAccessToken = async (): Promise<boolean> => {
-    const currentRefreshToken = refreshTokenValue.value;
-    if (!currentRefreshToken) {
-      return false;
-    }
-
     try {
-      const response = await refreshToken({ refreshToken: currentRefreshToken });
-      accessToken.value = response.accessToken;
-      refreshTokenValue.value = response.refreshToken;
-      safeStorage.setItem(TOKEN_KEY, response.accessToken);
-      safeStorage.setItem(REFRESH_TOKEN_KEY, response.refreshToken);
+      // 后端从 HttpOnly Cookie 中读取 refresh_token
+      await refreshToken();
+      logger.info('[Auth]', 'Token 刷新成功');
       return true;
     } catch (error) {
       logger.error('[Auth]', '刷新 Token 失败', error);
@@ -251,15 +163,11 @@ export const useAuthStore = defineStore('auth', () => {
 
   // 设置认证数据
   const setAuthData = (response: AuthResponse) => {
-    // 先设置 token，再设置用户信息，确保 isAuthenticated 计算正确
-    accessToken.value = response.tokens.accessToken;
-    refreshTokenValue.value = response.tokens.refreshToken;
+    // 设置用户信息
     user.value = response.user;
 
-    // 保存到 localStorage
-    safeStorage.setItem(TOKEN_KEY, response.tokens.accessToken);
-    safeStorage.setItem(REFRESH_TOKEN_KEY, response.tokens.refreshToken);
-    safeStorage.setItem(USER_KEY, JSON.stringify(response.user));
+    // 注意：Token 存储在 HttpOnly Cookie 中，由浏览器自动管理
+    // 前端不直接访问 Token
 
     logger.info('[Auth]', `用户登录成功 | username=${response.user.username}, role=${response.user.role}`);
   };
@@ -268,22 +176,12 @@ export const useAuthStore = defineStore('auth', () => {
   const clearAuth = () => {
     user.value = null;
     accessToken.value = null;
-    refreshTokenValue.value = null;
-    clearStorage();
-  };
-
-  // 清除 localStorage
-  const clearStorage = () => {
-    safeStorage.removeItem(TOKEN_KEY);
-    safeStorage.removeItem(REFRESH_TOKEN_KEY);
-    safeStorage.removeItem(USER_KEY);
   };
 
   // 更新用户信息（用于资料修改后同步）
   const updateUserInfo = (userData: Partial<User>) => {
     if (user.value) {
       user.value = { ...user.value, ...userData };
-      safeStorage.setItem(USER_KEY, JSON.stringify(user.value));
     }
   };
 

@@ -42,11 +42,16 @@ pub async fn create_pool_from_env() -> Result<PgPool, Box<dyn std::error::Error>
 pub struct AppState {
     pub pool: PgPool,
     pub jwt_secret: String,
+    pub cookie_secure: bool,
 }
 
 impl AppState {
-    pub fn new(pool: PgPool, jwt_secret: String) -> Self {
-        Self { pool, jwt_secret }
+    pub fn new(pool: PgPool, jwt_secret: String, cookie_secure: bool) -> Self {
+        Self {
+            pool,
+            jwt_secret,
+            cookie_secure,
+        }
     }
 }
 
