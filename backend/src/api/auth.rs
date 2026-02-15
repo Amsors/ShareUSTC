@@ -1,8 +1,35 @@
 use actix_web::{post, web, HttpRequest, HttpResponse, Responder};
+use actix_web::cookie::{Cookie, SameSite, time::Duration as CookieDuration};
 use crate::db::AppState;
-use crate::models::{LoginRequest, RefreshTokenRequest, RegisterRequest};
+use crate::models::{LoginRequest, RegisterRequest};
 use crate::services::{AuthService, AuditLogService, AuthError};
-use crate::utils::{bad_request, unauthorized, conflict, internal_error, created};
+use crate::utils::{bad_request, unauthorized, conflict, internal_error};
+
+/// Cookie 名称常量
+const ACCESS_TOKEN_COOKIE: &str = "access_token";
+const REFRESH_TOKEN_COOKIE: &str = "refresh_token";
+
+/// 构建 HttpOnly Cookie
+fn build_auth_cookie<'a>(name: &'a str, value: &'a str, max_age_days: i64, secure: bool) -> Cookie<'a> {
+    Cookie::build(name, value)
+        .http_only(true)
+        .secure(secure)  // 从配置读取，生产环境设为 true (HTTPS)
+        .same_site(SameSite::Lax)
+        .path("/")
+        .max_age(CookieDuration::days(max_age_days))
+        .finish()
+}
+
+/// 清除认证 Cookie
+fn clear_auth_cookie<'a>(name: &'a str, secure: bool) -> Cookie<'a> {
+    Cookie::build(name, "")
+        .http_only(true)
+        .secure(secure)
+        .same_site(SameSite::Lax)
+        .path("/")
+        .max_age(CookieDuration::seconds(0))
+        .finish()
+}
 
 /// 注册
 #[post("/auth/register")]
@@ -31,7 +58,29 @@ pub async fn register(
                 ip_address.as_deref(),
             ).await;
 
-            created(response)
+            // 设置 HttpOnly Cookies
+            let access_cookie = build_auth_cookie(
+                ACCESS_TOKEN_COOKIE,
+                &response.tokens.access_token,
+                1, // 1天
+                state.cookie_secure,
+            );
+            let refresh_cookie = build_auth_cookie(
+                REFRESH_TOKEN_COOKIE,
+                &response.tokens.refresh_token,
+                7, // 7天
+                state.cookie_secure,
+            );
+
+            // 返回用户信息（不包含token）
+            let user_response = serde_json::json!({
+                "user": response.user
+            });
+
+            HttpResponse::Created()
+                .cookie(access_cookie)
+                .cookie(refresh_cookie)
+                .json(user_response)
         }
         Err(e) => {
             log::warn!("[Auth] 用户注册失败 | username={}, error={}", username, e);
@@ -71,7 +120,29 @@ pub async fn login(
                 ip_address.as_deref(),
             ).await;
 
-            HttpResponse::Ok().json(response)
+            // 设置 HttpOnly Cookies
+            let access_cookie = build_auth_cookie(
+                ACCESS_TOKEN_COOKIE,
+                &response.tokens.access_token,
+                1, // 1天
+                state.cookie_secure,
+            );
+            let refresh_cookie = build_auth_cookie(
+                REFRESH_TOKEN_COOKIE,
+                &response.tokens.refresh_token,
+                7, // 7天
+                state.cookie_secure,
+            );
+
+            // 返回用户信息（不包含token）
+            let user_response = serde_json::json!({
+                "user": response.user
+            });
+
+            HttpResponse::Ok()
+                .cookie(access_cookie)
+                .cookie(refresh_cookie)
+                .json(user_response)
         }
         Err(e) => {
             log::warn!("[Auth] 用户登录失败 | username={}, error={}", username, e);
@@ -88,14 +159,45 @@ pub async fn login(
 #[post("/auth/refresh")]
 pub async fn refresh(
     state: web::Data<AppState>,
-    req: web::Json<RefreshTokenRequest>,
+    req: HttpRequest,
 ) -> impl Responder {
     log::info!("[Auth] Token刷新请求");
 
-    match AuthService::refresh_token(&state.pool, &state.jwt_secret, req.into_inner()).await {
+    // 从 Cookie 中获取 refresh token
+    let refresh_token = req.cookie(REFRESH_TOKEN_COOKIE)
+        .map(|c| c.value().to_string());
+
+    if refresh_token.is_none() {
+        log::warn!("[Auth] Token刷新失败 | 缺少refresh_token cookie");
+        return unauthorized("缺少认证信息");
+    }
+
+    let refresh_token = refresh_token.unwrap();
+
+    match AuthService::refresh_token(&state.pool, &state.jwt_secret, refresh_token).await {
         Ok(tokens) => {
             log::info!("[Auth] Token刷新成功");
-            HttpResponse::Ok().json(tokens)
+
+            // 设置新的 HttpOnly Cookies
+            let access_cookie = build_auth_cookie(
+                ACCESS_TOKEN_COOKIE,
+                &tokens.access_token,
+                1, // 1天
+                state.cookie_secure,
+            );
+            let refresh_cookie = build_auth_cookie(
+                REFRESH_TOKEN_COOKIE,
+                &tokens.refresh_token,
+                7, // 7天
+                state.cookie_secure,
+            );
+
+            HttpResponse::Ok()
+                .cookie(access_cookie)
+                .cookie(refresh_cookie)
+                .json(serde_json::json!({
+                    "message": "Token刷新成功"
+                }))
         }
         Err(e) => {
             log::warn!("[Auth] Token刷新失败 | error={}", e);
@@ -107,13 +209,23 @@ pub async fn refresh(
     }
 }
 
-/// 登出（此处仅记录，实际Token失效需要在前端处理或使用黑名单）
+/// 登出
 #[post("/auth/logout")]
-pub async fn logout() -> impl Responder {
+pub async fn logout(
+    state: web::Data<AppState>,
+) -> impl Responder {
     log::info!("[Auth] 用户登出");
-    HttpResponse::Ok().json(serde_json::json!({
-        "message": "登出成功"
-    }))
+
+    // 清除 Cookies
+    let access_cookie = clear_auth_cookie(ACCESS_TOKEN_COOKIE, state.cookie_secure);
+    let refresh_cookie = clear_auth_cookie(REFRESH_TOKEN_COOKIE, state.cookie_secure);
+
+    HttpResponse::Ok()
+        .cookie(access_cookie)
+        .cookie(refresh_cookie)
+        .json(serde_json::json!({
+            "message": "登出成功"
+        }))
 }
 
 /// 配置认证路由

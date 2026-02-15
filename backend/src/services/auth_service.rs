@@ -1,5 +1,5 @@
 use crate::models::{
-    AuthResponse, LoginRequest, RefreshTokenRequest, RegisterRequest, TokenResponse,
+    AuthResponse, LoginRequest, RegisterRequest, TokenResponse,
     UserInfo, UserRole, User,
 };
 use crate::utils::{generate_access_token, generate_refresh_token, hash_password, verify_password, verify_token};
@@ -243,10 +243,10 @@ impl AuthService {
     pub async fn refresh_token(
         _pool: &PgPool,
         jwt_secret: &str,
-        req: RefreshTokenRequest,
+        refresh_token: String,
     ) -> Result<TokenResponse, AuthError> {
         // 验证 Refresh Token
-        let claims = verify_token(&req.refresh_token, jwt_secret, Some("refresh"))
+        let claims = verify_token(&refresh_token, jwt_secret, Some("refresh"))
             .map_err(|e| AuthError::TokenInvalid(e))?;
 
         // 提取用户信息

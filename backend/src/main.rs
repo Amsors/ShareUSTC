@@ -14,7 +14,7 @@ mod db;
 use config::Config;
 use db::AppState;
 use middleware::{JwtAuth, PublicPathRule};
-use crate::utils::{not_found, internal_error};
+use crate::utils::not_found;
 
 #[derive(Serialize)]
 struct HelloResponse {
@@ -158,7 +158,11 @@ async fn main() -> std::io::Result<()> {
     }
 
     // 创建应用状态
-    let app_state = web::Data::new(AppState::new(pool, config.jwt_secret.clone()));
+    let app_state = web::Data::new(AppState::new(
+        pool,
+        config.jwt_secret.clone(),
+        config.cookie_secure,
+    ));
 
     log::info!("[System] Server starting at http://{}", server_addr);
     log::debug!("[System] Debug logging enabled");
@@ -221,16 +225,20 @@ async fn main() -> std::io::Result<()> {
         let jwt_auth = JwtAuth::new(jwt_secret.clone()).with_public_rules(public_rules);
 
         // 构建 CORS 配置
+        // 注意：使用 Cookie 认证必须设置 supports_credentials(true)
         let cors = Cors::default()
             .allowed_methods(vec!["GET", "POST", "PUT", "DELETE", "OPTIONS"])
             .allowed_headers(vec!["Content-Type", "Authorization", "Accept"])
             .expose_headers(vec!["Content-Disposition"])
-            .supports_credentials()
+            .supports_credentials() // 必须启用，以支持 Cookie 传输
             .max_age(3600);
 
         // 动态添加允许的域名
+        // 注意：使用 supports_credentials() 时，不能同时使用 allow_any_origin()
+        // 必须指定具体的允许域名
         let cors = if cors_origins_worker.contains(&"*".to_string()) {
-            cors.allow_any_origin()
+            // 允许任何来源，但需要验证 origin 头部（用于 Cookie 认证）
+            cors.allowed_origin_fn(|_origin, _req_head| true)
         } else {
             cors.allowed_origin_fn(move |origin, _req_head| {
                 let origin_str = origin.to_str().unwrap_or("");

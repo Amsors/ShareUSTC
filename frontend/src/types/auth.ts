@@ -42,9 +42,9 @@ export interface TokenResponse {
 }
 
 // 认证响应
+// 注意：Token 现在存储在 HttpOnly Cookie 中，不再在响应体中返回
 export interface AuthResponse {
   user: User;
-  tokens: TokenResponse;
 }
 
 // 刷新 Token 请求

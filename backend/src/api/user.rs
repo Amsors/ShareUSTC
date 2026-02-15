@@ -1,9 +1,25 @@
 use actix_web::{get, put, post, web, HttpResponse, Responder};
+use actix_web::cookie::{Cookie, SameSite, time::Duration as CookieDuration};
 use crate::db::AppState;
-use crate::models::{CurrentUser, UpdateProfileRequest, VerificationRequest, AuthResponse, TokenResponse, UserRole, UserHomepageQuery};
+use crate::models::{CurrentUser, UpdateProfileRequest, VerificationRequest, UserRole, UserHomepageQuery};
 use crate::services::{UserError, UserService};
 use crate::utils::{generate_access_token, generate_refresh_token, bad_request, forbidden, not_found, internal_error};
 use uuid::Uuid;
+
+/// Cookie 名称常量
+const ACCESS_TOKEN_COOKIE: &str = "access_token";
+const REFRESH_TOKEN_COOKIE: &str = "refresh_token";
+
+/// 构建 HttpOnly Cookie
+fn build_auth_cookie<'a>(name: &'a str, value: &'a str, max_age_days: i64, secure: bool) -> Cookie<'a> {
+    Cookie::build(name, value)
+        .http_only(true)
+        .secure(secure)  // 从配置读取，生产环境设为 true (HTTPS)
+        .same_site(SameSite::Lax)
+        .path("/")
+        .max_age(CookieDuration::days(max_age_days))
+        .finish()
+}
 
 /// 获取当前用户信息
 #[get("/users/me")]
@@ -115,17 +131,29 @@ pub async fn verify_user(
                 }
             };
 
-            let auth_response = AuthResponse {
-                user: user_info,
-                tokens: TokenResponse {
-                    access_token,
-                    refresh_token,
-                    token_type: "Bearer".to_string(),
-                    expires_in: 15 * 60, // 15分钟
-                },
-            };
+            // 设置 HttpOnly Cookies
+            let access_cookie = build_auth_cookie(
+                ACCESS_TOKEN_COOKIE,
+                &access_token,
+                1, // 1天
+                state.cookie_secure,
+            );
+            let refresh_cookie = build_auth_cookie(
+                REFRESH_TOKEN_COOKIE,
+                &refresh_token,
+                7, // 7天
+                state.cookie_secure,
+            );
 
-            HttpResponse::Ok().json(auth_response)
+            // 返回用户信息（不包含token）
+            let user_response = serde_json::json!({
+                "user": user_info
+            });
+
+            HttpResponse::Ok()
+                .cookie(access_cookie)
+                .cookie(refresh_cookie)
+                .json(user_response)
         }
         Err(e) => {
             log::warn!("[User] 实名认证失败 | user_id={}, error={}", user.id, e);

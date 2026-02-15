@@ -13,12 +13,15 @@ const request: AxiosInstance = axios.create({
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
-  }
+  },
+  withCredentials: true, // 启用 Cookie 支持，使浏览器自动发送 HttpOnly Cookie
 });
 
 // 请求拦截器
 request.interceptors.request.use(
   (config) => {
+    // Cookie 会自动通过 withCredentials 发送，不需要手动设置 Authorization 头
+    // 但为了兼容可能需要手动传递 Token 的场景（如文件下载），保留从 store 获取 token 的逻辑
     const authStore = useAuthStore();
     const token = authStore.accessToken;
 
@@ -60,26 +63,33 @@ request.interceptors.response.use(
   async (error: AxiosError) => {
     logger.error('[API]', 'Response Error', error);
 
-    const { response } = error;
+    const { response, config } = error;
 
     if (response) {
       const { status, data } = response as any;
       const message = data?.message || '请求失败';
+
+      // 检查是否标记为跳过认证错误处理（如初始化时的登录状态检查）
+      const skipAuthError = (config as any)?.skipAuthError;
 
       switch (status) {
         case 400:
           ElMessage.error(message);
           break;
         case 401:
+          // 如果标记为跳过认证错误，静默处理
+          if (skipAuthError) {
+            return Promise.reject(error);
+          }
+
           // Token 过期，尝试刷新
           const authStore = useAuthStore();
           const refreshed = await authStore.refreshAccessToken();
 
           if (refreshed) {
             // 刷新成功，重试原请求
-            const config = error.config;
             if (config) {
-              config.headers.Authorization = `Bearer ${authStore.accessToken}`;
+              // Cookie 会自动发送，不需要重新设置 Authorization
               return request(config);
             }
           } else {
@@ -94,10 +104,14 @@ request.interceptors.response.use(
           }
           break;
         case 403:
-          ElMessage.error('没有权限访问');
+          if (!skipAuthError) {
+            ElMessage.error('没有权限访问');
+          }
           break;
         case 404:
-          ElMessage.error('请求的资源不存在');
+          if (!skipAuthError) {
+            ElMessage.error('请求的资源不存在');
+          }
           break;
         case 409:
           ElMessage.error(message); // 如"用户名已存在"
@@ -114,7 +128,12 @@ request.interceptors.response.use(
 
       return Promise.reject(error);
     } else {
-      ElMessage.error('网络错误，请检查网络连接');
+      // 网络错误（CORS、超时等）
+      // 如果标记为跳过认证错误，静默处理
+      const skipAuthError = (config as any)?.skipAuthError;
+      if (!skipAuthError) {
+        ElMessage.error('网络错误，请检查网络连接');
+      }
       return Promise.reject(new ApiError('网络错误', true));
     }
   }
