@@ -26,17 +26,6 @@ pub async fn create_pool(database_url: &str) -> Result<PgPool, sqlx::Error> {
     Ok(pool)
 }
 
-/// 从环境变量创建连接池
-pub async fn create_pool_from_env() -> Result<PgPool, Box<dyn std::error::Error>> {
-    let database_url = std::env::var("DATABASE_URL")
-        .map_err(|_| "DATABASE_URL 环境变量未设置")?;
-
-    let pool = create_pool(&database_url).await
-        .map_err(|e| format!("数据库连接失败: {}", e))?;
-
-    Ok(pool)
-}
-
 /// 应用状态，包含数据库连接池
 #[derive(Clone)]
 pub struct AppState {

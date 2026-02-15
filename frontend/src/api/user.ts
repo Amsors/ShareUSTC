@@ -1,5 +1,5 @@
 import request from './request';
-import type { User, AuthResponse } from '../types/auth';
+import type { User } from '../types/auth';
 import type { ResourceListItem } from '../types/resource';
 
 // 用户资料更新请求

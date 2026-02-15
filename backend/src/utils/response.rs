@@ -51,19 +51,9 @@ pub fn conflict(message: &str) -> HttpResponse {
     error_response(409, message)
 }
 
-/// 快速构建 422 Unprocessable Entity 错误
-pub fn unprocessable_entity(message: &str) -> HttpResponse {
-    error_response(422, message)
-}
-
 /// 快速构建 500 Internal Server Error 错误
 pub fn internal_error(message: &str) -> HttpResponse {
     error_response(500, message)
-}
-
-/// 构建成功响应（200 OK）
-pub fn ok<T: serde::Serialize>(data: T) -> HttpResponse {
-    HttpResponse::Ok().json(data)
 }
 
 /// 构建创建成功响应（201 Created）

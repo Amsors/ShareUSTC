@@ -12,14 +12,6 @@ pub struct Favorite {
     pub created_at: NaiveDateTime,
 }
 
-/// 收藏夹资源关联实体（对应数据库 favorite_resources 表）
-#[derive(Debug, Clone, FromRow, Serialize)]
-pub struct FavoriteResource {
-    pub favorite_id: Uuid,
-    pub resource_id: Uuid,
-    pub added_at: NaiveDateTime,
-}
-
 /// 创建收藏夹请求 DTO
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]

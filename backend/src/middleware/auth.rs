@@ -105,27 +105,6 @@ impl JwtAuth {
         self.public_paths.iter().any(|rule| rule.matches(path, method))
     }
 
-    /// 从请求中提取 Token（从 Authorization 头或 Cookie）
-    fn extract_token(&self, req: &ServiceRequest) -> Option<String> {
-        // 首先尝试从 Authorization 头中提取
-        let auth_header = req
-            .headers()
-            .get(header::AUTHORIZATION)
-            .and_then(|h| h.to_str().ok());
-
-        if let Some(header) = auth_header {
-            if header.starts_with("Bearer ") {
-                return Some(header.trim_start_matches("Bearer ").to_string());
-            }
-        }
-
-        // 然后尝试从 Cookie 中提取
-        if let Some(cookie) = req.cookie(ACCESS_TOKEN_COOKIE) {
-            return Some(cookie.value().to_string());
-        }
-
-        None
-    }
 }
 
 impl<S, B> Transform<S, ServiceRequest> for JwtAuth

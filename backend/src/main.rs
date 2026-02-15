@@ -114,7 +114,7 @@ async fn main() -> std::io::Result<()> {
     log::info!("[System] Resource upload directory: {}", config.resource_upload_path);
 
     // 创建数据库连接池
-    let pool = match db::create_pool_from_env().await {
+    let pool = match db::create_pool(&config.database_url).await {
         Ok(pool) => {
             log::info!("[System] 数据库连接池创建成功");
             pool

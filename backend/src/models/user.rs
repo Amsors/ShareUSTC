@@ -120,13 +120,6 @@ pub struct AuthResponse {
     pub tokens: TokenResponse,
 }
 
-/// 刷新 Token 请求 DTO
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct RefreshTokenRequest {
-    pub refresh_token: String,
-}
-
 /// JWT Claims
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {

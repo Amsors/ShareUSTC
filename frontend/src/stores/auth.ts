@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { login, register, refreshToken, logout } from '../api/auth';
-import { getCurrentUser } from '../api/user';
 import axios from 'axios';
 import type {
   User,
@@ -12,15 +11,6 @@ import type {
 import { UserRole } from '../types/auth';
 import { ElMessage } from 'element-plus';
 import logger from '../utils/logger';
-
-const USER_KEY = 'user';
-
-// 创建一个独立的 axios 实例用于初始化验证（不经过响应拦截器的处理）
-const verifyRequest = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api',
-  timeout: 5000,
-  withCredentials: true, // 启用 Cookie 支持
-});
 
 export const useAuthStore = defineStore('auth', () => {
   // State

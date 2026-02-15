@@ -61,8 +61,4 @@ impl Config {
         }
     }
 
-    /// 检查指定用户名是否为配置中的管理员
-    pub fn is_admin_username(&self, username: &str) -> bool {
-        self.admin_usernames.iter().any(|admin| admin == username)
-    }
 }
