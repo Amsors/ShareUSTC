@@ -8,8 +8,8 @@
 
 # Configuration
 $DB_NAME = "shareustc"
-$DB_USER = "shareustc_app"
-$DB_PASSWORD = "114514"
+$DB_USER = "shareustc_app" 
+$DB_PASSWORD = "114514" # Note: In production, use environment variables or secure vaults for credentials
 $POSTGRES_USER = "postgres"
 
 # Color output function
