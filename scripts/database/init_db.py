@@ -1,88 +1,28 @@
-# ============================================
-# ShareUSTC Database Table Initialization Script (Windows)
-# No admin required, run as normal user
-# Function: Create/Update all tables, indexes, triggers (supports incremental update)
-# ============================================
+#!/usr/bin/env python3
+"""
+ShareUSTC Database Table Initialization Script
+Cross-platform: Works on Windows, Linux, macOS
+"""
+
+import subprocess
+import sys
+import os
+import tempfile
 
 # Configuration
-$DB_NAME = "shareustc"
-$DB_USER = "shareustc_app"
-$DB_PASSWORD = "114514"
-$DB_HOST = "localhost"
-$DB_PORT = "5432"
+DB_NAME = "shareustc"
+DB_USER = "shareustc_app"
+DB_PASSWORD = "114514"
+DB_HOST = "localhost"
+DB_PORT = "5432"
 
-# Color output function
-function Write-Green($msg) { Write-Host $msg -ForegroundColor Green }
-function Write-Yellow($msg) { Write-Host $msg -ForegroundColor Yellow }
-function Write-Red($msg) { Write-Host $msg -ForegroundColor Red }
-
-Write-Green "=== ShareUSTC Database Table Initialization (Incremental Update) ==="
-Write-Host ""
-
-# Find psql
-$psqlPath = Get-Command psql -ErrorAction SilentlyContinue
-if (-not $psqlPath) {
-    $commonPaths = @(
-        "C:\Program Files\PostgreSQL\*\bin\psql.exe",
-        "C:\Program Files (x86)\PostgreSQL\*\bin\psql.exe"
-    )
-    $found = $false
-    foreach ($path in $commonPaths) {
-        $matches = Get-ChildItem -Path $path -ErrorAction SilentlyContinue
-        if ($matches) {
-            $env:Path += ";" + $matches[0].DirectoryName
-            $found = $true
-            break
-        }
-    }
-    if (-not $found) {
-        Write-Red "Error: psql command not found. Please install PostgreSQL client."
-        exit 1
-    }
-}
-
-# Test database connection
-Write-Yellow "Testing database connection..."
-$env:PGPASSWORD = $DB_PASSWORD
-try {
-    $result = psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -c "SELECT 1;" 2>$null | Out-String
-    if ($result -notmatch "1") {
-        throw "Connection test failed"
-    }
-    Write-Green "  Database connection successful"
-} catch {
-    Write-Red "Error: Cannot connect to database. Please check:"
-    Write-Host "  1. Database is created (run db_create_system_win.ps1)"
-    Write-Host "  2. Username and password are correct"
-    Write-Host "  3. PostgreSQL service is running"
-    exit 1
-}
-
-Write-Host ""
-
-# Create SQL file and execute
-Write-Yellow "Starting incremental update..."
-
-$sqlFile = [System.IO.Path]::GetTempFileName() + ".sql"
-
-$sqlContent = @'
--- ============================================
+SQL_SCRIPT = '''
 -- ShareUSTC Database Incremental Update Script
--- Supports: 1) First-time table creation 2) Add new columns 3) Create indexes and triggers
--- Feature: Can be executed multiple times without losing data
--- ============================================
 
--- Enable extension
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- ============================================
--- Create sn sequence (auto increment from 1)
--- ============================================
 CREATE SEQUENCE IF NOT EXISTS user_sn_seq START 1;
 
--- ============================================
--- Ensure sequence starts correctly (consider existing data)
--- ============================================
 DO $$
 BEGIN
     PERFORM setval('user_sn_seq',
@@ -93,9 +33,7 @@ EXCEPTION
     WHEN undefined_column THEN NULL;
 END $$;
 
--- ============================================
--- 1. Users Table
--- ============================================
+-- 1. users table
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -141,9 +79,7 @@ BEGIN
     END IF;
 END $$;
 
--- ============================================
--- 2. Resources Table
--- ============================================
+-- 2. resources table
 CREATE TABLE IF NOT EXISTS resources (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -202,9 +138,7 @@ BEGIN
     END IF;
 END $$;
 
--- ============================================
--- 3. Resource Stats Table
--- ============================================
+-- 3. resource_stats table
 CREATE TABLE IF NOT EXISTS resource_stats (
     resource_id UUID PRIMARY KEY REFERENCES resources(id) ON DELETE CASCADE
 );
@@ -255,9 +189,7 @@ BEGIN
     END IF;
 END $$;
 
--- ============================================
--- 4. Ratings Table
--- ============================================
+-- 4. ratings table
 CREATE TABLE IF NOT EXISTS ratings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -309,12 +241,10 @@ BEGIN
     END IF;
 EXCEPTION
     WHEN unique_violation THEN
-        RAISE NOTICE 'Cannot add unique constraint: duplicate data (resource_id, user_id)';
+        RAISE NOTICE 'Cannot add unique constraint: duplicate data';
 END $$;
 
--- ============================================
--- 5. Likes Table
--- ============================================
+-- 5. likes table
 CREATE TABLE IF NOT EXISTS likes (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -342,9 +272,7 @@ EXCEPTION
         RAISE NOTICE 'Cannot add primary key: duplicate data';
 END $$;
 
--- ============================================
--- 6. Comments Table
--- ============================================
+-- 6. comments table
 CREATE TABLE IF NOT EXISTS comments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -377,9 +305,7 @@ BEGIN
     END IF;
 END $$;
 
--- ============================================
--- 7. Favorites Table
--- ============================================
+-- 7. favorites table
 CREATE TABLE IF NOT EXISTS favorites (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -399,9 +325,7 @@ BEGIN
     END IF;
 END $$;
 
--- ============================================
--- 8. Favorite Resources Table
--- ============================================
+-- 8. favorite_resources table
 CREATE TABLE IF NOT EXISTS favorite_resources (
     added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -429,9 +353,7 @@ EXCEPTION
         RAISE NOTICE 'Cannot add primary key: duplicate data';
 END $$;
 
--- ============================================
--- 9. Claims Table
--- ============================================
+-- 9. claims table
 CREATE TABLE IF NOT EXISTS claims (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -473,9 +395,7 @@ BEGIN
     END IF;
 END $$;
 
--- ============================================
--- 10. Notifications Table
--- ============================================
+-- 10. notifications table
 CREATE TABLE IF NOT EXISTS notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -506,9 +426,7 @@ BEGIN
     END IF;
 END $$;
 
--- ============================================
--- 10b. Notification Reads Table
--- ============================================
+-- 10b. notification_reads table
 CREATE TABLE IF NOT EXISTS notification_reads (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -545,9 +463,7 @@ EXCEPTION
         RAISE NOTICE 'Cannot add unique constraint: duplicate data';
 END $$;
 
--- ============================================
--- 11. Audit Logs Table
--- ============================================
+-- 11. audit_logs table
 CREATE TABLE IF NOT EXISTS audit_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -575,9 +491,7 @@ BEGIN
     END IF;
 END $$;
 
--- ============================================
--- 12. Download Logs Table
--- ============================================
+-- 12. download_logs table
 CREATE TABLE IF NOT EXISTS download_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     downloaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -600,9 +514,7 @@ BEGIN
     END IF;
 END $$;
 
--- ============================================
--- 13. Images Table
--- ============================================
+-- 13. images table
 CREATE TABLE IF NOT EXISTS images (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -631,9 +543,7 @@ BEGIN
     END IF;
 END $$;
 
--- ============================================
--- Assign sn to existing users (incremental update support)
--- ============================================
+-- Assign sn to existing users
 DO $$
 DECLARE
     user_record RECORD;
@@ -645,22 +555,15 @@ BEGIN
         UPDATE users SET sn = current_sn WHERE id = user_record.id;
         current_sn := current_sn + 1;
     END LOOP;
-
     IF current_sn > 1 THEN
         PERFORM setval('user_sn_seq', current_sn - 1, true);
     END IF;
 END $$;
 
--- ============================================
--- Create Indexes
--- ============================================
-
--- Users table indexes
+-- Create indexes
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 CREATE INDEX IF NOT EXISTS idx_users_is_verified ON users(is_verified);
 CREATE INDEX IF NOT EXISTS idx_users_sn ON users(sn);
-
--- Resources table indexes
 CREATE INDEX IF NOT EXISTS idx_resources_uploader ON resources(uploader_id);
 CREATE INDEX IF NOT EXISTS idx_resources_author ON resources(author_id);
 CREATE INDEX IF NOT EXISTS idx_resources_course ON resources(course_name);
@@ -669,63 +572,41 @@ CREATE INDEX IF NOT EXISTS idx_resources_category ON resources(category);
 CREATE INDEX IF NOT EXISTS idx_resources_audit_status ON resources(audit_status);
 CREATE INDEX IF NOT EXISTS idx_resources_tags ON resources USING GIN(tags);
 CREATE INDEX IF NOT EXISTS idx_resources_created_at ON resources(created_at DESC);
-
--- Ratings table indexes
 CREATE INDEX IF NOT EXISTS idx_ratings_resource ON ratings(resource_id);
 CREATE INDEX IF NOT EXISTS idx_ratings_user ON ratings(user_id);
-
--- Likes table indexes
 CREATE INDEX IF NOT EXISTS idx_likes_user ON likes(user_id);
-
--- Comments table indexes
 CREATE INDEX IF NOT EXISTS idx_comments_resource ON comments(resource_id);
 CREATE INDEX IF NOT EXISTS idx_comments_user ON comments(user_id);
 CREATE INDEX IF NOT EXISTS idx_comments_created_at ON comments(created_at DESC);
-
--- Favorites indexes
 CREATE INDEX IF NOT EXISTS idx_favorites_user ON favorites(user_id);
 CREATE INDEX IF NOT EXISTS idx_fav_res_resource ON favorite_resources(resource_id);
-
--- Claims table indexes
 CREATE INDEX IF NOT EXISTS idx_claims_resource ON claims(resource_id);
 CREATE INDEX IF NOT EXISTS idx_claims_applicant ON claims(applicant_id);
 CREATE INDEX IF NOT EXISTS idx_claims_status ON claims(status);
-
--- Notifications table indexes
 CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_priority ON notifications(priority);
 CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications(is_read);
 CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at DESC);
-
--- Notification reads table indexes
 CREATE INDEX IF NOT EXISTS idx_notification_reads_notification ON notification_reads(notification_id);
 CREATE INDEX IF NOT EXISTS idx_notification_reads_user ON notification_reads(user_id);
 CREATE INDEX IF NOT EXISTS idx_notification_reads_unique ON notification_reads(notification_id, user_id);
-
--- Audit logs indexes
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON audit_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC);
-
--- Download logs indexes
 CREATE INDEX IF NOT EXISTS idx_download_logs_resource ON download_logs(resource_id);
 CREATE INDEX IF NOT EXISTS idx_download_logs_user ON download_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_download_logs_time ON download_logs(downloaded_at DESC);
-
--- Images table indexes
 CREATE INDEX IF NOT EXISTS idx_images_uploader ON images(uploader_id);
 
--- ============================================
--- Create Triggers
--- ============================================
-
+-- Create triggers
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = CURRENT_TIMESTAMP;
     RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$
+language 'plpgsql';
 
 DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 CREATE TRIGGER update_users_updated_at
@@ -751,10 +632,7 @@ CREATE TRIGGER update_comments_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
--- ============================================
 -- Verify
--- ============================================
-
 SELECT 'users' as table_name, COUNT(*) as column_count FROM information_schema.columns WHERE table_name = 'users'
 UNION ALL
 SELECT 'resources', COUNT(*) FROM information_schema.columns WHERE table_name = 'resources'
@@ -782,48 +660,114 @@ UNION ALL
 SELECT 'download_logs', COUNT(*) FROM information_schema.columns WHERE table_name = 'download_logs'
 UNION ALL
 SELECT 'images', COUNT(*) FROM information_schema.columns WHERE table_name = 'images';
-'@
+'''
 
-# Write SQL to temp file with UTF8 encoding
-[System.IO.File]::WriteAllText($sqlFile, $sqlContent, [System.Text.Encoding]::UTF8)
+def find_psql():
+    """Find psql executable"""
+    # Check PATH first
+    try:
+        result = subprocess.run(['where', 'psql'], capture_output=True, text=True)
+        if result.returncode == 0:
+            return 'psql'
+    except:
+        pass
+    
+    # Check common PostgreSQL installation paths
+    common_paths = [
+        r"C:\Program Files\PostgreSQL",
+        r"C:\Program Files (x86)\PostgreSQL"
+    ]
+    
+    for base_path in common_paths:
+        if os.path.exists(base_path):
+            for version in os.listdir(base_path):
+                psql_path = os.path.join(base_path, version, 'bin', 'psql.exe')
+                if os.path.exists(psql_path):
+                    return psql_path
+    
+    return None
 
-# Execute SQL
-try {
-    psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f $sqlFile 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        throw "SQL execution failed"
-    }
-} catch {
-    Write-Red "Error: SQL execution failed"
-    Write-Red $_
-    Remove-Item $sqlFile -ErrorAction SilentlyContinue
-    exit 1
-} finally {
-    Remove-Item $sqlFile -ErrorAction SilentlyContinue
-}
+def main():
+    print("=== ShareUSTC Database Table Initialization ===")
+    print()
+    
+    # Find psql
+    psql = find_psql()
+    if not psql:
+        print("Error: psql not found. Please install PostgreSQL and ensure it's in PATH.")
+        sys.exit(1)
+    
+    # Test connection
+    print("Testing database connection...")
+    env = os.environ.copy()
+    env['PGPASSWORD'] = DB_PASSWORD
+    
+    try:
+        result = subprocess.run(
+            [psql, '-h', DB_HOST, '-p', DB_PORT, '-U', DB_USER, '-d', DB_NAME, '-c', 'SELECT 1;'],
+            capture_output=True,
+            text=True,
+            env=env
+        )
+        if result.returncode != 0 or '1' not in result.stdout:
+            raise Exception("Connection failed")
+        print("  Database connection successful")
+    except Exception as e:
+        print("Error: Cannot connect to database.")
+        print("  1. Run db_create_system_win.ps1 first")
+        print("  2. Check username/password")
+        print("  3. Check PostgreSQL service")
+        sys.exit(1)
+    
+    print()
+    print("Starting incremental update...")
+    
+    # Write SQL to temp file
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.sql', delete=False, encoding='utf-8') as f:
+        f.write(SQL_SCRIPT)
+        temp_file = f.name
+    
+    try:
+        # Execute SQL
+        result = subprocess.run(
+            [psql, '-h', DB_HOST, '-p', DB_PORT, '-U', DB_USER, '-d', DB_NAME, '-f', temp_file],
+            capture_output=True,
+            text=True,
+            env=env
+        )
+        print(result.stdout)
+        if result.stderr:
+            print(result.stderr)
+        
+        if result.returncode != 0:
+            print("Error: SQL execution failed")
+            sys.exit(1)
+    finally:
+        os.unlink(temp_file)
+    
+    print()
+    print("=== Table structure update completed ===")
+    print()
+    print("Created/Updated tables:")
+    print("  - users")
+    print("  - resources")
+    print("  - resource_stats")
+    print("  - ratings")
+    print("  - likes")
+    print("  - comments")
+    print("  - favorites")
+    print("  - favorite_resources")
+    print("  - claims")
+    print("  - notifications")
+    print("  - notification_reads")
+    print("  - audit_logs")
+    print("  - download_logs")
+    print("  - images")
+    print()
+    print("Indexes: 30+")
+    print("Triggers: 4 (auto update updated_at)")
+    print()
+    print("Note: This script supports incremental updates.")
 
-Write-Host ""
-Write-Green "=== Table Structure Incremental Update Completed ==="
-Write-Host ""
-Write-Host "Created/Updated Tables:"
-Write-Host "  - users (Users table)"
-Write-Host "  - resources (Resources table)"
-Write-Host "  - resource_stats (Resource stats table)"
-Write-Host "  - ratings (Ratings table)"
-Write-Host "  - likes (Likes table)"
-Write-Host "  - comments (Comments table)"
-Write-Host "  - favorites (Favorites table)"
-Write-Host "  - favorite_resources (Favorite resources table)"
-Write-Host "  - claims (Claims table)"
-Write-Host "  - notifications (Notifications table)"
-Write-Host "  - notification_reads (Notification reads table)"
-Write-Host "  - audit_logs (Audit logs table)"
-Write-Host "  - download_logs (Download logs table)"
-Write-Host "  - images (Images table)"
-Write-Host ""
-Write-Host "Indexes: 30+"
-Write-Host "Triggers: 4 (auto update updated_at)"
-Write-Host ""
-Write-Yellow "Note:"
-Write-Host "  This script supports incremental updates and can be executed multiple times."
-Write-Host "  New columns will be added automatically without affecting existing data."
+if __name__ == '__main__':
+    main()
