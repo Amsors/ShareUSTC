@@ -7,8 +7,8 @@
 # Configuration
 $DB_NAME = "shareustc"
 $DB_USER = "shareustc_app"
-$DB_PASSWORD = "114514"
-$DB_HOST = "localhost"
+$DB_PASSWORD = "114514" # Note: In production, use environment variables or secure vaults for credentials
+$DB_HOST = "localhost" # Assuming local PostgreSQL, adjust if needed
 $DB_PORT = "5432"
 
 # Color output function
