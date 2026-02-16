@@ -7,7 +7,7 @@
 -- psql -U postgres
 
 -- 1. 创建用户 (修改密码!)
-CREATE USER shareustc_app WITH PASSWORD 'ShareUSTC_default_pwd';
+CREATE USER shareustc_app WITH PASSWORD '114154';
 
 -- 2. 创建数据库
 CREATE DATABASE shareustc

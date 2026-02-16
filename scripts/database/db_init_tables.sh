@@ -10,7 +10,7 @@ set -e
 # 配置变量
 DB_NAME="shareustc"
 DB_USER="shareustc_app"
-DB_PASSWORD="ShareUSTC_default_pwd"  # 应与 db_create_system.sh 中一致
+DB_PASSWORD="114514"  # 应与 db_create_system.sh 中一致
 DB_HOST="localhost"
 DB_PORT="5432"
 
