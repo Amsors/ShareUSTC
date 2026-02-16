@@ -43,9 +43,8 @@ export interface TokenResponse {
 
 // 认证响应
 // 注意：Token 现在存储在 HttpOnly Cookie 中，不再在响应体中返回
-export interface AuthResponse {
-  user: User;
-}
+// API 直接返回 User 对象（不再包装在 {user: ...} 中）
+export type AuthResponse = User;
 
 // 刷新 Token 请求
 export interface RefreshTokenRequest {

@@ -52,14 +52,17 @@ export const AuditStatus = {
 
 export type AuditStatusType = typeof AuditStatus[keyof typeof AuditStatus];
 
-// 资源统计信息
+// 资源统计信息（5维度评分）
 export interface ResourceStats {
   views: number;
   downloads: number;
   likes: number;
-  avgDifficulty?: number;
-  avgQuality?: number;
-  avgDetail?: number;
+  // 5维度评分平均分
+  avgDifficulty?: number;        // 难度
+  avgOverallQuality?: number;    // 总体质量
+  avgAnswerQuality?: number;     // 参考答案质量
+  avgFormatQuality?: number;     // 格式质量
+  avgDetailLevel?: number;       // 知识点详细程度
   ratingCount: number;
 }
 

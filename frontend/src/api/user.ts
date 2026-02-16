@@ -66,7 +66,8 @@ export const updateProfile = (data: UpdateProfileRequest): Promise<User> => {
 };
 
 // 实名认证（后端会设置新的 HttpOnly Cookie）
-export const verifyUser = (data: VerificationRequest): Promise<{ user: User }> => {
+// 返回更新后的 User 对象（API 直接返回，不再包装在 {user: ...} 中）
+export const verifyUser = (data: VerificationRequest): Promise<User> => {
   return request.post('/users/verify', data);
 };
 

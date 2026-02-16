@@ -39,7 +39,7 @@ pub async fn register(
     http_req: HttpRequest,
 ) -> impl Responder {
     let username = req.username.clone();
-    log::info!("[Auth] 用户注册 | username={}", username);
+    log::info!("[Auth] 用户注册请求 | username={}", username);
 
     match AuthService::register(&state.pool, &state.jwt_secret, req.into_inner()).await {
         Ok(response) => {
@@ -72,15 +72,11 @@ pub async fn register(
                 state.cookie_secure,
             );
 
-            // 返回用户信息（不包含token）
-            let user_response = serde_json::json!({
-                "user": response.user
-            });
-
+            // 返回用户信息（不包含token），直接返回用户对象（符合API规范）
             HttpResponse::Created()
                 .cookie(access_cookie)
                 .cookie(refresh_cookie)
-                .json(user_response)
+                .json(response.user)
         }
         Err(e) => {
             log::warn!("[Auth] 用户注册失败 | username={}, error={}", username, e);
@@ -101,7 +97,7 @@ pub async fn login(
     http_req: HttpRequest,
 ) -> impl Responder {
     let username = req.username.clone();
-    log::info!("[Auth] 用户登录 | username={}", username);
+    log::info!("[Auth] 用户登录请求 | username={}", username);
 
     match AuthService::login(&state.pool, &state.jwt_secret, req.into_inner()).await {
         Ok(response) => {
@@ -134,15 +130,11 @@ pub async fn login(
                 state.cookie_secure,
             );
 
-            // 返回用户信息（不包含token）
-            let user_response = serde_json::json!({
-                "user": response.user
-            });
-
+            // 返回用户信息（不包含token），直接返回用户对象（符合API规范）
             HttpResponse::Ok()
                 .cookie(access_cookie)
                 .cookie(refresh_cookie)
-                .json(user_response)
+                .json(response.user)
         }
         Err(e) => {
             log::warn!("[Auth] 用户登录失败 | username={}, error={}", username, e);

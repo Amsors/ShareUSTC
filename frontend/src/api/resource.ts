@@ -157,9 +157,7 @@ export const downloadResource = async (resourceId: string, fileName?: string): P
     const response = await fetch(
       `${cleanBaseUrl}/api/resources/${resourceId}/download`,
       {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`
-        }
+        credentials: 'include', // 自动携带 HttpOnly Cookie
       }
     );
 
@@ -213,9 +211,7 @@ export const getResourceContent = async (resourceId: string): Promise<Blob> => {
   const response = await fetch(
     `${cleanBaseUrl}/api/resources/${resourceId}/content`,
     {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`
-      }
+      credentials: 'include', // 自动携带 HttpOnly Cookie
     }
   );
 

@@ -145,15 +145,11 @@ pub async fn verify_user(
                 state.cookie_secure,
             );
 
-            // 返回用户信息（不包含token）
-            let user_response = serde_json::json!({
-                "user": user_info
-            });
-
+            // 返回用户信息（不包含token），直接返回用户对象（符合API规范）
             HttpResponse::Ok()
                 .cookie(access_cookie)
                 .cookie(refresh_cookie)
-                .json(user_response)
+                .json(user_info)
         }
         Err(e) => {
             log::warn!("[User] 实名认证失败 | user_id={}, error={}", user.id, e);

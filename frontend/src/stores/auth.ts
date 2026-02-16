@@ -152,14 +152,15 @@ export const useAuthStore = defineStore('auth', () => {
   };
 
   // 设置认证数据
+  // 注意：AuthResponse 现在直接是 User 对象（API 不再包装在 {user: ...} 中）
   const setAuthData = (response: AuthResponse) => {
     // 设置用户信息
-    user.value = response.user;
+    user.value = response;
 
     // 注意：Token 存储在 HttpOnly Cookie 中，由浏览器自动管理
     // 前端不直接访问 Token
 
-    logger.info('[Auth]', `用户登录成功 | username=${response.user.username}, role=${response.user.role}`);
+    logger.info('[Auth]', `用户登录成功 | username=${response.username}, role=${response.role}`);
   };
 
   // 清除认证数据
