@@ -1,18 +1,18 @@
 # ============================================
-# ShareUSTC 数据库系统级初始化脚本 (Windows版本)
-# 需要管理员权限执行
-# 功能: 创建数据库和用户
+# ShareUSTC Database System Initialization Script (Windows)
+# Requires Administrator privileges
+# Function: Create database and user
 # ============================================
 
 #Requires -RunAsAdministrator
 
-# 配置变量
+# Configuration
 $DB_NAME = "shareustc"
-$DB_USER = "shareustc_app"
-$DB_PASSWORD = "ShareUSTC_default_pwd"  # 生产环境请修改此密码
-$POSTGRES_USER = "postgres"  # PostgreSQL 超级用户
+$DB_USER = "shareustc_app" 
+$DB_PASSWORD = "114514" # Note: In production, use environment variables or secure vaults for credentials
+$POSTGRES_USER = "postgres"
 
-# 颜色输出函数
+# Color output function
 function Write-ColorOutput($ForegroundColor) {
     $fc = $host.UI.RawUI.ForegroundColor
     $host.UI.RawUI.ForegroundColor = $ForegroundColor
@@ -22,126 +22,159 @@ function Write-ColorOutput($ForegroundColor) {
     $host.UI.RawUI.ForegroundColor = $fc
 }
 
-Write-ColorOutput Green "=== ShareUSTC 数据库系统级初始化 (Windows) ==="
+Write-ColorOutput Green "=== ShareUSTC Database System Initialization (Windows) ==="
 Write-Output ""
 
-# 检查 psql 是否可用
-$psqlPath = Get-Command psql -ErrorAction SilentlyContinue
-if (-not $psqlPath) {
-    # 尝试常见安装路径
+# Find psql
+function Find-Psql {
+    $psqlCmd = Get-Command psql -ErrorAction SilentlyContinue
+    if ($psqlCmd) {
+        return $psqlCmd.Source
+    }
+    
     $commonPaths = @(
         "C:\Program Files\PostgreSQL\*\bin\psql.exe",
         "C:\Program Files (x86)\PostgreSQL\*\bin\psql.exe"
     )
-    $found = $false
+    
     foreach ($path in $commonPaths) {
-        $matches = Get-ChildItem -Path $path -ErrorAction SilentlyContinue
+        $matches = Get-ChildItem -Path $path -ErrorAction SilentlyContinue | Select-Object -First 1
         if ($matches) {
-            $env:Path += ";" + $matches[0].DirectoryName
-            $found = $true
-            break
+            $env:Path += ";" + $matches.DirectoryName
+            return $matches.FullName
         }
     }
-    if (-not $found) {
-        Write-ColorOutput Red "错误: 未找到 psql 命令，请安装 PostgreSQL 并添加到 PATH"
-        exit 1
-    }
+    
+    return $null
 }
 
-# 检查 PostgreSQL 服务状态
-Write-ColorOutput Yellow "步骤 1/4: 检查 PostgreSQL 服务状态..."
+$psqlPath = Find-Psql
+if (-not $psqlPath) {
+    Write-ColorOutput Red "Error: psql command not found. Please install PostgreSQL and add to PATH."
+    exit 1
+}
+
+Write-ColorOutput Yellow "Using psql: $psqlPath"
+Write-Output ""
+
+# Check PostgreSQL service
+Write-ColorOutput Yellow "Step 1/4: Checking PostgreSQL service status..."
 $service = Get-Service -Name "postgresql*" -ErrorAction SilentlyContinue | Select-Object -First 1
 
 if ($service -and $service.Status -eq "Running") {
-    Write-ColorOutput Green "  PostgreSQL 服务正在运行"
+    Write-ColorOutput Green "  PostgreSQL service is running"
 } else {
-    Write-ColorOutput Yellow "  启动 PostgreSQL 服务..."
+    Write-ColorOutput Yellow "  Starting PostgreSQL service..."
     if ($service) {
         Start-Service $service.Name
         Set-Service $service.Name -StartupType Automatic
-        Write-ColorOutput Green "  PostgreSQL 服务已启动"
+        Write-ColorOutput Green "  PostgreSQL service started"
     } else {
-        Write-ColorOutput Red "  错误: 未找到 PostgreSQL 服务，请确保 PostgreSQL 已安装"
+        Write-ColorOutput Red "  Error: PostgreSQL service not found. Please ensure PostgreSQL is installed."
         exit 1
     }
 }
 
 Write-Output ""
 
-# 创建数据库用户
-Write-ColorOutput Yellow "步骤 2/4: 创建数据库用户 '$DB_USER'..."
-$env:PGPASSWORD = $DB_PASSWORD
+# Prompt for postgres password
+Write-ColorOutput Yellow "Please enter PostgreSQL '$POSTGRES_USER' user password (default is often empty or 'postgres'):"
+$postgresPassword = Read-Host -AsSecureString "PostgreSQL postgres password"
+$BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($postgresPassword)
+$plainPostgresPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
+
+$env:PGPASSWORD = $plainPostgresPassword
+
+# Test postgres connection
+Write-ColorOutput Yellow "Testing postgres connection..."
 try {
-    $userExists = psql -U $POSTGRES_USER -d postgres -t -c "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER';" 2>$null | Out-String
+    $testResult = & $psqlPath -U $POSTGRES_USER -d postgres -c "SELECT 1;" 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw "Connection failed"
+    }
+    Write-ColorOutput Green "  Connection successful"
+} catch {
+    Write-ColorOutput Red "  Error: Cannot connect to PostgreSQL as '$POSTGRES_USER'."
+    Write-ColorOutput Red "  Please check the password and ensure PostgreSQL is running."
+    exit 1
+}
+
+Write-Output ""
+
+# Create database user
+Write-ColorOutput Yellow "Step 2/4: Creating database user '$DB_USER'..."
+try {
+    $userExists = & $psqlPath -U $POSTGRES_USER -d postgres -t -c "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER';" 2>&1 | Out-String
     if ($userExists.Trim() -eq "1") {
-        Write-ColorOutput Yellow "  用户 '$DB_USER' 已存在，跳过创建"
+        Write-ColorOutput Yellow "  User '$DB_USER' already exists, skipping creation"
     } else {
-        psql -U $POSTGRES_USER -d postgres -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';" 2>$null
+        & $psqlPath -U $POSTGRES_USER -d postgres -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';" 2>&1 | Out-Null
         if ($LASTEXITCODE -eq 0) {
-            Write-ColorOutput Green "  用户 '$DB_USER' 创建成功"
+            Write-ColorOutput Green "  User '$DB_USER' created successfully"
         } else {
-            throw "创建用户失败"
+            throw "Failed to create user"
         }
     }
 } catch {
-    Write-ColorOutput Red "  错误: 创建用户失败，请检查 PostgreSQL 是否运行以及用户名密码是否正确"
+    Write-ColorOutput Red "  Error: Failed to create user"
     Write-ColorOutput Red "  $_"
     exit 1
 }
 
 Write-Output ""
 
-# 创建数据库
-Write-ColorOutput Yellow "步骤 3/4: 创建数据库 '$DB_NAME'..."
+# Create database
+Write-ColorOutput Yellow "Step 3/4: Creating database '$DB_NAME'..."
 try {
-    $dbExists = psql -U $POSTGRES_USER -d postgres -t -c "SELECT 1 FROM pg_database WHERE datname='$DB_NAME';" 2>$null | Out-String
+    $dbExists = & $psqlPath -U $POSTGRES_USER -d postgres -t -c "SELECT 1 FROM pg_database WHERE datname='$DB_NAME';" 2>&1 | Out-String
     if ($dbExists.Trim() -eq "1") {
-        Write-ColorOutput Yellow "  数据库 '$DB_NAME' 已存在，跳过创建"
+        Write-ColorOutput Yellow "  Database '$DB_NAME' already exists, skipping creation"
     } else {
-        psql -U $POSTGRES_USER -d postgres -c "CREATE DATABASE $DB_NAME OWNER $DB_USER ENCODING 'UTF8' LC_COLLATE 'C' LC_CTYPE 'C' TEMPLATE template0;" 2>$null
+        & $psqlPath -U $POSTGRES_USER -d postgres -c "CREATE DATABASE $DB_NAME OWNER $DB_USER ENCODING 'UTF8' LC_COLLATE 'C' LC_CTYPE 'C' TEMPLATE template0;" 2>&1 | Out-Null
         if ($LASTEXITCODE -eq 0) {
-            Write-ColorOutput Green "  数据库 '$DB_NAME' 创建成功"
+            Write-ColorOutput Green "  Database '$DB_NAME' created successfully"
         } else {
-            throw "创建数据库失败"
+            throw "Failed to create database"
         }
     }
 } catch {
-    Write-ColorOutput Red "  错误: 创建数据库失败"
+    Write-ColorOutput Red "  Error: Failed to create database"
     Write-ColorOutput Red "  $_"
     exit 1
 }
 
 Write-Output ""
 
-# 授予权限
-Write-ColorOutput Yellow "步骤 4/4: 授予权限..."
+# Grant permissions
+Write-ColorOutput Yellow "Step 4/4: Granting permissions..."
 try {
-    # 授予数据库连接权限
-    psql -U $POSTGRES_USER -d postgres -c "GRANT CONNECT ON DATABASE $DB_NAME TO $DB_USER;" 2>$null | Out-Null
-
-    # 在数据库内授予 schema 权限
-    psql -U $POSTGRES_USER -d $DB_NAME -c "GRANT USAGE ON SCHEMA public TO $DB_USER;" 2>$null | Out-Null
-    psql -U $POSTGRES_USER -d $DB_NAME -c "GRANT CREATE ON SCHEMA public TO $DB_USER;" 2>$null | Out-Null
-
-    # 启用 pgcrypto 扩展
-    psql -U $POSTGRES_USER -d $DB_NAME -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;" 2>$null | Out-Null
-
-    Write-ColorOutput Green "  权限授予完成"
+    # Grant connect permission
+    & $psqlPath -U $POSTGRES_USER -d postgres -c "GRANT CONNECT ON DATABASE $DB_NAME TO $DB_USER;" 2>&1 | Out-Null
+    
+    # Grant schema permissions
+    & $psqlPath -U $POSTGRES_USER -d $DB_NAME -c "GRANT USAGE ON SCHEMA public TO $DB_USER;" 2>&1 | Out-Null
+    & $psqlPath -U $POSTGRES_USER -d $DB_NAME -c "GRANT CREATE ON SCHEMA public TO $DB_USER;" 2>&1 | Out-Null
+    
+    # Enable pgcrypto extension
+    & $psqlPath -U $POSTGRES_USER -d $DB_NAME -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;" 2>&1 | Out-Null
+    
+    Write-ColorOutput Green "  Permissions granted successfully"
 } catch {
-    Write-ColorOutput Red "  错误: 授予权限失败"
+    Write-ColorOutput Red "  Error: Failed to grant permissions"
     Write-ColorOutput Red "  $_"
     exit 1
 }
 
 Write-Output ""
-Write-ColorOutput Green "=== 系统级初始化完成 ==="
+Write-ColorOutput Green "=== System Initialization Completed ==="
 Write-Output ""
-Write-Output "数据库信息:"
-Write-Output "  数据库名: $DB_NAME"
-Write-Output "  用户名:   $DB_USER"
-Write-Output "  密码:     $DB_PASSWORD"
+Write-Output "Database Information:"
+Write-Output "  Database Name: $DB_NAME"
+Write-Output "  Username:      $DB_USER"
+Write-Output "  Password:      $DB_PASSWORD"
 Write-Output ""
-Write-ColorOutput Yellow "提示: 请修改脚本中的 DB_PASSWORD 变量或使用更安全的密码生成方式"
-Write-Output ""
-Write-Output "下一步: 执行数据库表结构初始化"
+Write-ColorOutput Yellow "Next Step: Run database table initialization"
 Write-Output "  .\db_init_tables_win.ps1"
+Write-Output ""
+Write-Output "Or use Python script:"
+Write-Output "  python init_db.py"

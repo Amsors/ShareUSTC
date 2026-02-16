@@ -1,36 +1,28 @@
--- ============================================
--- ShareUSTC 数据库完整初始化 SQL
--- 支持增量更新：可重复执行，会自动添加新列而不丢失数据
--- ============================================
+#!/usr/bin/env python3
+"""
+ShareUSTC Database Table Initialization Script
+Cross-platform: Works on Windows, Linux, macOS
+"""
 
--- 连接到 PostgreSQL
--- psql -U postgres
+import subprocess
+import sys
+import os
+import tempfile
 
--- 1. 创建用户 (修改密码!)
-CREATE USER shareustc_app WITH PASSWORD '114154';
+# Configuration
+DB_NAME = "shareustc"
+DB_USER = "shareustc_app"
+DB_PASSWORD = "114514"
+DB_HOST = "localhost"
+DB_PORT = "5432"
 
--- 2. 创建数据库
-CREATE DATABASE shareustc
-    OWNER shareustc_app
-    ENCODING 'UTF8'
-    LC_COLLATE 'en_US.UTF-8'
-    LC_CTYPE 'en_US.UTF-8';
+SQL_SCRIPT = '''
+-- ShareUSTC Database Incremental Update Script
 
--- 3. 连接到新数据库
-\c shareustc
-
--- 4. 启用扩展
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- ============================================
--- 创建 sn 序列（从1开始自增）
--- ============================================
 CREATE SEQUENCE IF NOT EXISTS user_sn_seq START 1;
 
--- ============================================
--- 增强：确保序列起始值正确（考虑已有数据）
--- 版本迁移注意：如果数据库已有用户数据，此逻辑会自动调整序列
--- ============================================
 DO $$
 BEGIN
     PERFORM setval('user_sn_seq',
@@ -41,87 +33,53 @@ EXCEPTION
     WHEN undefined_column THEN NULL;
 END $$;
 
--- ============================================
--- 创建表结构（支持增量更新）
--- 策略：先创建表（IF NOT EXISTS），再添加列（IF NOT EXISTS）
--- ============================================
-
--- ============================================
--- 1. 用户表
--- ============================================
--- 第一步：创建基础表（仅包含必要的约束和默认值）
+-- 1. users table
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 第二步：添加各列（如果不存在）
 DO $$
 BEGIN
-    -- sn: 用户编号，从1开始自增
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'sn') THEN
         ALTER TABLE users ADD COLUMN sn BIGINT UNIQUE;
     END IF;
-
-    -- username: 用户名
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'username') THEN
         ALTER TABLE users ADD COLUMN username VARCHAR(50) UNIQUE NOT NULL DEFAULT 'temp_' || gen_random_uuid();
     END IF;
-
-    -- password_hash: 密码哈希
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'password_hash') THEN
         ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NOT NULL DEFAULT '';
     END IF;
-
-    -- email: 邮箱
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'email') THEN
         ALTER TABLE users ADD COLUMN email VARCHAR(255) UNIQUE;
     END IF;
-
-    -- role: 角色 (guest, user, verified, admin)
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'role') THEN
         ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'user';
     END IF;
-
-    -- bio: 个人简介
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'bio') THEN
         ALTER TABLE users ADD COLUMN bio TEXT;
     END IF;
-
-    -- social_links: 社交链接 (JSONB)
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'social_links') THEN
         ALTER TABLE users ADD COLUMN social_links JSONB DEFAULT '{}';
     END IF;
-
-    -- real_info: 实名信息 (JSONB)
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'real_info') THEN
         ALTER TABLE users ADD COLUMN real_info JSONB DEFAULT '{}';
     END IF;
-
-    -- is_verified: 是否实名认证
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'is_verified') THEN
         ALTER TABLE users ADD COLUMN is_verified BOOLEAN DEFAULT FALSE;
     END IF;
-
-    -- is_active: 是否启用
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'is_active') THEN
         ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT TRUE;
     END IF;
-
-    -- avatar_url: 头像URL
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'avatar_url') THEN
         ALTER TABLE users ADD COLUMN avatar_url VARCHAR(500);
     END IF;
-
-    -- updated_at: 更新时间
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'updated_at') THEN
         ALTER TABLE users ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
     END IF;
 END $$;
 
--- ============================================
--- 2. 资源表
--- ============================================
+-- 2. resources table
 CREATE TABLE IF NOT EXISTS resources (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -132,74 +90,55 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resources' AND column_name = 'title') THEN
         ALTER TABLE resources ADD COLUMN title VARCHAR(255) NOT NULL DEFAULT '';
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resources' AND column_name = 'author_id') THEN
         ALTER TABLE resources ADD COLUMN author_id UUID REFERENCES users(id);
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resources' AND column_name = 'uploader_id') THEN
-        -- 版本迁移注意：旧数据的外键需要手动处理
         IF EXISTS (SELECT 1 FROM resources LIMIT 1) THEN
-            -- 表已有数据，先添加可为NULL的列（需要业务层处理NULL值）
             ALTER TABLE resources ADD COLUMN uploader_id UUID REFERENCES users(id);
         ELSE
-            -- 新表：使用 NOT NULL + DEFAULT
             ALTER TABLE resources ADD COLUMN uploader_id UUID NOT NULL REFERENCES users(id) DEFAULT '00000000-0000-0000-0000-000000000000';
         END IF;
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resources' AND column_name = 'course_name') THEN
         ALTER TABLE resources ADD COLUMN course_name VARCHAR(255);
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resources' AND column_name = 'resource_type') THEN
         ALTER TABLE resources ADD COLUMN resource_type VARCHAR(50);
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resources' AND column_name = 'category') THEN
         ALTER TABLE resources ADD COLUMN category VARCHAR(50);
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resources' AND column_name = 'tags') THEN
         ALTER TABLE resources ADD COLUMN tags JSONB DEFAULT '[]';
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resources' AND column_name = 'file_path') THEN
         ALTER TABLE resources ADD COLUMN file_path VARCHAR(500);
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resources' AND column_name = 'source_file_path') THEN
         ALTER TABLE resources ADD COLUMN source_file_path VARCHAR(500);
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resources' AND column_name = 'file_hash') THEN
         ALTER TABLE resources ADD COLUMN file_hash VARCHAR(64);
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resources' AND column_name = 'file_size') THEN
         ALTER TABLE resources ADD COLUMN file_size BIGINT;
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resources' AND column_name = 'content_accuracy') THEN
         ALTER TABLE resources ADD COLUMN content_accuracy FLOAT8;
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resources' AND column_name = 'audit_status') THEN
         ALTER TABLE resources ADD COLUMN audit_status VARCHAR(20) DEFAULT 'pending';
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resources' AND column_name = 'ai_reject_reason') THEN
         ALTER TABLE resources ADD COLUMN ai_reject_reason TEXT;
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resources' AND column_name = 'updated_at') THEN
         ALTER TABLE resources ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
     END IF;
 END $$;
 
--- ============================================
--- 3. 资源统计表
--- ============================================
+-- 3. resource_stats table
 CREATE TABLE IF NOT EXISTS resource_stats (
     resource_id UUID PRIMARY KEY REFERENCES resources(id) ON DELETE CASCADE
 );
@@ -209,54 +148,39 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resource_stats' AND column_name = 'views') THEN
         ALTER TABLE resource_stats ADD COLUMN views INTEGER DEFAULT 0;
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resource_stats' AND column_name = 'downloads') THEN
         ALTER TABLE resource_stats ADD COLUMN downloads INTEGER DEFAULT 0;
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resource_stats' AND column_name = 'likes') THEN
         ALTER TABLE resource_stats ADD COLUMN likes INTEGER DEFAULT 0;
     END IF;
-
-    -- 评分人数（冗余字段，用于快速查询）
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resource_stats' AND column_name = 'rating_count') THEN
         ALTER TABLE resource_stats ADD COLUMN rating_count INTEGER DEFAULT 0;
     END IF;
-
-    -- 评分统计：每个维度独立记录总分和评分次数
-    -- 难度维度
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resource_stats' AND column_name = 'difficulty_total') THEN
         ALTER TABLE resource_stats ADD COLUMN difficulty_total INTEGER DEFAULT 0;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resource_stats' AND column_name = 'difficulty_count') THEN
         ALTER TABLE resource_stats ADD COLUMN difficulty_count INTEGER DEFAULT 0;
     END IF;
-
-    -- 总体质量维度
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resource_stats' AND column_name = 'overall_quality_total') THEN
         ALTER TABLE resource_stats ADD COLUMN overall_quality_total INTEGER DEFAULT 0;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resource_stats' AND column_name = 'overall_quality_count') THEN
         ALTER TABLE resource_stats ADD COLUMN overall_quality_count INTEGER DEFAULT 0;
     END IF;
-
-    -- 参考答案质量维度
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resource_stats' AND column_name = 'answer_quality_total') THEN
         ALTER TABLE resource_stats ADD COLUMN answer_quality_total INTEGER DEFAULT 0;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resource_stats' AND column_name = 'answer_quality_count') THEN
         ALTER TABLE resource_stats ADD COLUMN answer_quality_count INTEGER DEFAULT 0;
     END IF;
-
-    -- 格式质量维度
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resource_stats' AND column_name = 'format_quality_total') THEN
         ALTER TABLE resource_stats ADD COLUMN format_quality_total INTEGER DEFAULT 0;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resource_stats' AND column_name = 'format_quality_count') THEN
         ALTER TABLE resource_stats ADD COLUMN format_quality_count INTEGER DEFAULT 0;
     END IF;
-
-    -- 知识点详细程度维度
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'resource_stats' AND column_name = 'detail_level_total') THEN
         ALTER TABLE resource_stats ADD COLUMN detail_level_total INTEGER DEFAULT 0;
     END IF;
@@ -265,9 +189,7 @@ BEGIN
     END IF;
 END $$;
 
--- ============================================
--- 4. 评分表
--- ============================================
+-- 4. ratings table
 CREATE TABLE IF NOT EXISTS ratings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -276,51 +198,39 @@ CREATE TABLE IF NOT EXISTS ratings (
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'ratings' AND column_name = 'resource_id') THEN
-        -- 版本迁移注意：旧数据的外键需要手动处理
         IF EXISTS (SELECT 1 FROM ratings LIMIT 1) THEN
             ALTER TABLE ratings ADD COLUMN resource_id UUID REFERENCES resources(id) ON DELETE CASCADE;
         ELSE
             ALTER TABLE ratings ADD COLUMN resource_id UUID NOT NULL REFERENCES resources(id) ON DELETE CASCADE DEFAULT '00000000-0000-0000-0000-000000000000';
         END IF;
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'ratings' AND column_name = 'user_id') THEN
-        -- 版本迁移注意：旧数据的外键需要手动处理
         IF EXISTS (SELECT 1 FROM ratings LIMIT 1) THEN
             ALTER TABLE ratings ADD COLUMN user_id UUID REFERENCES users(id) ON DELETE CASCADE;
         ELSE
             ALTER TABLE ratings ADD COLUMN user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE DEFAULT '00000000-0000-0000-0000-000000000000';
         END IF;
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'ratings' AND column_name = 'difficulty') THEN
         ALTER TABLE ratings ADD COLUMN difficulty INTEGER CHECK (difficulty BETWEEN 1 AND 10);
     END IF;
-
-    -- 注意：quality 和 detail 字段已移除，使用 overall_quality 和 detail_level 替代
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'ratings' AND column_name = 'overall_quality') THEN
         ALTER TABLE ratings ADD COLUMN overall_quality INTEGER CHECK (overall_quality BETWEEN 1 AND 10);
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'ratings' AND column_name = 'answer_quality') THEN
         ALTER TABLE ratings ADD COLUMN answer_quality INTEGER CHECK (answer_quality BETWEEN 1 AND 10);
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'ratings' AND column_name = 'format_quality') THEN
         ALTER TABLE ratings ADD COLUMN format_quality INTEGER CHECK (format_quality BETWEEN 1 AND 10);
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'ratings' AND column_name = 'detail_level') THEN
         ALTER TABLE ratings ADD COLUMN detail_level INTEGER CHECK (detail_level BETWEEN 1 AND 10);
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'ratings' AND column_name = 'updated_at') THEN
         ALTER TABLE ratings ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
     END IF;
 END $$;
 
--- 添加唯一约束（如果存在重复数据，需要先清理）
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -331,12 +241,10 @@ BEGIN
     END IF;
 EXCEPTION
     WHEN unique_violation THEN
-        RAISE NOTICE '无法添加唯一约束：存在重复数据 (resource_id, user_id)';
+        RAISE NOTICE 'Cannot add unique constraint: duplicate data';
 END $$;
 
--- ============================================
--- 5. 点赞表
--- ============================================
+-- 5. likes table
 CREATE TABLE IF NOT EXISTS likes (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -346,13 +254,11 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'likes' AND column_name = 'resource_id') THEN
         ALTER TABLE likes ADD COLUMN resource_id UUID REFERENCES resources(id) ON DELETE CASCADE;
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'likes' AND column_name = 'user_id') THEN
         ALTER TABLE likes ADD COLUMN user_id UUID REFERENCES users(id) ON DELETE CASCADE;
     END IF;
 END $$;
 
--- 添加主键约束
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -363,12 +269,10 @@ BEGIN
     END IF;
 EXCEPTION
     WHEN unique_violation THEN
-        RAISE NOTICE '无法添加主键约束：存在重复数据';
+        RAISE NOTICE 'Cannot add primary key: duplicate data';
 END $$;
 
--- ============================================
--- 6. 评论表
--- ============================================
+-- 6. comments table
 CREATE TABLE IF NOT EXISTS comments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -377,39 +281,31 @@ CREATE TABLE IF NOT EXISTS comments (
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'comments' AND column_name = 'resource_id') THEN
-        -- 版本迁移注意：旧数据的外键需要手动处理
         IF EXISTS (SELECT 1 FROM comments LIMIT 1) THEN
             ALTER TABLE comments ADD COLUMN resource_id UUID REFERENCES resources(id) ON DELETE CASCADE;
         ELSE
             ALTER TABLE comments ADD COLUMN resource_id UUID NOT NULL REFERENCES resources(id) ON DELETE CASCADE DEFAULT '00000000-0000-0000-0000-000000000000';
         END IF;
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'comments' AND column_name = 'user_id') THEN
-        -- 版本迁移注意：旧数据的外键需要手动处理
         IF EXISTS (SELECT 1 FROM comments LIMIT 1) THEN
             ALTER TABLE comments ADD COLUMN user_id UUID REFERENCES users(id) ON DELETE CASCADE;
         ELSE
             ALTER TABLE comments ADD COLUMN user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE DEFAULT '00000000-0000-0000-0000-000000000000';
         END IF;
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'comments' AND column_name = 'content') THEN
         ALTER TABLE comments ADD COLUMN content TEXT NOT NULL DEFAULT '';
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'comments' AND column_name = 'audit_status') THEN
         ALTER TABLE comments ADD COLUMN audit_status VARCHAR(20) DEFAULT 'approved';
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'comments' AND column_name = 'updated_at') THEN
         ALTER TABLE comments ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
     END IF;
 END $$;
 
--- ============================================
--- 7. 收藏夹表
--- ============================================
+-- 7. favorites table
 CREATE TABLE IF NOT EXISTS favorites (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -418,22 +314,18 @@ CREATE TABLE IF NOT EXISTS favorites (
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'favorites' AND column_name = 'user_id') THEN
-        -- 版本迁移注意：旧数据的外键需要手动处理
         IF EXISTS (SELECT 1 FROM favorites LIMIT 1) THEN
             ALTER TABLE favorites ADD COLUMN user_id UUID REFERENCES users(id) ON DELETE CASCADE;
         ELSE
             ALTER TABLE favorites ADD COLUMN user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE DEFAULT '00000000-0000-0000-0000-000000000000';
         END IF;
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'favorites' AND column_name = 'name') THEN
-        ALTER TABLE favorites ADD COLUMN name VARCHAR(255) NOT NULL DEFAULT '未命名收藏夹';
+        ALTER TABLE favorites ADD COLUMN name VARCHAR(255) NOT NULL DEFAULT 'Unnamed';
     END IF;
 END $$;
 
--- ============================================
--- 8. 收藏夹资源关联表
--- ============================================
+-- 8. favorite_resources table
 CREATE TABLE IF NOT EXISTS favorite_resources (
     added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -443,13 +335,11 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'favorite_resources' AND column_name = 'favorite_id') THEN
         ALTER TABLE favorite_resources ADD COLUMN favorite_id UUID REFERENCES favorites(id) ON DELETE CASCADE;
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'favorite_resources' AND column_name = 'resource_id') THEN
         ALTER TABLE favorite_resources ADD COLUMN resource_id UUID REFERENCES resources(id) ON DELETE CASCADE;
     END IF;
 END $$;
 
--- 添加主键约束
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -460,12 +350,10 @@ BEGIN
     END IF;
 EXCEPTION
     WHEN unique_violation THEN
-        RAISE NOTICE '无法添加主键约束：存在重复数据';
+        RAISE NOTICE 'Cannot add primary key: duplicate data';
 END $$;
 
--- ============================================
--- 9. 申领表
--- ============================================
+-- 9. claims table
 CREATE TABLE IF NOT EXISTS claims (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -474,51 +362,40 @@ CREATE TABLE IF NOT EXISTS claims (
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'claims' AND column_name = 'resource_id') THEN
-        -- 版本迁移注意：旧数据的外键需要手动处理
         IF EXISTS (SELECT 1 FROM claims LIMIT 1) THEN
             ALTER TABLE claims ADD COLUMN resource_id UUID REFERENCES resources(id) ON DELETE CASCADE;
         ELSE
             ALTER TABLE claims ADD COLUMN resource_id UUID NOT NULL REFERENCES resources(id) ON DELETE CASCADE DEFAULT '00000000-0000-0000-0000-000000000000';
         END IF;
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'claims' AND column_name = 'applicant_id') THEN
-        -- 版本迁移注意：旧数据的外键需要手动处理
         IF EXISTS (SELECT 1 FROM claims LIMIT 1) THEN
             ALTER TABLE claims ADD COLUMN applicant_id UUID REFERENCES users(id) ON DELETE CASCADE;
         ELSE
             ALTER TABLE claims ADD COLUMN applicant_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE DEFAULT '00000000-0000-0000-0000-000000000000';
         END IF;
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'claims' AND column_name = 'claim_type') THEN
         ALTER TABLE claims ADD COLUMN claim_type VARCHAR(20);
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'claims' AND column_name = 'reason') THEN
         ALTER TABLE claims ADD COLUMN reason TEXT NOT NULL DEFAULT '';
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'claims' AND column_name = 'proof_files') THEN
         ALTER TABLE claims ADD COLUMN proof_files JSONB DEFAULT '[]';
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'claims' AND column_name = 'status') THEN
         ALTER TABLE claims ADD COLUMN status VARCHAR(20) DEFAULT 'pending';
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'claims' AND column_name = 'reviewer_id') THEN
         ALTER TABLE claims ADD COLUMN reviewer_id UUID REFERENCES users(id);
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'claims' AND column_name = 'reviewed_at') THEN
         ALTER TABLE claims ADD COLUMN reviewed_at TIMESTAMP;
     END IF;
 END $$;
 
--- ============================================
--- 10. 通知表
--- ============================================
+-- 10. notifications table
 CREATE TABLE IF NOT EXISTS notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -529,35 +406,27 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'notifications' AND column_name = 'recipient_id') THEN
         ALTER TABLE notifications ADD COLUMN recipient_id UUID REFERENCES users(id) ON DELETE CASCADE;
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'notifications' AND column_name = 'title') THEN
         ALTER TABLE notifications ADD COLUMN title VARCHAR(255) NOT NULL DEFAULT '';
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'notifications' AND column_name = 'content') THEN
         ALTER TABLE notifications ADD COLUMN content TEXT NOT NULL DEFAULT '';
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'notifications' AND column_name = 'notification_type') THEN
         ALTER TABLE notifications ADD COLUMN notification_type VARCHAR(50);
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'notifications' AND column_name = 'priority') THEN
         ALTER TABLE notifications ADD COLUMN priority VARCHAR(20) DEFAULT 'normal';
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'notifications' AND column_name = 'is_read') THEN
         ALTER TABLE notifications ADD COLUMN is_read BOOLEAN DEFAULT FALSE;
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'notifications' AND column_name = 'link_url') THEN
         ALTER TABLE notifications ADD COLUMN link_url VARCHAR(500);
     END IF;
 END $$;
 
--- ============================================
--- 10b. 通知已读记录表（用于群发通知的独立已读状态）
--- ============================================
+-- 10b. notification_reads table
 CREATE TABLE IF NOT EXISTS notification_reads (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -566,16 +435,13 @@ CREATE TABLE IF NOT EXISTS notification_reads (
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'notification_reads' AND column_name = 'notification_id') THEN
-        -- 版本迁移注意：旧数据的外键需要手动处理
         IF EXISTS (SELECT 1 FROM notification_reads LIMIT 1) THEN
             ALTER TABLE notification_reads ADD COLUMN notification_id UUID REFERENCES notifications(id) ON DELETE CASCADE;
         ELSE
             ALTER TABLE notification_reads ADD COLUMN notification_id UUID NOT NULL REFERENCES notifications(id) ON DELETE CASCADE DEFAULT '00000000-0000-0000-0000-000000000000';
         END IF;
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'notification_reads' AND column_name = 'user_id') THEN
-        -- 版本迁移注意：旧数据的外键需要手动处理
         IF EXISTS (SELECT 1 FROM notification_reads LIMIT 1) THEN
             ALTER TABLE notification_reads ADD COLUMN user_id UUID REFERENCES users(id) ON DELETE CASCADE;
         ELSE
@@ -584,7 +450,6 @@ BEGIN
     END IF;
 END $$;
 
--- 添加唯一约束
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -595,12 +460,10 @@ BEGIN
     END IF;
 EXCEPTION
     WHEN unique_violation THEN
-        RAISE NOTICE '无法添加唯一约束：存在重复数据';
+        RAISE NOTICE 'Cannot add unique constraint: duplicate data';
 END $$;
 
--- ============================================
--- 11. 审计日志表
--- ============================================
+-- 11. audit_logs table
 CREATE TABLE IF NOT EXISTS audit_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -611,31 +474,24 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'audit_logs' AND column_name = 'user_id') THEN
         ALTER TABLE audit_logs ADD COLUMN user_id UUID REFERENCES users(id);
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'audit_logs' AND column_name = 'action') THEN
         ALTER TABLE audit_logs ADD COLUMN action VARCHAR(100) NOT NULL DEFAULT '';
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'audit_logs' AND column_name = 'target_type') THEN
         ALTER TABLE audit_logs ADD COLUMN target_type VARCHAR(50);
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'audit_logs' AND column_name = 'target_id') THEN
         ALTER TABLE audit_logs ADD COLUMN target_id UUID;
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'audit_logs' AND column_name = 'details') THEN
         ALTER TABLE audit_logs ADD COLUMN details JSONB DEFAULT '{}';
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'audit_logs' AND column_name = 'ip_address') THEN
         ALTER TABLE audit_logs ADD COLUMN ip_address INET;
     END IF;
 END $$;
 
--- ============================================
--- 12. 下载记录表
--- ============================================
+-- 12. download_logs table
 CREATE TABLE IF NOT EXISTS download_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     downloaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -644,26 +500,21 @@ CREATE TABLE IF NOT EXISTS download_logs (
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'download_logs' AND column_name = 'resource_id') THEN
-        -- 版本迁移注意：旧数据的外键需要手动处理
         IF EXISTS (SELECT 1 FROM download_logs LIMIT 1) THEN
             ALTER TABLE download_logs ADD COLUMN resource_id UUID REFERENCES resources(id) ON DELETE CASCADE;
         ELSE
             ALTER TABLE download_logs ADD COLUMN resource_id UUID NOT NULL REFERENCES resources(id) ON DELETE CASCADE DEFAULT '00000000-0000-0000-0000-000000000000';
         END IF;
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'download_logs' AND column_name = 'user_id') THEN
         ALTER TABLE download_logs ADD COLUMN user_id UUID REFERENCES users(id) ON DELETE SET NULL;
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'download_logs' AND column_name = 'ip_address') THEN
         ALTER TABLE download_logs ADD COLUMN ip_address INET NOT NULL DEFAULT '0.0.0.0';
     END IF;
 END $$;
 
--- ============================================
--- 13. 图片表
--- ============================================
+-- 13. images table
 CREATE TABLE IF NOT EXISTS images (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -672,34 +523,27 @@ CREATE TABLE IF NOT EXISTS images (
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'images' AND column_name = 'uploader_id') THEN
-        -- 版本迁移注意：旧数据的外键需要手动处理
         IF EXISTS (SELECT 1 FROM images LIMIT 1) THEN
             ALTER TABLE images ADD COLUMN uploader_id UUID REFERENCES users(id);
         ELSE
             ALTER TABLE images ADD COLUMN uploader_id UUID NOT NULL REFERENCES users(id) DEFAULT '00000000-0000-0000-0000-000000000000';
         END IF;
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'images' AND column_name = 'file_path') THEN
         ALTER TABLE images ADD COLUMN file_path VARCHAR(500) NOT NULL DEFAULT '';
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'images' AND column_name = 'original_name') THEN
         ALTER TABLE images ADD COLUMN original_name VARCHAR(255);
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'images' AND column_name = 'file_size') THEN
         ALTER TABLE images ADD COLUMN file_size INTEGER;
     END IF;
-
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'images' AND column_name = 'mime_type') THEN
         ALTER TABLE images ADD COLUMN mime_type VARCHAR(50);
     END IF;
 END $$;
 
--- ============================================
--- 为现有用户分配 sn（增量更新支持）
--- ============================================
+-- Assign sn to existing users
 DO $$
 DECLARE
     user_record RECORD;
@@ -711,23 +555,15 @@ BEGIN
         UPDATE users SET sn = current_sn WHERE id = user_record.id;
         current_sn := current_sn + 1;
     END LOOP;
-
-    -- 如果分配了 sn，更新序列的下一个值
     IF current_sn > 1 THEN
         PERFORM setval('user_sn_seq', current_sn - 1, true);
     END IF;
 END $$;
 
--- ============================================
--- 创建索引
--- ============================================
-
--- 用户表索引
+-- Create indexes
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 CREATE INDEX IF NOT EXISTS idx_users_is_verified ON users(is_verified);
 CREATE INDEX IF NOT EXISTS idx_users_sn ON users(sn);
-
--- 资源表索引
 CREATE INDEX IF NOT EXISTS idx_resources_uploader ON resources(uploader_id);
 CREATE INDEX IF NOT EXISTS idx_resources_author ON resources(author_id);
 CREATE INDEX IF NOT EXISTS idx_resources_course ON resources(course_name);
@@ -736,63 +572,41 @@ CREATE INDEX IF NOT EXISTS idx_resources_category ON resources(category);
 CREATE INDEX IF NOT EXISTS idx_resources_audit_status ON resources(audit_status);
 CREATE INDEX IF NOT EXISTS idx_resources_tags ON resources USING GIN(tags);
 CREATE INDEX IF NOT EXISTS idx_resources_created_at ON resources(created_at DESC);
-
--- 评分表索引
 CREATE INDEX IF NOT EXISTS idx_ratings_resource ON ratings(resource_id);
 CREATE INDEX IF NOT EXISTS idx_ratings_user ON ratings(user_id);
-
--- 点赞表索引
 CREATE INDEX IF NOT EXISTS idx_likes_user ON likes(user_id);
-
--- 评论表索引
 CREATE INDEX IF NOT EXISTS idx_comments_resource ON comments(resource_id);
 CREATE INDEX IF NOT EXISTS idx_comments_user ON comments(user_id);
 CREATE INDEX IF NOT EXISTS idx_comments_created_at ON comments(created_at DESC);
-
--- 收藏夹索引
 CREATE INDEX IF NOT EXISTS idx_favorites_user ON favorites(user_id);
 CREATE INDEX IF NOT EXISTS idx_fav_res_resource ON favorite_resources(resource_id);
-
--- 申领表索引
 CREATE INDEX IF NOT EXISTS idx_claims_resource ON claims(resource_id);
 CREATE INDEX IF NOT EXISTS idx_claims_applicant ON claims(applicant_id);
 CREATE INDEX IF NOT EXISTS idx_claims_status ON claims(status);
-
--- 通知表索引
 CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_priority ON notifications(priority);
 CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications(is_read);
 CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at DESC);
-
--- 通知已读记录表索引
 CREATE INDEX IF NOT EXISTS idx_notification_reads_notification ON notification_reads(notification_id);
 CREATE INDEX IF NOT EXISTS idx_notification_reads_user ON notification_reads(user_id);
 CREATE INDEX IF NOT EXISTS idx_notification_reads_unique ON notification_reads(notification_id, user_id);
-
--- 审计日志索引
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON audit_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC);
-
--- 下载记录索引
 CREATE INDEX IF NOT EXISTS idx_download_logs_resource ON download_logs(resource_id);
 CREATE INDEX IF NOT EXISTS idx_download_logs_user ON download_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_download_logs_time ON download_logs(downloaded_at DESC);
-
--- 图片表索引
 CREATE INDEX IF NOT EXISTS idx_images_uploader ON images(uploader_id);
 
--- ============================================
--- 创建触发器
--- ============================================
-
+-- Create triggers
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = CURRENT_TIMESTAMP;
     RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$
+language 'plpgsql';
 
 DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 CREATE TRIGGER update_users_updated_at
@@ -818,10 +632,7 @@ CREATE TRIGGER update_comments_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
--- ============================================
--- 验证
--- ============================================
-
+-- Verify
 SELECT 'users' as table_name, COUNT(*) as column_count FROM information_schema.columns WHERE table_name = 'users'
 UNION ALL
 SELECT 'resources', COUNT(*) FROM information_schema.columns WHERE table_name = 'resources'
@@ -849,3 +660,114 @@ UNION ALL
 SELECT 'download_logs', COUNT(*) FROM information_schema.columns WHERE table_name = 'download_logs'
 UNION ALL
 SELECT 'images', COUNT(*) FROM information_schema.columns WHERE table_name = 'images';
+'''
+
+def find_psql():
+    """Find psql executable"""
+    # Check PATH first
+    try:
+        result = subprocess.run(['where', 'psql'], capture_output=True, text=True)
+        if result.returncode == 0:
+            return 'psql'
+    except:
+        pass
+    
+    # Check common PostgreSQL installation paths
+    common_paths = [
+        r"C:\Program Files\PostgreSQL",
+        r"C:\Program Files (x86)\PostgreSQL"
+    ]
+    
+    for base_path in common_paths:
+        if os.path.exists(base_path):
+            for version in os.listdir(base_path):
+                psql_path = os.path.join(base_path, version, 'bin', 'psql.exe')
+                if os.path.exists(psql_path):
+                    return psql_path
+    
+    return None
+
+def main():
+    print("=== ShareUSTC Database Table Initialization ===")
+    print()
+    
+    # Find psql
+    psql = find_psql()
+    if not psql:
+        print("Error: psql not found. Please install PostgreSQL and ensure it's in PATH.")
+        sys.exit(1)
+    
+    # Test connection
+    print("Testing database connection...")
+    env = os.environ.copy()
+    env['PGPASSWORD'] = DB_PASSWORD
+    
+    try:
+        result = subprocess.run(
+            [psql, '-h', DB_HOST, '-p', DB_PORT, '-U', DB_USER, '-d', DB_NAME, '-c', 'SELECT 1;'],
+            capture_output=True,
+            text=True,
+            env=env
+        )
+        if result.returncode != 0 or '1' not in result.stdout:
+            raise Exception("Connection failed")
+        print("  Database connection successful")
+    except Exception as e:
+        print("Error: Cannot connect to database.")
+        print("  1. Run db_create_system_win.ps1 first")
+        print("  2. Check username/password")
+        print("  3. Check PostgreSQL service")
+        sys.exit(1)
+    
+    print()
+    print("Starting incremental update...")
+    
+    # Write SQL to temp file
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.sql', delete=False, encoding='utf-8') as f:
+        f.write(SQL_SCRIPT)
+        temp_file = f.name
+    
+    try:
+        # Execute SQL
+        result = subprocess.run(
+            [psql, '-h', DB_HOST, '-p', DB_PORT, '-U', DB_USER, '-d', DB_NAME, '-f', temp_file],
+            capture_output=True,
+            text=True,
+            env=env
+        )
+        print(result.stdout)
+        if result.stderr:
+            print(result.stderr)
+        
+        if result.returncode != 0:
+            print("Error: SQL execution failed")
+            sys.exit(1)
+    finally:
+        os.unlink(temp_file)
+    
+    print()
+    print("=== Table structure update completed ===")
+    print()
+    print("Created/Updated tables:")
+    print("  - users")
+    print("  - resources")
+    print("  - resource_stats")
+    print("  - ratings")
+    print("  - likes")
+    print("  - comments")
+    print("  - favorites")
+    print("  - favorite_resources")
+    print("  - claims")
+    print("  - notifications")
+    print("  - notification_reads")
+    print("  - audit_logs")
+    print("  - download_logs")
+    print("  - images")
+    print()
+    print("Indexes: 30+")
+    print("Triggers: 4 (auto update updated_at)")
+    print()
+    print("Note: This script supports incremental updates.")
+
+if __name__ == '__main__':
+    main()

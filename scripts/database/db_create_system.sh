@@ -10,7 +10,7 @@ set -e
 # 配置变量
 DB_NAME="shareustc"
 DB_USER="shareustc_app"
-DB_PASSWORD="ShareUSTC_default_pwd"  # 生产环境请修改此密码
+DB_PASSWORD="114514"  # 生产环境请修改此密码
 POSTGRES_USER="postgres"  # PostgreSQL 超级用户
 
 # 颜色输出
