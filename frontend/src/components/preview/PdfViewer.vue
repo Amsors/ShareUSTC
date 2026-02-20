@@ -88,12 +88,12 @@
 import { ref, watch, nextTick } from 'vue';
 import { ArrowLeft, ArrowRight, ZoomIn, ZoomOut, FullScreen } from '@element-plus/icons-vue';
 import * as pdfjsLib from 'pdfjs-dist';
-import PDFWorker from 'pdfjs-dist/build/pdf.worker.mjs?worker';
 import { getResourcePreviewInfo, getResourcePreviewContent, type PreviewUrlResponse } from '../../api/resource';
 import logger from '../../utils/logger';
 
-// 设置 PDF.js worker - 使用 Vite 的 worker 导入
-pdfjsLib.GlobalWorkerOptions.workerPort = new PDFWorker();
+// 设置 PDF.js worker - 使用 CDN 加载以提高兼容性
+// 避免使用 Vite 的 worker 导入，部分手机浏览器不支持 ES module worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 const props = defineProps<{
   resourceId: string;
