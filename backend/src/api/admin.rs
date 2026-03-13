@@ -1463,6 +1463,31 @@ async fn delete_all_favorite_resources(
     }
 }
 
+/// 检测重复资源（根据文件hash）
+#[get("/admin/duplicate-resources")]
+async fn check_duplicate_resources(
+    data: web::Data<AppState>,
+    current_user: web::ReqData<CurrentUser>,
+) -> impl Responder {
+    let user = current_user.into_inner();
+    log::info!("[Admin] 检测重复资源 | admin_id={}", user.id);
+
+    if let Err(e) = check_admin(&user) {
+        return handle_admin_error(e);
+    }
+
+    match AdminService::check_duplicate_resources(&data.pool).await {
+        Ok(result) => {
+            log::info!(
+                "[Admin] 重复资源检测完成 | admin_id={}, groups={}, duplicates={}",
+                user.id, result.total_groups, result.total_duplicate_resources
+            );
+            HttpResponse::Ok().json(result)
+        }
+        Err(e) => handle_admin_error(e),
+    }
+}
+
 /// 配置管理后台路由
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(get_dashboard)
@@ -1503,5 +1528,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
         .service(admin_delete_resource)
         .service(admin_recalculate_resource_hash)
         .service(get_admin_favorites)
-        .service(delete_all_favorite_resources);
+        .service(delete_all_favorite_resources)
+        // 重复资源检测
+        .service(check_duplicate_resources);
 }

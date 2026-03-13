@@ -1635,6 +1635,90 @@ impl AdminService {
             grade,
         })
     }
+
+    /// 检测重复资源（根据文件hash）
+    ///
+    /// 查询数据库中所有非空hash，找出hash相同的资源组
+    pub async fn check_duplicate_resources(
+        pool: &PgPool,
+    ) -> Result<DuplicateResourceCheckResponse, AdminError> {
+        // 首先查询所有有重复hash的资源
+        let records = sqlx::query_as::<_, (String, i64)>(
+            r#"
+            SELECT file_hash, COUNT(*) as count
+            FROM resources
+            WHERE file_hash IS NOT NULL AND file_hash != ''
+            GROUP BY file_hash
+            HAVING COUNT(*) > 1
+            ORDER BY count DESC, file_hash
+            "#
+        )
+        .fetch_all(pool)
+        .await
+        .map_err(|e| {
+            log::error!("[AdminService] 查询重复hash失败 | error={}", e);
+            AdminError::DatabaseError(e.to_string())
+        })?;
+
+        let total_groups = records.len() as i64;
+        let mut total_duplicate_resources = 0i64;
+        let mut groups = Vec::new();
+
+        // 对于每个重复的hash，查询详细信息
+        for (file_hash, count) in records {
+            total_duplicate_resources += count;
+
+            let resources = sqlx::query_as::<_, DuplicateResourceItem>(
+                r#"
+                SELECT
+                    r.id,
+                    r.title,
+                    r.course_name,
+                    r.resource_type,
+                    r.category,
+                    r.uploader_id,
+                    u.username as uploader_name,
+                    r.file_size,
+                    r.file_hash,
+                    r.storage_type,
+                    r.created_at
+                FROM resources r
+                LEFT JOIN users u ON r.uploader_id = u.id
+                WHERE r.file_hash = $1
+                ORDER BY r.created_at ASC
+                "#
+            )
+            .bind(&file_hash)
+            .fetch_all(pool)
+            .await
+            .map_err(|e| {
+                log::error!("[AdminService] 查询hash详情失败 | hash={}, error={}", file_hash, e);
+                AdminError::DatabaseError(e.to_string())
+            })?;
+
+            let total_file_size: i64 = resources.iter()
+                .map(|r| r.file_size.unwrap_or(0))
+                .sum();
+
+            groups.push(DuplicateResourceGroup {
+                file_hash,
+                resource_count: count,
+                total_file_size,
+                resources,
+            });
+        }
+
+        log::info!(
+            "[AdminService] 重复资源检测完成 | groups={}, duplicates={}",
+            total_groups, total_duplicate_resources
+        );
+
+        Ok(DuplicateResourceCheckResponse {
+            total_groups,
+            total_duplicate_resources,
+            groups,
+        })
+    }
 }
 
 /// Hash重新计算结果
@@ -1868,4 +1952,40 @@ pub struct AdminResourceListResponse {
 pub struct DeleteFavoriteResourcesResult {
     pub deleted_count: i64,
     pub favorite_name: String,
+}
+
+/// 重复资源组中的单个资源
+#[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct DuplicateResourceItem {
+    pub id: Uuid,
+    pub title: String,
+    pub course_name: Option<String>,
+    pub resource_type: String,
+    pub category: String,
+    pub uploader_id: Uuid,
+    pub uploader_name: Option<String>,
+    pub file_size: Option<i64>,
+    pub file_hash: String,
+    pub storage_type: Option<String>,
+    pub created_at: NaiveDateTime,
+}
+
+/// 重复资源组（相同hash的资源列表）
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DuplicateResourceGroup {
+    pub file_hash: String,
+    pub resource_count: i64,
+    pub total_file_size: i64,
+    pub resources: Vec<DuplicateResourceItem>,
+}
+
+/// 重复资源检测响应
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DuplicateResourceCheckResponse {
+    pub total_groups: i64,
+    pub total_duplicate_resources: i64,
+    pub groups: Vec<DuplicateResourceGroup>,
 }

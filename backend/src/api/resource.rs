@@ -957,6 +957,33 @@ pub async fn track_download(
     }))
 }
 
+/// 根据文件哈希查询资源
+/// 用于上传前检查是否已存在相同内容的资源
+#[get("/resources/by-hash/{file_hash}")]
+pub async fn get_resources_by_hash(
+    state: web::Data<AppState>,
+    path: web::Path<String>,
+) -> impl Responder {
+    let file_hash = path.into_inner();
+
+    // 验证哈希格式（应该是64位十六进制字符串，即SHA256）
+    if file_hash.len() != 64 || !file_hash.chars().all(|c| c.is_ascii_hexdigit()) {
+        return bad_request("无效的哈希格式，应为64位十六进制字符串");
+    }
+
+    match ResourceService::find_by_file_hash(&state.pool, &file_hash).await {
+        Ok(resources) => HttpResponse::Ok().json(resources),
+        Err(e) => {
+            log::warn!(
+                "[Resource] 根据哈希查询资源失败 | hash={}, error={}",
+                &file_hash[..16.min(file_hash.len())],
+                e
+            );
+            internal_error("查询资源失败")
+        }
+    }
+}
+
 /// 配置公开资源路由（不需要认证）
 pub fn config_public(cfg: &mut web::ServiceConfig) {
     // 注意：具体路径必须放在通配路径之前注册
@@ -966,6 +993,7 @@ pub fn config_public(cfg: &mut web::ServiceConfig) {
         .service(get_hot_resources) // /resources/hot （先注册具体路径）
         .service(get_resource_count) // /resources/count
         .service(search_resources_for_relation) // /resources/search-for-relation
+        .service(get_resources_by_hash) // /resources/by-hash/{file_hash}
         .service(get_resource_list) // /resources
         .service(search_resources) // /resources/search
         .service(get_resource_detail) // /resources/{id} （后注册通配路径）

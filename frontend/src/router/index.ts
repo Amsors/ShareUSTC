@@ -14,6 +14,7 @@ import CommentManagement from '../views/admin/CommentManagement.vue';
 import SendNotification from '../views/admin/SendNotification.vue';
 import DetailedStats from '../views/admin/DetailedStats.vue';
 import AuditLogs from '../views/admin/AuditLogs.vue';
+import DuplicateResourceCheck from '../views/admin/DuplicateResourceCheck.vue';
 
 // 路由配置
 const routes = [
@@ -186,6 +187,11 @@ const routes = [
         path: 'logs',
         name: 'AuditLogs',
         component: AuditLogs
+      },
+      {
+        path: 'duplicate-check',
+        name: 'DuplicateResourceCheck',
+        component: DuplicateResourceCheck
       }
     ]
   },

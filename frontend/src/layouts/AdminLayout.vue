@@ -52,7 +52,8 @@ import {
   Expand,
   User,
   Reading,
-  Folder
+  Folder,
+  DocumentCopy
 } from '@element-plus/icons-vue';
 import { brandConfig } from '../config/site.config';
 
@@ -65,6 +66,7 @@ const menuItems = [
   { path: '/admin/courses', title: '课程管理', icon: Reading },
   { path: '/admin/resources', title: '资源审核', icon: Document },
   { path: '/admin/resource-management', title: '资料管理', icon: Folder },
+  { path: '/admin/duplicate-check', title: '重复检测', icon: DocumentCopy },
   { path: '/admin/comments', title: '评论管理', icon: ChatDotSquare },
   { path: '/admin/notifications', title: '发送通知', icon: Bell },
   { path: '/admin/stats', title: '详细统计', icon: DataLine },

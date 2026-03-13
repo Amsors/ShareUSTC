@@ -14,7 +14,8 @@ import type {
   UpdateResourceContentResponse,
   GetResourceRawContentResponse,
   HotResourceItem,
-  RelatedResourceItem
+  RelatedResourceItem,
+  ResourceListItem
 } from '../types/resource';
 
 /**
@@ -612,5 +613,20 @@ export const verifyPdfPreviewChallenge = async (code: string): Promise<{ success
     url: '/resources/pdf-preview-challenge/verify',
     method: 'post',
     data: { code }
+  });
+};
+
+/**
+ * 根据文件哈希查询资源
+ * 用于上传前检查是否已存在相同内容的资源
+ * @param fileHash 文件SHA256哈希值（64位十六进制字符串）
+ * @returns 相同哈希的资源列表
+ */
+export const getResourcesByFileHash = async (
+  fileHash: string
+): Promise<ResourceListItem[]> => {
+  return request({
+    url: `/resources/by-hash/${fileHash}`,
+    method: 'get'
   });
 };

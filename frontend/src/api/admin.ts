@@ -497,6 +497,41 @@ export const deleteAllFavoriteResources = (favoriteId: string): Promise<DeleteFa
   return request.delete(`/admin/favorites/${favoriteId}/resources`);
 };
 
+// 重复资源检测相关类型
+export interface DuplicateResourceItem {
+  id: string;
+  title: string;
+  courseName: string | null;
+  resourceType: string;
+  category: string;
+  uploaderId: string;
+  uploaderName: string | null;
+  fileSize: number | null;
+  fileHash: string;
+  storageType: string | null;
+  createdAt: string;
+}
+
+export interface DuplicateResourceGroup {
+  fileHash: string;
+  resourceCount: number;
+  totalFileSize: number;
+  resources: DuplicateResourceItem[];
+}
+
+export interface DuplicateResourceCheckResponse {
+  totalGroups: number;
+  totalDuplicateResources: number;
+  groups: DuplicateResourceGroup[];
+}
+
+/**
+ * 检测重复资源（根据文件hash）
+ */
+export const checkDuplicateResources = (): Promise<DuplicateResourceCheckResponse> => {
+  return request.get('/admin/duplicate-resources');
+};
+
 // 导出API对象
 export const adminApi = {
   getDashboardStats,
@@ -536,6 +571,8 @@ export const adminApi = {
   adminDeleteResource,
   recalculateResourceHash,
   getAdminFavorites,
-  deleteAllFavoriteResources
+  deleteAllFavoriteResources,
+  // 重复资源检测
+  checkDuplicateResources
 };
 
