@@ -253,7 +253,10 @@ async fn main() -> std::io::Result<()> {
     ));
 
     // 启动文件哈希计算后台任务
-    tasks::file_hash_task::start_file_hash_task(pool, storage).await;
+    tasks::file_hash_task::start_file_hash_task(pool.clone(), storage.clone()).await;
+
+    // 启动孤立文件扫描后台任务
+    tasks::orphan_file_task::start_orphan_file_task(pool.clone(), storage.clone()).await;
 
     log::info!("[System] Server starting at http://{}", server_addr);
     log::debug!("[System] Debug logging enabled");
