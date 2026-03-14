@@ -1,4 +1,4 @@
-pub mod admin;
+pub mod admin_api;
 pub mod auth;
 pub mod comment;
 pub mod course;
@@ -6,6 +6,6 @@ pub mod favorite;
 pub mod image_host;
 pub mod notification;
 pub mod oss;
-pub mod resource;
+pub mod resource_api;
 pub mod teacher;
 pub mod user;

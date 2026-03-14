@@ -19,7 +19,6 @@ pub mod teacher_service;
 pub mod user_service;
 
 pub use admin_service::*;
-pub use ai_service::*;
 pub use audit_log_service::*;
 pub use auth_service::*;
 pub use comment_service::*;
@@ -34,6 +33,3 @@ pub use resource_service::*;
 pub use storage_service::*;
 pub use teacher_service::*;
 pub use user_service::*;
-
-// 从 resource_service 重新导出关联信息结构体
-pub use crate::models::resource::{CourseInfo, RelatedResourceInfo, TeacherInfo};

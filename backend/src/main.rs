@@ -370,12 +370,12 @@ async fn main() -> std::io::Result<()> {
                     .configure(api::image_host::config)
                     .configure(api::comment::config) // 评论路由
                     .configure(api::notification::config) // 通知路由
-                    .configure(api::admin::config) // 管理后台路由
+                    .configure(api::admin_api::config) // 管理后台路由
                     .configure(api::favorite::config) // 收藏夹路由
                     .configure(api::teacher::config) // 教师路由（公开）
                     .configure(api::course::config) // 课程路由（公开）
-                    .configure(api::resource::config) // 需要认证的资源路由（先注册）
-                    .configure(api::resource::config_public), // 公开资源路由（后注册）
+                    .configure(api::resource_api::config) // 需要认证的资源路由（先注册）
+                    .configure(api::resource_api::config_public), // 公开资源路由（后注册）
             )
             // 独立的公开服务（非 /api 前缀）
             .service(serve_image)
