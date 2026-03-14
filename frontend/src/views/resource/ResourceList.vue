@@ -481,11 +481,29 @@ const formatTime = (time: string) => {
   });
 };
 
+// 搜索页面过滤设置 LocalStorage 键名
+const FILTER_EMPTY_RESOURCES_KEY = 'filterEmptyResources';
+
+// 获取过滤设置
+const getFilterSetting = (): boolean => {
+  try {
+    const stored = localStorage.getItem(FILTER_EMPTY_RESOURCES_KEY);
+    if (stored) {
+      const data = JSON.parse(stored);
+      return data.enabled !== false;
+    }
+  } catch (e) {
+    logger.warn('[ResourceList]', 'Failed to parse filter setting:', e);
+  }
+  return true; // 默认开启过滤
+};
+
 // 加载教师列表
 const loadTeachers = async () => {
   loadingTeachers.value = true;
   try {
-    const teachers = await getTeachers();
+    const withResourcesOnly = getFilterSetting();
+    const teachers = await getTeachers(withResourcesOnly);
     teacherList.value = teachers;
   } catch (error: any) {
     logger.error('[ResourceList]', '加载教师列表失败:', error);
@@ -498,7 +516,8 @@ const loadTeachers = async () => {
 const loadCourses = async () => {
   loadingCourses.value = true;
   try {
-    const courses = await getCourses();
+    const withResourcesOnly = getFilterSetting();
+    const courses = await getCourses(withResourcesOnly);
     courseList.value = courses;
   } catch (error: any) {
     logger.error('[ResourceList]', '加载课程列表失败:', error);

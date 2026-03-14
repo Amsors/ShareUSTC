@@ -126,18 +126,32 @@ impl CourseService {
     }
 
     /// 获取有效课程列表（公开）
-    pub async fn get_active_courses(pool: &PgPool) -> Result<Vec<Course>, CourseError> {
-        let courses = sqlx::query_as::<_, Course>(
+    /// 当 with_resources_only 为 true 时，只返回有关联资源的课程
+    pub async fn get_active_courses(
+        pool: &PgPool,
+        with_resources_only: bool,
+    ) -> Result<Vec<Course>, CourseError> {
+        let sql = if with_resources_only {
+            r#"
+            SELECT DISTINCT c.id, c.sn, c.name, c.semester, c.credits, c.is_active, c.created_at, c.updated_at
+            FROM courses c
+            INNER JOIN resource_courses rc ON c.sn = rc.course_sn
+            WHERE c.is_active = true
+            ORDER BY c.sn ASC
+            "#
+        } else {
             r#"
             SELECT id, sn, name, semester, credits, is_active, created_at, updated_at
             FROM courses
             WHERE is_active = true
             ORDER BY sn ASC
-            "#,
-        )
-        .fetch_all(pool)
-        .await
-        .map_err(|e| CourseError::DatabaseError(e.to_string()))?;
+            "#
+        };
+
+        let courses = sqlx::query_as::<_, Course>(sql)
+            .fetch_all(pool)
+            .await
+            .map_err(|e| CourseError::DatabaseError(e.to_string()))?;
 
         Ok(courses)
     }

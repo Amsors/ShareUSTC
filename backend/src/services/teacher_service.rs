@@ -125,18 +125,32 @@ impl TeacherService {
     }
 
     /// 获取有效教师列表（公开）
-    pub async fn get_active_teachers(pool: &PgPool) -> Result<Vec<Teacher>, TeacherError> {
-        let teachers = sqlx::query_as::<_, Teacher>(
+    /// 当 with_resources_only 为 true 时，只返回有关联资源的教师
+    pub async fn get_active_teachers(
+        pool: &PgPool,
+        with_resources_only: bool,
+    ) -> Result<Vec<Teacher>, TeacherError> {
+        let sql = if with_resources_only {
+            r#"
+            SELECT DISTINCT t.id, t.sn, t.name, t.department, t.is_active, t.created_at, t.updated_at
+            FROM teachers t
+            INNER JOIN resource_teachers rt ON t.sn = rt.teacher_sn
+            WHERE t.is_active = true
+            ORDER BY t.sn ASC
+            "#
+        } else {
             r#"
             SELECT id, sn, name, department, is_active, created_at, updated_at
             FROM teachers
             WHERE is_active = true
             ORDER BY sn ASC
-            "#,
-        )
-        .fetch_all(pool)
-        .await
-        .map_err(|e| TeacherError::DatabaseError(e.to_string()))?;
+            "#
+        };
+
+        let teachers = sqlx::query_as::<_, Teacher>(sql)
+            .fetch_all(pool)
+            .await
+            .map_err(|e| TeacherError::DatabaseError(e.to_string()))?;
 
         Ok(teachers)
     }

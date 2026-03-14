@@ -93,6 +93,23 @@
               </el-input-number>
             </div>
           </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label">搜索页面过滤空资源</div>
+              <div class="setting-desc">
+                在搜索页面的课程/教师下拉菜单中，只显示已绑定资源的课程/教师
+              </div>
+            </div>
+            <div class="setting-control">
+              <el-switch
+                v-model="filterEmptyResources"
+                active-text="开启"
+                inactive-text="关闭"
+                @change="handleFilterEmptyResourcesChange"
+              />
+            </div>
+          </div>
         </section>
 
         <!-- 缓存管理 -->
@@ -284,11 +301,18 @@ onMounted(() => {
   loadUserGuideSetting();
   loadResourceGuideSetting();
   loadPdfPreviewSettings();
+  loadFilterEmptyResourcesSetting();
 });
 
 // 用户指南设置
 const showUserGuide = ref(true);
 const showResourceGuide = ref(true);
+
+// 搜索页面过滤空资源设置 LocalStorage 键名
+const FILTER_EMPTY_RESOURCES_KEY = 'filterEmptyResources';
+
+// 搜索页面过滤空资源设置
+const filterEmptyResources = ref(true);
 
 // PDF 预览设置
 const autoLoadPdfPreview = ref(false);
@@ -450,6 +474,43 @@ const handleResourceGuideChange = (value: boolean) => {
     }
   } catch (e) {
     logger.error('[Settings]', 'Failed to save resource guide modal setting:', e);
+    ElMessage.error('设置保存失败');
+  }
+};
+
+// 加载搜索页面过滤空资源设置
+const loadFilterEmptyResourcesSetting = () => {
+  try {
+    const stored = localStorage.getItem(FILTER_EMPTY_RESOURCES_KEY);
+    if (stored) {
+      const data = JSON.parse(stored);
+      // 如果没有明确设置 enabled，默认为 true
+      filterEmptyResources.value = data.enabled !== false;
+    } else {
+      // 没有设置时默认开启
+      filterEmptyResources.value = true;
+    }
+  } catch (e) {
+    logger.warn('[Settings]', 'Failed to parse filter empty resources setting:', e);
+    filterEmptyResources.value = true;
+  }
+};
+
+// 处理搜索页面过滤空资源设置变化
+const handleFilterEmptyResourcesChange = (value: boolean) => {
+  try {
+    localStorage.setItem(FILTER_EMPTY_RESOURCES_KEY, JSON.stringify({
+      enabled: value,
+      timestamp: Date.now()
+    }));
+
+    if (value) {
+      ElMessage.success('已开启搜索页面过滤，只显示有资源的课程/教师');
+    } else {
+      ElMessage.success('已关闭搜索页面过滤，显示所有课程/教师');
+    }
+  } catch (e) {
+    logger.error('[Settings]', 'Failed to save filter empty resources setting:', e);
     ElMessage.error('设置保存失败');
   }
 };
