@@ -125,7 +125,8 @@ impl FavoriteService {
     ) -> Result<FavoriteDetailResponse, ResourceError> {
         log::debug!(
             "[FavoriteService] 获取收藏夹详情 | favorite_id={}, user_id={}",
-            favorite_id, user_id
+            favorite_id,
+            user_id
         );
 
         // 验证收藏夹所有权
@@ -141,7 +142,8 @@ impl FavoriteService {
             None => {
                 log::warn!(
                     "[FavoriteService] 收藏夹不存在或无权限 | favorite_id={}, user_id={}",
-                    favorite_id, user_id
+                    favorite_id,
+                    user_id
                 );
                 return Err(ResourceError::NotFound("收藏夹不存在".to_string()));
             }
@@ -149,7 +151,8 @@ impl FavoriteService {
 
         log::debug!(
             "[FavoriteService] 找到收藏夹 | favorite_id={}, name={}",
-            favorite.id, favorite.name
+            favorite.id,
+            favorite.name
         );
 
         // 获取收藏夹中的资源列表
@@ -195,7 +198,8 @@ impl FavoriteService {
             Err(e) => {
                 log::error!(
                     "[FavoriteService] 查询收藏夹资源失败 | favorite_id={}, error={}",
-                    favorite_id, e
+                    favorite_id,
+                    e
                 );
                 return Err(ResourceError::DatabaseError(format!(
                     "查询收藏夹资源失败: {}",
@@ -407,9 +411,7 @@ impl FavoriteService {
         .await?;
 
         if already_in {
-            return Err(ResourceError::Conflict(
-                "资源已在收藏夹中".to_string(),
-            ));
+            return Err(ResourceError::Conflict("资源已在收藏夹中".to_string()));
         }
 
         // 添加资源到收藏夹
@@ -592,7 +594,9 @@ impl FavoriteService {
                             Err(e) => {
                                 log::warn!(
                                     "读取 OSS 资源文件失败: resource_id={}, path={}, error={}",
-                                    resource_id, file_path, e
+                                    resource_id,
+                                    file_path,
+                                    e
                                 );
                                 continue; // 跳过无法读取的文件
                             }
@@ -601,7 +605,9 @@ impl FavoriteService {
                         // 当前是 local 模式，但需要读取 OSS 文件
                         // 创建临时 OSS 存储实例
                         match crate::services::create_storage_backend(config) {
-                            Ok(oss_storage) if oss_storage.backend_type() == StorageBackendType::Oss => {
+                            Ok(oss_storage)
+                                if oss_storage.backend_type() == StorageBackendType::Oss =>
+                            {
                                 match oss_storage.read_file(file_path).await {
                                     Ok(content) => content,
                                     Err(e) => {
@@ -630,7 +636,9 @@ impl FavoriteService {
                             Err(e) => {
                                 log::warn!(
                                     "读取本地资源文件失败: resource_id={}, path={}, error={}",
-                                    resource_id, file_path, e
+                                    resource_id,
+                                    file_path,
+                                    e
                                 );
                                 continue; // 跳过无法读取的文件
                             }
@@ -705,7 +713,8 @@ impl FavoriteService {
                 if let Err(e) = ResourceService::increment_downloads(pool, *resource_id).await {
                     log::warn!(
                         "增加资源下载计数失败: resource_id={}, error={}",
-                        resource_id, e
+                        resource_id,
+                        e
                     );
                 }
             }

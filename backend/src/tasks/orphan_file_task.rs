@@ -14,8 +14,8 @@ use std::time::Duration;
 use sqlx::PgPool;
 use tokio::time::interval;
 
-use crate::services::{StorageBackend, StorageBackendType};
 use crate::config::Config;
+use crate::services::{StorageBackend, StorageBackendType};
 
 /// 扫描批次大小（每次处理的文件数量）
 const SCAN_BATCH_SIZE: usize = 100;
@@ -102,7 +102,8 @@ async fn scan_orphan_files(pool: &PgPool, storage: &Arc<dyn StorageBackend>) {
             &config.resource_upload_path,
             &config.image_upload_path,
             &db_oss_files,
-        ).await;
+        )
+        .await;
     }
 
     log::info!("[OrphanFileTask] 孤立文件扫描完成");
@@ -167,7 +168,9 @@ async fn check_local_files_migrated_to_oss(
             Err(e) => {
                 log::warn!(
                     "[OrphanFileTask] 检查重复文件失败 | type={}, path={}, error={}",
-                    dir_type, dir, e
+                    dir_type,
+                    dir,
+                    e
                 );
             }
         }
@@ -178,25 +181,19 @@ async fn check_local_files_migrated_to_oss(
 }
 
 /// 扫描本地目录
-async fn scan_local_directory(
-    dir_path: &str,
-    dir_type: &str,
-    db_files: &HashSet<String>,
-) {
+async fn scan_local_directory(dir_path: &str, dir_type: &str, db_files: &HashSet<String>) {
     let path = Path::new(dir_path);
 
     if !path.exists() {
         log::warn!(
             "[OrphanFileTask] 目录不存在 | type={}, path={}",
-            dir_type, dir_path
+            dir_type,
+            dir_path
         );
         return;
     }
 
-    log::info!(
-        "[OrphanFileTask] 开始扫描 {} 目录: {}",
-        dir_type, dir_path
-    );
+    log::info!("[OrphanFileTask] 开始扫描 {} 目录: {}", dir_type, dir_path);
 
     let mut orphan_files = Vec::new();
     let mut total_files = 0;
@@ -231,7 +228,9 @@ async fn scan_local_directory(
         Err(e) => {
             log::error!(
                 "[OrphanFileTask] 扫描目录失败 | type={}, path={}, error={}",
-                dir_type, dir_path, e
+                dir_type,
+                dir_path,
+                e
             );
             return;
         }
@@ -241,7 +240,8 @@ async fn scan_local_directory(
     if orphan_files.is_empty() {
         log::info!(
             "[OrphanFileTask] {} 目录扫描完成 | 总文件数={}, 孤立文件数=0，一切正常",
-            dir_type, total_files
+            dir_type,
+            total_files
         );
     } else {
         log::warn!(
@@ -295,9 +295,7 @@ fn normalize_path(file_path: &Path, base_dir: &str) -> String {
     let absolute_path = if file_path.is_absolute() {
         file_path.to_path_buf()
     } else {
-        std::env::current_dir()
-            .unwrap_or_default()
-            .join(file_path)
+        std::env::current_dir().unwrap_or_default().join(file_path)
     };
 
     // 尝试获取相对于上传目录的路径

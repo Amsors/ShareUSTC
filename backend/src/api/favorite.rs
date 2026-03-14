@@ -7,7 +7,9 @@ use crate::models::{
     AddToFavoriteRequest, CreateFavoriteRequest, CurrentUser, UpdateFavoriteRequest,
 };
 use crate::services::{AuditLogService, FavoriteService, ResourceError};
-use crate::utils::{bad_request, build_content_disposition, conflict, forbidden, internal_error, not_found};
+use crate::utils::{
+    bad_request, build_content_disposition, conflict, forbidden, internal_error, not_found,
+};
 
 /// 创建收藏夹
 #[post("/favorites")]

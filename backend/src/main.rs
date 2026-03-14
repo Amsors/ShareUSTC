@@ -74,7 +74,9 @@ async fn serve_image(data: web::Data<AppState>, path: web::Path<Uuid>) -> impl R
                     // 当前是 local 模式，但需要读取 OSS 文件
                     let config = config::Config::from_env();
                     match services::create_storage_backend(&config) {
-                        Ok(oss_storage) if oss_storage.backend_type() == StorageBackendType::Oss => {
+                        Ok(oss_storage)
+                            if oss_storage.backend_type() == StorageBackendType::Oss =>
+                        {
                             oss_storage.read_file(&file_path).await
                         }
                         _ => {

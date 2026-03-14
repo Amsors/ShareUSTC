@@ -10,7 +10,7 @@ fn deserialize_vec_i64<'de, D>(deserializer: D) -> Result<Vec<i64>, D::Error>
 where
     D: Deserializer<'de>,
 {
-    use serde::de::{Error, Visitor, SeqAccess, Unexpected};
+    use serde::de::{Error, SeqAccess, Unexpected, Visitor};
     use std::fmt;
 
     struct VecI64Visitor;
@@ -42,9 +42,9 @@ where
                 Ok(result)
             } else {
                 // 单个值
-                let num = value.parse::<i64>().map_err(|_| {
-                    E::invalid_value(Unexpected::Str(value), &"a valid i64 number")
-                })?;
+                let num = value
+                    .parse::<i64>()
+                    .map_err(|_| E::invalid_value(Unexpected::Str(value), &"a valid i64 number"))?;
                 Ok(vec![num])
             }
         }
@@ -77,20 +77,14 @@ where
                         let trimmed = part.trim();
                         if !trimmed.is_empty() {
                             let num = trimmed.parse::<i64>().map_err(|_| {
-                                A::Error::invalid_value(
-                                    Unexpected::Str(&s),
-                                    &"a valid i64 number"
-                                )
+                                A::Error::invalid_value(Unexpected::Str(&s), &"a valid i64 number")
                             })?;
                             result.push(num);
                         }
                     }
                 } else {
                     let num = s.parse::<i64>().map_err(|_| {
-                        A::Error::invalid_value(
-                            Unexpected::Str(&s),
-                            &"a valid i64 number"
-                        )
+                        A::Error::invalid_value(Unexpected::Str(&s), &"a valid i64 number")
                     })?;
                     result.push(num);
                 }
@@ -721,9 +715,18 @@ mod tests {
 
         #[test]
         fn test_from_extension_markdown() {
-            assert_eq!(ResourceType::from_extension("md"), ResourceType::WebMarkdown);
-            assert_eq!(ResourceType::from_extension("markdown"), ResourceType::WebMarkdown);
-            assert_eq!(ResourceType::from_extension("MD"), ResourceType::WebMarkdown);
+            assert_eq!(
+                ResourceType::from_extension("md"),
+                ResourceType::WebMarkdown
+            );
+            assert_eq!(
+                ResourceType::from_extension("markdown"),
+                ResourceType::WebMarkdown
+            );
+            assert_eq!(
+                ResourceType::from_extension("MD"),
+                ResourceType::WebMarkdown
+            );
         }
 
         #[test]

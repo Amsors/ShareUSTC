@@ -12,8 +12,8 @@ use sqlx::PgPool;
 use tokio::time::interval;
 use uuid::Uuid;
 
-use crate::services::{FileService, StorageBackend, StorageBackendType};
 use crate::config::Config;
+use crate::services::{FileService, StorageBackend, StorageBackendType};
 
 /// 批次大小（每次处理的数量）
 const BATCH_SIZE: i64 = 50;
@@ -77,7 +77,9 @@ async fn process_all_missing_hashes(pool: &PgPool, storage: &Arc<dyn StorageBack
     if total_success > 0 || total_fail > 0 {
         log::info!(
             "[FileHashTask] 全量扫描完成 | 批次={}, 成功={}, 失败={}",
-            batch_count, total_success, total_fail
+            batch_count,
+            total_success,
+            total_fail
         );
     } else {
         log::info!("[FileHashTask] 没有需要计算哈希的资源");
@@ -93,24 +95,24 @@ async fn process_hash_batch(
     batch_size: i64,
 ) -> (i32, i32, i32) {
     // 查询待处理的资源数量（用于告警）
-    let pending_count: i64 = match sqlx::query_scalar(
-        "SELECT COUNT(*) FROM resources WHERE file_hash IS NULL"
-    )
-    .fetch_one(pool)
-    .await
-    {
-        Ok(count) => count,
-        Err(e) => {
-            log::error!("[FileHashTask] 查询待处理数量失败 | error={}", e);
-            0
-        }
-    };
+    let pending_count: i64 =
+        match sqlx::query_scalar("SELECT COUNT(*) FROM resources WHERE file_hash IS NULL")
+            .fetch_one(pool)
+            .await
+        {
+            Ok(count) => count,
+            Err(e) => {
+                log::error!("[FileHashTask] 查询待处理数量失败 | error={}", e);
+                0
+            }
+        };
 
     // 告警：待处理数量过多
     if pending_count > ALERT_THRESHOLD {
         log::warn!(
             "[FileHashTask] [告警] 待计算哈希的资源数量过多 | pending={}, threshold={}",
-            pending_count, ALERT_THRESHOLD
+            pending_count,
+            ALERT_THRESHOLD
         );
     }
 
@@ -122,7 +124,7 @@ async fn process_hash_batch(
         WHERE file_hash IS NULL
         ORDER BY created_at ASC
         LIMIT $1
-        "#
+        "#,
     )
     .bind(batch_size)
     .fetch_all(pool)
@@ -142,7 +144,8 @@ async fn process_hash_batch(
 
     log::info!(
         "[FileHashTask] 本批处理 {} 个资源 (总待处理: {})",
-        count, pending_count
+        count,
+        pending_count
     );
 
     let mut success_count = 0;
@@ -158,18 +161,21 @@ async fn process_hash_batch(
         if file_size > MAX_FILE_SIZE {
             log::warn!(
                 "[FileHashTask] 文件过大，跳过哈希计算 | resource_id={}, size={}",
-                resource_id, file_size
+                resource_id,
+                file_size
             );
             fail_count += 1;
             continue;
         }
 
         // 尝试计算哈希（带指数退避重试）
-        match calculate_hash_with_exponential_backoff(pool, storage, &file_path, file_size as usize).await {
+        match calculate_hash_with_exponential_backoff(pool, storage, &file_path, file_size as usize)
+            .await
+        {
             Ok(hash) => {
                 // 更新数据库（使用乐观锁防止并发修改）
                 match sqlx::query(
-                    "UPDATE resources SET file_hash = $1 WHERE id = $2 AND file_hash IS NULL"
+                    "UPDATE resources SET file_hash = $1 WHERE id = $2 AND file_hash IS NULL",
                 )
                 .bind(&hash)
                 .bind(resource_id)
@@ -194,7 +200,8 @@ async fn process_hash_batch(
                     Err(e) => {
                         log::error!(
                             "[FileHashTask] 更新哈希失败 | resource_id={}, error={}",
-                            resource_id, e
+                            resource_id,
+                            e
                         );
                         fail_count += 1;
                     }
@@ -203,7 +210,8 @@ async fn process_hash_batch(
             Err(e) => {
                 log::error!(
                     "[FileHashTask] 计算哈希失败 | resource_id={}, error={}",
-                    resource_id, e
+                    resource_id,
+                    e
                 );
                 fail_count += 1;
             }
@@ -215,7 +223,8 @@ async fn process_hash_batch(
 
     log::info!(
         "[FileHashTask] 本批完成 | 成功={}, 失败={}",
-        success_count, fail_count
+        success_count,
+        fail_count
     );
 
     (success_count, fail_count, count)
@@ -241,11 +250,13 @@ async fn calculate_hash_with_exponential_backoff(
             // 指数退避：2^attempt * INITIAL_DELAY_MS
             let delay_ms = std::cmp::min(
                 INITIAL_DELAY_MS * (1_u64 << attempt.saturating_sub(1)),
-                MAX_DELAY_MS
+                MAX_DELAY_MS,
             );
             log::info!(
                 "[FileHashTask] 重试计算哈希 | attempt={}/{}, delay={}ms",
-                attempt + 1, MAX_RETRIES, delay_ms
+                attempt + 1,
+                MAX_RETRIES,
+                delay_ms
             );
             tokio::time::sleep(Duration::from_millis(delay_ms)).await;
         }
@@ -256,7 +267,10 @@ async fn calculate_hash_with_exponential_backoff(
             Err(e) => {
                 log::warn!(
                     "[FileHashTask] 读取文件失败 | path={}, attempt={}/{}, error={}",
-                    file_path, attempt + 1, MAX_RETRIES, e
+                    file_path,
+                    attempt + 1,
+                    MAX_RETRIES,
+                    e
                 );
                 last_error = e;
             }
@@ -279,7 +293,9 @@ async fn try_calculate_hash(
             // 大文件使用流式计算
             if data.len() > 10 * 1024 * 1024 {
                 let mut cursor = std::io::Cursor::new(&data);
-                match FileService::calculate_hash_streaming(&mut cursor, Some(STREAM_BUFFER_SIZE)).await {
+                match FileService::calculate_hash_streaming(&mut cursor, Some(STREAM_BUFFER_SIZE))
+                    .await
+                {
                     Ok(hash) => return Ok(hash),
                     Err(e) => return Err(format!("流式计算hash失败: {}", e)),
                 }
@@ -290,21 +306,22 @@ async fn try_calculate_hash(
         }
         Err(e) => {
             // 如果是 OSS 存储失败，尝试创建对应的 storage 实例
-            let storage_type: Option<String> = sqlx::query_scalar(
-                "SELECT storage_type FROM resources WHERE file_path = $1"
-            )
-            .bind(file_path)
-            .fetch_optional(pool)
-            .await
-            .ok()
-            .flatten();
+            let storage_type: Option<String> =
+                sqlx::query_scalar("SELECT storage_type FROM resources WHERE file_path = $1")
+                    .bind(file_path)
+                    .fetch_optional(pool)
+                    .await
+                    .ok()
+                    .flatten();
 
             if let Some(st) = storage_type {
                 if st == "oss" && storage.backend_type() != StorageBackendType::Oss {
                     // 当前是 local 模式，但资源在 OSS
                     let config = Config::from_env();
                     match crate::services::create_storage_backend(&config) {
-                        Ok(oss_storage) if oss_storage.backend_type() == StorageBackendType::Oss => {
+                        Ok(oss_storage)
+                            if oss_storage.backend_type() == StorageBackendType::Oss =>
+                        {
                             match oss_storage.read_file(file_path).await {
                                 Ok(data) => {
                                     let hash = FileService::calculate_hash(&data);
@@ -321,17 +338,15 @@ async fn try_calculate_hash(
                     // 当前是 OSS 模式，但资源在本地
                     let config = Config::from_env();
                     match crate::services::create_local_storage(&config) {
-                        Ok(local_storage) => {
-                            match local_storage.read_file(file_path).await {
-                                Ok(data) => {
-                                    let hash = FileService::calculate_hash(&data);
-                                    return Ok(hash);
-                                }
-                                Err(e2) => {
-                                    return Err(format!("本地读取失败: {}", e2));
-                                }
+                        Ok(local_storage) => match local_storage.read_file(file_path).await {
+                            Ok(data) => {
+                                let hash = FileService::calculate_hash(&data);
+                                return Ok(hash);
                             }
-                        }
+                            Err(e2) => {
+                                return Err(format!("本地读取失败: {}", e2));
+                            }
+                        },
                         Err(e) => {
                             return Err(format!("创建本地存储失败: {}", e));
                         }
@@ -353,7 +368,9 @@ pub async fn compute_hash_for_resource(
     file_path: &str,
 ) -> Result<String, String> {
     // 读取文件内容
-    let data = storage.read_file(file_path).await
+    let data = storage
+        .read_file(file_path)
+        .await
         .map_err(|e| format!("读取文件失败: {}", e))?;
 
     // 计算哈希
@@ -374,7 +391,9 @@ pub async fn compute_and_verify_hash(
     expected_content: Option<&[u8]>,
 ) -> Result<String, String> {
     // 读取文件内容
-    let data = storage.read_file(file_path).await
+    let data = storage
+        .read_file(file_path)
+        .await
         .map_err(|e| format!("读取文件失败: {}", e))?;
 
     // 如果提供了预期内容，验证一致性

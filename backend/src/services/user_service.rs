@@ -173,7 +173,9 @@ impl UserService {
         // 处理个人简介：空字符串转为 None
         // 未实名用户不能修改个人简介，保持原有值
         let bio = if is_verified {
-            req.bio.filter(|b| !b.trim().is_empty()).or(current_user.bio)
+            req.bio
+                .filter(|b| !b.trim().is_empty())
+                .or(current_user.bio)
         } else {
             current_user.bio
         };
@@ -514,14 +516,12 @@ impl UserService {
             .map_err(|e| UserError::DatabaseError(format!("密码哈希失败: {}", e)))?;
 
         // 更新密码
-        sqlx::query(
-            "UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2"
-        )
-        .bind(new_password_hash)
-        .bind(user_id)
-        .execute(pool)
-        .await
-        .map_err(|e| UserError::DatabaseError(format!("更新密码失败: {}", e)))?;
+        sqlx::query("UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2")
+            .bind(new_password_hash)
+            .bind(user_id)
+            .execute(pool)
+            .await
+            .map_err(|e| UserError::DatabaseError(format!("更新密码失败: {}", e)))?;
 
         log::info!("[User] 用户密码已修改 | user_id={}", user_id);
 
@@ -566,12 +566,20 @@ impl UserService {
         let mut users = Vec::new();
         for row in rows {
             users.push(LeaderboardUser {
-                id: row.try_get("id").map_err(|e| UserError::DatabaseError(e.to_string()))?,
+                id: row
+                    .try_get("id")
+                    .map_err(|e| UserError::DatabaseError(e.to_string()))?,
                 sn: row.try_get("sn").ok(),
-                username: row.try_get("username").map_err(|e| UserError::DatabaseError(e.to_string()))?,
+                username: row
+                    .try_get("username")
+                    .map_err(|e| UserError::DatabaseError(e.to_string()))?,
                 bio: row.try_get("bio").ok(),
-                role: row.try_get("role").map_err(|e| UserError::DatabaseError(e.to_string()))?,
-                is_verified: row.try_get("is_verified").map_err(|e| UserError::DatabaseError(e.to_string()))?,
+                role: row
+                    .try_get("role")
+                    .map_err(|e| UserError::DatabaseError(e.to_string()))?,
+                is_verified: row
+                    .try_get("is_verified")
+                    .map_err(|e| UserError::DatabaseError(e.to_string()))?,
                 uploads_count: row.try_get::<i64, _>("uploads_count").unwrap_or(0),
                 total_likes: row.try_get::<i64, _>("total_likes").unwrap_or(0),
                 total_downloads: row.try_get::<i64, _>("total_downloads").unwrap_or(0),

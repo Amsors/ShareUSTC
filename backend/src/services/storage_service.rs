@@ -174,9 +174,9 @@ impl LocalStorage {
         // 如果传入的是绝对路径，直接使用
         if path.is_absolute() {
             // 使用 canonicalize 确保路径在允许的范围内
-            let canonical_path = path.canonicalize().map_err(|e| {
-                StorageError::Validation(format!("无法解析文件路径: {}", e))
-            })?;
+            let canonical_path = path
+                .canonicalize()
+                .map_err(|e| StorageError::Validation(format!("无法解析文件路径: {}", e)))?;
 
             // 确保最终路径在基础目录内，防止路径遍历攻击
             if !canonical_path.starts_with(&base_absolute) {
@@ -189,9 +189,7 @@ impl LocalStorage {
         }
 
         // 处理相对路径：去掉开头的 "./" 以便正确拼接
-        let key = key_or_path
-            .trim_start_matches('/')
-            .trim_start_matches("./");
+        let key = key_or_path.trim_start_matches('/').trim_start_matches("./");
 
         // 检查路径是否已经包含 base_path 的前缀（处理存储时返回的完整路径）
         let path_str = key_or_path;
@@ -199,7 +197,9 @@ impl LocalStorage {
 
         // 如果路径以 base_path 开头（如 ./uploads/resources/xxx.pdf），提取相对部分
         let relative_key = if path_str.starts_with(base_str.as_ref()) {
-            path_str[base_str.len()..].trim_start_matches('/').trim_start_matches("./")
+            path_str[base_str.len()..]
+                .trim_start_matches('/')
+                .trim_start_matches("./")
         } else {
             key
         };
@@ -244,11 +244,17 @@ impl LocalStorage {
         let base_str = self.base_path.to_string_lossy();
         if key_or_path.starts_with(base_str.as_ref()) {
             let relative = &key_or_path[base_str.len()..];
-            return relative.trim_start_matches('/').trim_start_matches("./").to_string();
+            return relative
+                .trim_start_matches('/')
+                .trim_start_matches("./")
+                .to_string();
         }
 
         // 处理 ./ 开头的路径
-        key_or_path.trim_start_matches('/').trim_start_matches("./").to_string()
+        key_or_path
+            .trim_start_matches('/')
+            .trim_start_matches("./")
+            .to_string()
     }
 }
 
@@ -347,7 +353,6 @@ impl StorageBackend for LocalStorage {
     ) -> StorageFuture<'a, String> {
         self.get_file_url(key, expires_secs)
     }
-
 
     fn get_upload_url<'a>(
         &'a self,

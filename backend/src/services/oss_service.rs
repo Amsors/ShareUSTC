@@ -168,7 +168,10 @@ impl OssStorage {
         params.insert("Version".to_string(), "2015-04-01".to_string());
         params.insert("AccessKeyId".to_string(), self.config.access_key_id.clone());
         params.insert("SignatureMethod".to_string(), "HMAC-SHA1".to_string());
-        params.insert("Timestamp".to_string(), Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string());
+        params.insert(
+            "Timestamp".to_string(),
+            Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string(),
+        );
         params.insert("SignatureVersion".to_string(), "1.0".to_string());
         params.insert("SignatureNonce".to_string(), Uuid::new_v4().to_string());
         params.insert("RoleArn".to_string(), role_arn);
@@ -205,9 +208,13 @@ impl OssStorage {
             )));
         }
 
-        let assume_role_response: AssumeRoleResponse = serde_json::from_str(&body).map_err(|e| {
-            StorageError::Backend(format!("解析 STS AssumeRole 响应失败: {}，响应: {}", e, body))
-        })?;
+        let assume_role_response: AssumeRoleResponse =
+            serde_json::from_str(&body).map_err(|e| {
+                StorageError::Backend(format!(
+                    "解析 STS AssumeRole 响应失败: {}，响应: {}",
+                    e, body
+                ))
+            })?;
 
         Ok(StorageStsCredentials {
             access_key_id: assume_role_response.credentials.access_key_id,
@@ -316,7 +323,6 @@ impl OssStorage {
         ))
     }
 
-
     async fn put_object(
         &self,
         key: &str,
@@ -332,9 +338,7 @@ impl OssStorage {
             content_type,
         )?;
 
-        let mut request = self
-            .client
-            .put(&presigned_url);
+        let mut request = self.client.put(&presigned_url);
 
         if let Some(content_type) = content_type {
             request = request.header("Content-Type", content_type);
@@ -473,7 +477,8 @@ impl StorageBackend for OssStorage {
     fn head_file<'a>(&'a self, key: &'a str) -> StorageFuture<'a, StorageFileMetadata> {
         Box::pin(async move {
             let normalized_key = self.normalize_key(key)?;
-            let presigned_url = self.build_presigned_url("HEAD", &normalized_key, 60, None, None)?;
+            let presigned_url =
+                self.build_presigned_url("HEAD", &normalized_key, 60, None, None)?;
 
             let head_response = self
                 .client
@@ -483,13 +488,17 @@ impl StorageBackend for OssStorage {
                 .map_err(|e| StorageError::Backend(format!("OSS 读取文件元信息失败: {}", e)))?;
 
             match head_response.status() {
-                StatusCode::OK => Ok(parse_storage_metadata_from_headers(head_response.headers(), None)),
+                StatusCode::OK => Ok(parse_storage_metadata_from_headers(
+                    head_response.headers(),
+                    None,
+                )),
                 StatusCode::NOT_FOUND => {
                     Err(StorageError::NotFound(format!("OSS 文件不存在: {}", key)))
                 }
                 StatusCode::FORBIDDEN | StatusCode::METHOD_NOT_ALLOWED => {
                     // 某些策略下可能未授予 HeadObject；回退到 GET Range 获取元信息。
-                    let get_url = self.build_presigned_url("GET", &normalized_key, 60, None, None)?;
+                    let get_url =
+                        self.build_presigned_url("GET", &normalized_key, 60, None, None)?;
                     let get_response = self
                         .client
                         .get(&get_url)
@@ -501,8 +510,8 @@ impl StorageBackend for OssStorage {
                         })?;
 
                     match get_response.status() {
-                        StatusCode::OK | StatusCode::PARTIAL_CONTENT => Ok(
-                            parse_storage_metadata_from_headers(
+                        StatusCode::OK | StatusCode::PARTIAL_CONTENT => {
+                            Ok(parse_storage_metadata_from_headers(
                                 get_response.headers(),
                                 parse_total_length_from_content_range(
                                     get_response
@@ -510,8 +519,8 @@ impl StorageBackend for OssStorage {
                                         .get(reqwest::header::CONTENT_RANGE)
                                         .and_then(|v| v.to_str().ok()),
                                 ),
-                            ),
-                        ),
+                            ))
+                        }
                         StatusCode::NOT_FOUND => {
                             Err(StorageError::NotFound(format!("OSS 文件不存在: {}", key)))
                         }

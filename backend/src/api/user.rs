@@ -296,13 +296,8 @@ pub async fn change_password(
 
     log::info!("[User] 用户请求修改密码 | user_id={}", user.id);
 
-    match UserService::change_password(
-        &state.pool,
-        user.id,
-        &req.old_password,
-        &req.new_password,
-    )
-    .await
+    match UserService::change_password(&state.pool, user.id, &req.old_password, &req.new_password)
+        .await
     {
         Ok(()) => {
             log::info!("[User] 用户密码修改成功 | user_id={}", user.id);
@@ -332,11 +327,7 @@ pub async fn change_password(
             }))
         }
         Err(e) => {
-            log::warn!(
-                "[User] 用户密码修改失败 | user_id={}, error={}",
-                user.id,
-                e
-            );
+            log::warn!("[User] 用户密码修改失败 | user_id={}, error={}", user.id, e);
             match e {
                 UserError::UserNotFound(msg) => not_found(&msg),
                 UserError::InvalidCredentials(msg) => unauthorized(&msg),

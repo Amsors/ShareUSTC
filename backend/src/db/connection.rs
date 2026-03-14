@@ -126,11 +126,33 @@ mod tests {
             pdf_preview_challenge_uuid: Option<String>,
             pdf_preview_challenge_code: Option<String>,
         ) -> AppState {
-            AppState::new(pool, jwt_secret, cookie_secure, storage, require_email_on_register, allow_username_change, allow_email_change, brand, pdf_preview_challenge_uuid, pdf_preview_challenge_code)
+            AppState::new(
+                pool,
+                jwt_secret,
+                cookie_secure,
+                storage,
+                require_email_on_register,
+                allow_username_change,
+                allow_email_change,
+                brand,
+                pdf_preview_challenge_uuid,
+                pdf_preview_challenge_code,
+            )
         }
 
         // 验证函数指针类型
-        let _: fn(PgPool, String, bool, Arc<dyn StorageBackend>, bool, bool, bool, BrandConfig, Option<String>, Option<String>) -> AppState = _check_app_state_new_signature;
+        let _: fn(
+            PgPool,
+            String,
+            bool,
+            Arc<dyn StorageBackend>,
+            bool,
+            bool,
+            bool,
+            BrandConfig,
+            Option<String>,
+            Option<String>,
+        ) -> AppState = _check_app_state_new_signature;
 
         // 测试通过，类型检查完成
         assert!(true);
@@ -143,10 +165,7 @@ mod tests {
     async fn test_create_pool_with_invalid_url() {
         let invalid_url = "invalid_url_format";
         let result = create_pool(invalid_url).await;
-        assert!(
-            result.is_err(),
-            "无效的数据库 URL 应该返回错误"
-        );
+        assert!(result.is_err(), "无效的数据库 URL 应该返回错误");
     }
 
     /// 测试数据库连接超时

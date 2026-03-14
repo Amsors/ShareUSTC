@@ -294,21 +294,21 @@ impl ResourceService {
         }
 
         // 从 OSS 下载文件并计算哈希（带重试机制）
-        let file_hash = Self::compute_hash_from_storage_with_retry(storage, oss_key, resource_id).await;
+        let file_hash =
+            Self::compute_hash_from_storage_with_retry(storage, oss_key, resource_id).await;
         match file_hash {
             Ok(hash) => {
                 // 更新数据库中的 file_hash
-                if let Err(e) = sqlx::query(
-                    "UPDATE resources SET file_hash = $1 WHERE id = $2"
-                )
-                .bind(&hash)
-                .bind(resource_id)
-                .execute(&mut *tx)
-                .await
+                if let Err(e) = sqlx::query("UPDATE resources SET file_hash = $1 WHERE id = $2")
+                    .bind(&hash)
+                    .bind(resource_id)
+                    .execute(&mut *tx)
+                    .await
                 {
                     log::warn!(
                         "[Resource] OSS 回调更新文件哈希失败 | resource_id={}, error={}",
-                        resource_id, e
+                        resource_id,
+                        e
                     );
                     // 哈希更新失败不影响主流程，继续提交事务
                 } else {
@@ -322,7 +322,8 @@ impl ResourceService {
             Err(e) => {
                 log::warn!(
                     "[Resource] OSS 回调计算文件哈希失败 | resource_id={}, error={}",
-                    resource_id, e
+                    resource_id,
+                    e
                 );
                 // 哈希计算失败不影响主流程，后续定时任务会重新计算
             }
@@ -689,27 +690,28 @@ impl ResourceService {
         .unwrap_or_default();
 
         // 获取关联的资源列表（该资源主动关联的其他资源）
-        let related_resources: Vec<super::RelatedResourceInfo> = sqlx::query_as::<_, super::RelatedResourceInfo>(
-            r#"
+        let related_resources: Vec<super::RelatedResourceInfo> =
+            sqlx::query_as::<_, super::RelatedResourceInfo>(
+                r#"
             SELECT r.id, r.title, r.resource_type, r.category, r.created_at
             FROM resources r
             INNER JOIN resource_relations rr ON r.id = rr.target_resource_id
             WHERE rr.source_resource_id = $1 AND r.audit_status = 'approved'
             ORDER BY rr.created_at DESC
             "#,
-        )
-        .bind(resource_id)
-        .fetch_all(pool)
-        .await
-        .map_err(|e| {
-            log::warn!(
-                "[Resource] 获取关联资源失败 | resource_id={}, error={}",
-                resource_id,
+            )
+            .bind(resource_id)
+            .fetch_all(pool)
+            .await
+            .map_err(|e| {
+                log::warn!(
+                    "[Resource] 获取关联资源失败 | resource_id={}, error={}",
+                    resource_id,
+                    e
+                );
                 e
-            );
-            e
-        })
-        .unwrap_or_default();
+            })
+            .unwrap_or_default();
 
         Ok(ResourceDetailResponse {
             id: resource.id,
@@ -740,7 +742,10 @@ impl ResourceService {
             teachers,
             courses,
             related_resources,
-            storage_type: resource.storage_type.clone().unwrap_or_else(|| "local".to_string()),
+            storage_type: resource
+                .storage_type
+                .clone()
+                .unwrap_or_else(|| "local".to_string()),
         })
     }
 
@@ -774,7 +779,7 @@ impl ResourceService {
 
         // 使用 QueryBuilder 构建 COUNT 查询
         let mut count_builder = sqlx::QueryBuilder::new(
-            "SELECT COUNT(DISTINCT r.id) FROM resources r WHERE r.audit_status = 'approved'"
+            "SELECT COUNT(DISTINCT r.id) FROM resources r WHERE r.audit_status = 'approved'",
         );
 
         // 添加关联表 JOIN
@@ -1380,7 +1385,9 @@ impl ResourceService {
         let uploader_id = row.5;
 
         // 检查权限：只有管理员或上传者可以访问未审核的资源
-        let is_admin = user.map(|u| matches!(u.role, crate::models::UserRole::Admin)).unwrap_or(false);
+        let is_admin = user
+            .map(|u| matches!(u.role, crate::models::UserRole::Admin))
+            .unwrap_or(false);
         let is_uploader = user.map(|u| u.id == uploader_id).unwrap_or(false);
 
         if audit_status != "approved" && !is_admin && !is_uploader {
@@ -1413,7 +1420,9 @@ impl ResourceService {
         let uploader_id = row.5;
 
         // 检查权限：只有管理员或上传者可以访问未审核的资源
-        let is_admin = user.map(|u| matches!(u.role, crate::models::UserRole::Admin)).unwrap_or(false);
+        let is_admin = user
+            .map(|u| matches!(u.role, crate::models::UserRole::Admin))
+            .unwrap_or(false);
         let is_uploader = user.map(|u| u.id == uploader_id).unwrap_or(false);
 
         if audit_status != "approved" && !is_admin && !is_uploader {
@@ -1516,7 +1525,9 @@ impl ResourceService {
                 // 当前是 local 模式，但需要写入 OSS 文件
                 let config = crate::config::Config::from_env();
                 match super::create_storage_backend(&config) {
-                    Ok(oss_storage) if oss_storage.backend_type() == super::StorageBackendType::Oss => {
+                    Ok(oss_storage)
+                        if oss_storage.backend_type() == super::StorageBackendType::Oss =>
+                    {
                         oss_storage
                             .write_file(
                                 &resource.file_path,
@@ -1536,7 +1547,8 @@ impl ResourceService {
                 &resource.file_path,
                 content_bytes,
                 resource_id,
-            ).await;
+            )
+            .await;
 
             match verification_result {
                 Ok(verified_hash) => {
@@ -1549,11 +1561,10 @@ impl ResourceService {
                 Err(e) => {
                     log::error!(
                         "[Resource] OSS 写入验证失败，内容可能不一致 | resource_id={}, error={}",
-                        resource_id, e
+                        resource_id,
+                        e
                     );
-                    return Err(ResourceError::FileError(format!(
-                        "文件写入验证失败: {}", e
-                    )));
+                    return Err(ResourceError::FileError(format!("文件写入验证失败: {}", e)));
                 }
             }
         } else {
@@ -1579,7 +1590,9 @@ impl ResourceService {
                             )
                             .await?;
                     }
-                    Err(e) => return Err(ResourceError::FileError(format!("无法访问本地存储: {}", e))),
+                    Err(e) => {
+                        return Err(ResourceError::FileError(format!("无法访问本地存储: {}", e)))
+                    }
                 }
             }
         }
@@ -1646,7 +1659,7 @@ impl ResourceService {
                     resource_id
                 );
                 Err(ResourceError::Conflict(
-                    "资源在您编辑期间已被修改，请刷新后重试".to_string()
+                    "资源在您编辑期间已被修改，请刷新后重试".to_string(),
                 ))
             }
         }
@@ -1685,7 +1698,9 @@ impl ResourceService {
                 // 当前是 local 模式，但需要读取 OSS 文件
                 let config = crate::config::Config::from_env();
                 match super::create_storage_backend(&config) {
-                    Ok(oss_storage) if oss_storage.backend_type() == super::StorageBackendType::Oss => {
+                    Ok(oss_storage)
+                        if oss_storage.backend_type() == super::StorageBackendType::Oss =>
+                    {
                         oss_storage.read_file(&resource.file_path).await?
                     }
                     _ => return Err(ResourceError::FileError("无法读取 OSS 资源".to_string())),
@@ -1700,7 +1715,9 @@ impl ResourceService {
                 let config = crate::config::Config::from_env();
                 match super::create_local_storage(&config) {
                     Ok(local_storage) => local_storage.read_file(&resource.file_path).await?,
-                    Err(e) => return Err(ResourceError::FileError(format!("无法访问本地存储: {}", e))),
+                    Err(e) => {
+                        return Err(ResourceError::FileError(format!("无法访问本地存储: {}", e)))
+                    }
                 }
             }
         };
@@ -1798,16 +1815,18 @@ impl ResourceService {
         related_resource_ids: Vec<Uuid>,
     ) -> Result<(), ResourceError> {
         // 检查资源是否存在
-        let resource_exists: bool = sqlx::query_scalar(
-            "SELECT EXISTS(SELECT 1 FROM resources WHERE id = $1)"
-        )
-        .bind(resource_id)
-        .fetch_one(pool)
-        .await
-        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+        let resource_exists: bool =
+            sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM resources WHERE id = $1)")
+                .bind(resource_id)
+                .fetch_one(pool)
+                .await
+                .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
 
         if !resource_exists {
-            return Err(ResourceError::NotFound(format!("资源 {} 不存在", resource_id)));
+            return Err(ResourceError::NotFound(format!(
+                "资源 {} 不存在",
+                resource_id
+            )));
         }
 
         // 开启事务
@@ -1823,7 +1842,10 @@ impl ResourceService {
             .await
         {
             let _ = tx.rollback().await;
-            return Err(ResourceError::DatabaseError(format!("删除旧教师关联失败: {}", e)));
+            return Err(ResourceError::DatabaseError(format!(
+                "删除旧教师关联失败: {}",
+                e
+            )));
         }
 
         for teacher_sn in &teacher_sns {
@@ -1848,7 +1870,10 @@ impl ResourceService {
             .await
         {
             let _ = tx.rollback().await;
-            return Err(ResourceError::DatabaseError(format!("删除旧课程关联失败: {}", e)));
+            return Err(ResourceError::DatabaseError(format!(
+                "删除旧课程关联失败: {}",
+                e
+            )));
         }
 
         for course_sn in &course_sns {
@@ -1873,7 +1898,10 @@ impl ResourceService {
             .await
         {
             let _ = tx.rollback().await;
-            return Err(ResourceError::DatabaseError(format!("删除旧资源关联失败: {}", e)));
+            return Err(ResourceError::DatabaseError(format!(
+                "删除旧资源关联失败: {}",
+                e
+            )));
         }
 
         for related_id in &related_resource_ids {
@@ -1932,11 +1960,11 @@ impl ResourceService {
             FROM resources r
             WHERE r.audit_status = 'approved'
             AND (r.title ILIKE
-            "#
+            "#,
         );
         builder.push_bind(&search_pattern);
         builder.push(" OR r.id::text = ");
-        builder.push_bind(query);  // 支持通过UUID精确搜索
+        builder.push_bind(query); // 支持通过UUID精确搜索
         builder.push(")");
 
         // 排除指定资源（避免自关联或已关联的）
@@ -1954,7 +1982,11 @@ impl ResourceService {
             .fetch_all(pool)
             .await
             .map_err(|e| {
-                log::warn!("[Resource] 搜索可关联资源失败 | query={}, error={}", query, e);
+                log::warn!(
+                    "[Resource] 搜索可关联资源失败 | query={}, error={}",
+                    query,
+                    e
+                );
                 ResourceError::DatabaseError(e.to_string())
             })?;
 
@@ -1974,13 +2006,17 @@ impl ResourceService {
             INNER JOIN resource_relations rr ON r.id = rr.target_resource_id
             WHERE rr.source_resource_id = $1 AND r.audit_status = 'approved'
             ORDER BY rr.created_at DESC
-            "#
+            "#,
         )
         .bind(resource_id)
         .fetch_all(pool)
         .await
         .map_err(|e| {
-            log::warn!("[Resource] 获取关联资源列表失败 | resource_id={}, error={}", resource_id, e);
+            log::warn!(
+                "[Resource] 获取关联资源列表失败 | resource_id={}, error={}",
+                resource_id,
+                e
+            );
             ResourceError::DatabaseError(e.to_string())
         })?;
 
@@ -2022,7 +2058,7 @@ impl ResourceService {
 
         // 更新描述
         sqlx::query(
-            "UPDATE resources SET description = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2"
+            "UPDATE resources SET description = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2",
         )
         .bind(description)
         .bind(resource_id)
@@ -2065,7 +2101,10 @@ impl ResourceService {
                 );
                 log::info!(
                     "[Resource] OSS 写入验证重试 | resource_id={}, attempt={}/{}, delay={}ms",
-                    resource_id, attempt + 1, MAX_RETRIES, delay_ms
+                    resource_id,
+                    attempt + 1,
+                    MAX_RETRIES,
+                    delay_ms
                 );
                 tokio::time::sleep(Duration::from_millis(delay_ms)).await;
             }
@@ -2086,13 +2125,15 @@ impl ResourceService {
                     if actual_hash == expected_hash {
                         log::info!(
                             "[Resource] OSS 写入验证通过 | resource_id={}, attempt={}",
-                            resource_id, attempt + 1
+                            resource_id,
+                            attempt + 1
                         );
                         return Ok(actual_hash);
                     } else {
                         log::warn!(
                             "[Resource] OSS 写入验证失败：hash不一致 | resource_id={}, attempt={}",
-                            resource_id, attempt + 1
+                            resource_id,
+                            attempt + 1
                         );
                         // hash不一致，继续重试（可能是读取到旧版本）
                     }
@@ -2100,7 +2141,10 @@ impl ResourceService {
                 Err(e) => {
                     log::warn!(
                         "[Resource] OSS 写入验证读取失败 | resource_id={}, attempt={}/{}, error={}",
-                        resource_id, attempt + 1, MAX_RETRIES, e
+                        resource_id,
+                        attempt + 1,
+                        MAX_RETRIES,
+                        e
                     );
                 }
             }
@@ -2129,7 +2173,9 @@ impl ResourceService {
             if attempt > 0 {
                 log::info!(
                     "[Resource] 重试计算文件哈希 | resource_id={}, attempt={}/{}",
-                    resource_id, attempt + 1, MAX_RETRIES
+                    resource_id,
+                    attempt + 1,
+                    MAX_RETRIES
                 );
                 tokio::time::sleep(Duration::from_millis(RETRY_DELAY_MS * attempt as u64)).await;
             }
@@ -2161,7 +2207,23 @@ impl ResourceService {
         file_hash: &str,
     ) -> Result<Vec<ResourceListItem>, ResourceError> {
         // 使用 ILIKE 来支持大小写不敏感的查询（哈希可能是大写或小写）
-        let records = sqlx::query_as::<_, (Uuid, String, Option<String>, String, String, Option<serde_json::Value>, String, chrono::NaiveDateTime, i32, i32, i32, Option<String>)>(
+        let records = sqlx::query_as::<
+            _,
+            (
+                Uuid,
+                String,
+                Option<String>,
+                String,
+                String,
+                Option<serde_json::Value>,
+                String,
+                chrono::NaiveDateTime,
+                i32,
+                i32,
+                i32,
+                Option<String>,
+            ),
+        >(
             r#"
             SELECT
                 r.id, r.title, r.course_name, r.resource_type, r.category,
@@ -2177,7 +2239,7 @@ impl ResourceService {
                 AND r.audit_status = 'approved'
             ORDER BY r.created_at DESC
             LIMIT 10
-            "#
+            "#,
         )
         .bind(file_hash)
         .fetch_all(pool)
@@ -2189,40 +2251,55 @@ impl ResourceService {
 
         let items = records
             .into_iter()
-            .map(|(id, title, course_name, resource_type, category, tags, audit_status, created_at, views, downloads, likes, uploader_name)| {
-                // 解析标签
-                let tags_vec = tags.and_then(|v| {
-                    if let Ok(arr) = serde_json::from_value::<Vec<String>>(v) {
-                        Some(arr)
-                    } else {
-                        None
-                    }
-                });
-
-                ResourceListItem {
+            .map(
+                |(
                     id,
                     title,
                     course_name,
                     resource_type,
                     category,
-                    tags: tags_vec,
+                    tags,
                     audit_status,
                     created_at,
-                    stats: ResourceStatsResponse {
-                        views,
-                        downloads,
-                        likes,
-                        avg_difficulty: None,
-                        avg_overall_quality: None,
-                        avg_answer_quality: None,
-                        avg_format_quality: None,
-                        avg_detail_level: None,
-                        rating_count: 0,
-                    },
+                    views,
+                    downloads,
+                    likes,
                     uploader_name,
-                    storage_type: "local".to_string(), // 简化为local，实际需要根据记录返回
-                }
-            })
+                )| {
+                    // 解析标签
+                    let tags_vec = tags.and_then(|v| {
+                        if let Ok(arr) = serde_json::from_value::<Vec<String>>(v) {
+                            Some(arr)
+                        } else {
+                            None
+                        }
+                    });
+
+                    ResourceListItem {
+                        id,
+                        title,
+                        course_name,
+                        resource_type,
+                        category,
+                        tags: tags_vec,
+                        audit_status,
+                        created_at,
+                        stats: ResourceStatsResponse {
+                            views,
+                            downloads,
+                            likes,
+                            avg_difficulty: None,
+                            avg_overall_quality: None,
+                            avg_answer_quality: None,
+                            avg_format_quality: None,
+                            avg_detail_level: None,
+                            rating_count: 0,
+                        },
+                        uploader_name,
+                        storage_type: "local".to_string(), // 简化为local，实际需要根据记录返回
+                    }
+                },
+            )
             .collect();
 
         Ok(items)

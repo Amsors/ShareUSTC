@@ -88,7 +88,6 @@ impl JwtAuth {
         self.public_paths = rules;
         self
     }
-
 }
 
 impl<S, B> Transform<S, ServiceRequest> for JwtAuth

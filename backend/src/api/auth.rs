@@ -46,7 +46,14 @@ pub async fn register(
     let username = req.username.clone();
     log::info!("[Auth] 用户注册请求 | username={}", username);
 
-    match AuthService::register(&state.pool, &state.jwt_secret, req.into_inner(), state.require_email_on_register).await {
+    match AuthService::register(
+        &state.pool,
+        &state.jwt_secret,
+        req.into_inner(),
+        state.require_email_on_register,
+    )
+    .await
+    {
         Ok(response) => {
             log::info!(
                 "[Auth] 用户注册成功 | user_id={}, username={}",

@@ -334,7 +334,9 @@ pub async fn download_resource(
     let current_user = user.map(|u| u.into_inner());
 
     // 获取资源文件路径和存储类型（带权限检查）
-    match ResourceService::get_resource_file_path(&state.pool, resource_id, current_user.as_ref()).await {
+    match ResourceService::get_resource_file_path(&state.pool, resource_id, current_user.as_ref())
+        .await
+    {
         Ok((file_path, resource_type, title, storage_type)) => {
             let user_id = current_user.map(|u| u.id);
             let content_type = crate::services::FileService::get_mime_type_by_type(&resource_type);
@@ -354,8 +356,7 @@ pub async fn download_resource(
                     .await
                 {
                     Ok(download_url) => {
-                        record_download_events(&state, resource_id, user_id, &title, &req)
-                            .await;
+                        record_download_events(&state, resource_id, user_id, &title, &req).await;
                         HttpResponse::Found()
                             .insert_header(("Location", download_url))
                             .finish()
@@ -374,46 +375,42 @@ pub async fn download_resource(
                 // 本地存储：需要创建本地存储实例来读取文件
                 let config = crate::config::Config::from_env();
                 match crate::services::create_local_storage(&config) {
-                    Ok(local_storage) => {
-                        match local_storage.read_file(&file_path).await {
-                            Ok(file_content) => {
-                                record_download_events(&state, resource_id, user_id, &title, &req).await;
+                    Ok(local_storage) => match local_storage.read_file(&file_path).await {
+                        Ok(file_content) => {
+                            record_download_events(&state, resource_id, user_id, &title, &req)
+                                .await;
 
-                                log::info!(
+                            log::info!(
                                     "[Resource] 资源下载成功 | resource_id={}, user_id={:?}, storage=local",
                                     resource_id,
                                     user_id
                                 );
 
-                                HttpResponse::Ok()
-                                    .content_type(content_type)
-                                    .insert_header(("Content-Disposition", content_disposition))
-                                    .body(file_content)
-                            }
-                            Err(StorageError::NotFound(_)) => {
-                                log::warn!(
-                                    "[Resource] 下载文件不存在 | resource_id={}, path={}",
-                                    resource_id,
-                                    file_path
-                                );
-                                not_found("文件不存在")
-                            }
-                            Err(e) => {
-                                log::warn!(
+                            HttpResponse::Ok()
+                                .content_type(content_type)
+                                .insert_header(("Content-Disposition", content_disposition))
+                                .body(file_content)
+                        }
+                        Err(StorageError::NotFound(_)) => {
+                            log::warn!(
+                                "[Resource] 下载文件不存在 | resource_id={}, path={}",
+                                resource_id,
+                                file_path
+                            );
+                            not_found("文件不存在")
+                        }
+                        Err(e) => {
+                            log::warn!(
                                     "[Resource] 读取资源文件失败(下载) | resource_id={}, path={}, error={}",
                                     resource_id,
                                     file_path,
                                     e
                                 );
-                                internal_error("文件读取失败")
-                            }
+                            internal_error("文件读取失败")
                         }
-                    }
+                    },
                     Err(e) => {
-                        log::error!(
-                            "[Resource] 创建本地存储失败 | error={}",
-                            e
-                        );
+                        log::error!("[Resource] 创建本地存储失败 | error={}", e);
                         internal_error("无法访问本地存储")
                     }
                 }
@@ -534,7 +531,13 @@ pub async fn get_resource_preview_url(
     let current_user = user.map(|u| u.into_inner());
 
     // 获取资源文件路径和存储类型（带权限检查）
-    match ResourceService::get_resource_file_path_for_preview(&state.pool, resource_id, current_user.as_ref()).await {
+    match ResourceService::get_resource_file_path_for_preview(
+        &state.pool,
+        resource_id,
+        current_user.as_ref(),
+    )
+    .await
+    {
         Ok((file_path, resource_type, storage_type, updated_at)) => {
             let is_oss = storage_type.as_deref() == Some("oss");
 
@@ -610,7 +613,13 @@ pub async fn get_resource_content(
     let current_user = user.map(|u| u.into_inner());
 
     // 获取资源文件路径和存储类型（带权限检查）
-    match ResourceService::get_resource_file_path_for_preview(&state.pool, resource_id, current_user.as_ref()).await {
+    match ResourceService::get_resource_file_path_for_preview(
+        &state.pool,
+        resource_id,
+        current_user.as_ref(),
+    )
+    .await
+    {
         Ok((file_path, resource_type, storage_type, updated_at)) => {
             // 根据资源实际的存储类型选择正确的存储后端读取文件
             // 使用后端代理模式，避免浏览器直接访问 OSS 产生 CORS 问题
@@ -628,7 +637,9 @@ pub async fn get_resource_content(
                     // 创建临时 OSS 存储实例
                     let config = crate::config::Config::from_env();
                     match crate::services::create_storage_backend(&config) {
-                        Ok(oss_storage) if oss_storage.backend_type() == StorageBackendType::Oss => {
+                        Ok(oss_storage)
+                            if oss_storage.backend_type() == StorageBackendType::Oss =>
+                        {
                             oss_storage.read_file(&file_path).await
                         }
                         _ => {
@@ -761,7 +772,8 @@ pub async fn update_resource_content(
     }
 
     // 获取资源信息（用于审计日志）
-    let resource_detail = match ResourceService::get_resource_detail(&state.pool, resource_id).await {
+    let resource_detail = match ResourceService::get_resource_detail(&state.pool, resource_id).await
+    {
         Ok(detail) => detail,
         Err(e) => {
             log::warn!(
@@ -798,7 +810,11 @@ pub async fn update_resource_content(
             )
             .await
             {
-                log::warn!("[Audit] 记录资源更新日志失败 | resource_id={}, error={}", resource_id, e);
+                log::warn!(
+                    "[Audit] 记录资源更新日志失败 | resource_id={}, error={}",
+                    resource_id,
+                    e
+                );
             }
 
             HttpResponse::Ok().json(response)
@@ -868,7 +884,10 @@ pub async fn search_resources_for_relation(
         return bad_request("搜索关键词不能为空");
     }
 
-    let exclude_id = query.exclude_id.clone().and_then(|id| Uuid::parse_str(&id).ok());
+    let exclude_id = query
+        .exclude_id
+        .clone()
+        .and_then(|id| Uuid::parse_str(&id).ok());
 
     match ResourceService::search_resources_for_relation(
         &state.pool,
@@ -933,7 +952,8 @@ pub async fn track_download(
     let user_id = current_user.map(|u| u.id);
 
     // 获取资源信息（用于审计日志）
-    let resource_detail = match ResourceService::get_resource_detail(&state.pool, resource_id).await {
+    let resource_detail = match ResourceService::get_resource_detail(&state.pool, resource_id).await
+    {
         Ok(detail) => detail,
         Err(e) => {
             log::warn!(
@@ -1160,7 +1180,8 @@ pub async fn toggle_like(
     let resource_id = path.into_inner();
 
     // 获取资源信息（用于审计日志）
-    let resource_detail = match ResourceService::get_resource_detail(&state.pool, resource_id).await {
+    let resource_detail = match ResourceService::get_resource_detail(&state.pool, resource_id).await
+    {
         Ok(detail) => detail,
         Err(e) => {
             log::warn!(
@@ -1371,7 +1392,8 @@ pub async fn update_resource_relations(
     let resource_id = path.into_inner();
 
     // 获取资源信息（用于权限检查和审计日志）
-    let resource_detail = match ResourceService::get_resource_detail(&state.pool, resource_id).await {
+    let resource_detail = match ResourceService::get_resource_detail(&state.pool, resource_id).await
+    {
         Ok(detail) => detail,
         Err(e) => {
             log::warn!(
@@ -1458,7 +1480,8 @@ pub async fn update_resource_description(
     }
 
     // 获取资源信息（用于审计日志）
-    let resource_detail = match ResourceService::get_resource_detail(&state.pool, resource_id).await {
+    let resource_detail = match ResourceService::get_resource_detail(&state.pool, resource_id).await
+    {
         Ok(detail) => detail,
         Err(e) => {
             log::warn!(
@@ -1524,22 +1547,16 @@ pub async fn update_resource_description(
 
 /// 获取 PDF 预览检测配置
 #[get("/resources/pdf-preview-challenge/config")]
-pub async fn get_pdf_preview_challenge_config(
-    state: web::Data<AppState>,
-) -> impl Responder {
+pub async fn get_pdf_preview_challenge_config(state: web::Data<AppState>) -> impl Responder {
     match &state.pdf_preview_challenge_uuid {
-        Some(uuid) => {
-            HttpResponse::Ok().json(serde_json::json!({
-                "resourceId": uuid,
-                "enabled": true
-            }))
-        }
-        None => {
-            HttpResponse::Ok().json(serde_json::json!({
-                "resourceId": null,
-                "enabled": false
-            }))
-        }
+        Some(uuid) => HttpResponse::Ok().json(serde_json::json!({
+            "resourceId": uuid,
+            "enabled": true
+        })),
+        None => HttpResponse::Ok().json(serde_json::json!({
+            "resourceId": null,
+            "enabled": false
+        })),
     }
 }
 

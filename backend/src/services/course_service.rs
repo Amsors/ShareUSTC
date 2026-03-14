@@ -296,13 +296,12 @@ impl CourseService {
             }
 
             // 检查是否已存在同名课程
-            let existing: Option<(i64,)> = sqlx::query_as(
-                "SELECT sn FROM courses WHERE name = $1 LIMIT 1"
-            )
-            .bind(&item.name)
-            .fetch_optional(pool)
-            .await
-            .map_err(|e| CourseError::DatabaseError(e.to_string()))?;
+            let existing: Option<(i64,)> =
+                sqlx::query_as("SELECT sn FROM courses WHERE name = $1 LIMIT 1")
+                    .bind(&item.name)
+                    .fetch_optional(pool)
+                    .await
+                    .map_err(|e| CourseError::DatabaseError(e.to_string()))?;
 
             if existing.is_some() {
                 fail_count += 1;
@@ -318,7 +317,7 @@ impl CourseService {
                 r#"
                 INSERT INTO courses (name, semester, credits, is_active)
                 VALUES ($1, $2, $3, true)
-                "#
+                "#,
             )
             .bind(&item.name)
             .bind(&item.semester)
@@ -391,9 +390,7 @@ impl CourseService {
                 }
             } else {
                 // 单个编号
-                let sn: i64 = part
-                    .parse()
-                    .map_err(|_| format!("无效的编号: {}", part))?;
+                let sn: i64 = part.parse().map_err(|_| format!("无效的编号: {}", part))?;
 
                 if sn <= 0 {
                     return Err("编号必须为正整数".to_string());

@@ -330,7 +330,10 @@ impl UpdateProfileRequest {
             if username.len() < 3 || username.len() > 50 {
                 return Err("用户名长度必须在3-50个字符之间".to_string());
             }
-            if !username.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+            if !username
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_')
+            {
                 return Err("用户名只能包含字母、数字和下划线".to_string());
             }
         }
@@ -360,7 +363,11 @@ mod tests {
     mod register_request_tests {
         use super::*;
 
-        fn create_register_request(username: &str, password: &str, email: Option<&str>) -> RegisterRequest {
+        fn create_register_request(
+            username: &str,
+            password: &str,
+            email: Option<&str>,
+        ) -> RegisterRequest {
             RegisterRequest {
                 username: username.to_string(),
                 password: password.to_string(),
@@ -595,49 +602,76 @@ mod tests {
 
         #[test]
         fn test_default_page() {
-            let query = UserHomepageQuery { page: None, per_page: None };
+            let query = UserHomepageQuery {
+                page: None,
+                per_page: None,
+            };
             assert_eq!(query.get_page(), 1);
         }
 
         #[test]
         fn test_custom_page() {
-            let query = UserHomepageQuery { page: Some(5), per_page: None };
+            let query = UserHomepageQuery {
+                page: Some(5),
+                per_page: None,
+            };
             assert_eq!(query.get_page(), 5);
         }
 
         #[test]
         fn test_page_less_than_one() {
-            let query = UserHomepageQuery { page: Some(0), per_page: None };
+            let query = UserHomepageQuery {
+                page: Some(0),
+                per_page: None,
+            };
             assert_eq!(query.get_page(), 1);
 
-            let query = UserHomepageQuery { page: Some(-5), per_page: None };
+            let query = UserHomepageQuery {
+                page: Some(-5),
+                per_page: None,
+            };
             assert_eq!(query.get_page(), 1);
         }
 
         #[test]
         fn test_default_per_page() {
-            let query = UserHomepageQuery { page: None, per_page: None };
+            let query = UserHomepageQuery {
+                page: None,
+                per_page: None,
+            };
             assert_eq!(query.get_per_page(), 10);
         }
 
         #[test]
         fn test_custom_per_page() {
-            let query = UserHomepageQuery { page: None, per_page: Some(20) };
+            let query = UserHomepageQuery {
+                page: None,
+                per_page: Some(20),
+            };
             assert_eq!(query.get_per_page(), 20);
         }
 
         #[test]
         fn test_per_page_too_high() {
-            let query = UserHomepageQuery { page: None, per_page: Some(100) };
+            let query = UserHomepageQuery {
+                page: None,
+                per_page: Some(100),
+            };
             assert_eq!(query.get_per_page(), 50);
         }
 
         #[test]
         fn test_per_page_less_than_one() {
-            let query = UserHomepageQuery { page: None, per_page: Some(0) };
+            let query = UserHomepageQuery {
+                page: None,
+                per_page: Some(0),
+            };
             assert_eq!(query.get_per_page(), 1);
 
-            let query = UserHomepageQuery { page: None, per_page: Some(-5) };
+            let query = UserHomepageQuery {
+                page: None,
+                per_page: Some(-5),
+            };
             assert_eq!(query.get_per_page(), 1);
         }
     }

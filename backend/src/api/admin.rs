@@ -779,7 +779,11 @@ async fn batch_import_teachers(
     req: web::Json<BatchImportTeachersRequest>,
 ) -> impl Responder {
     let user = current_user.into_inner();
-    log::info!("[Admin] 批量导入教师 | admin_id={}, count={}", user.id, req.teachers.len());
+    log::info!(
+        "[Admin] 批量导入教师 | admin_id={}, count={}",
+        user.id,
+        req.teachers.len()
+    );
 
     if let Err(e) = check_admin(&user) {
         return handle_admin_error(e);
@@ -811,7 +815,11 @@ async fn batch_import_courses(
     req: web::Json<BatchImportCoursesRequest>,
 ) -> impl Responder {
     let user = current_user.into_inner();
-    log::info!("[Admin] 批量导入课程 | admin_id={}, count={}", user.id, req.courses.len());
+    log::info!(
+        "[Admin] 批量导入课程 | admin_id={}, count={}",
+        user.id,
+        req.courses.len()
+    );
 
     if let Err(e) = check_admin(&user) {
         return handle_admin_error(e);
@@ -869,8 +877,8 @@ fn parse_teachers_from_bytes(
         "xlsx" => {
             let mut teachers = Vec::new();
             let cursor = std::io::Cursor::new(data);
-            let mut workbook: calamine::Xlsx<std::io::Cursor<&[u8]>> = calamine::Xlsx::new(cursor)
-                .map_err(|e| format!("Excel文件解析错误: {:?}", e))?;
+            let mut workbook: calamine::Xlsx<std::io::Cursor<&[u8]>> =
+                calamine::Xlsx::new(cursor).map_err(|e| format!("Excel文件解析错误: {:?}", e))?;
             let range = workbook
                 .worksheet_range_at(0)
                 .ok_or("无法读取Excel第一个工作表")?
@@ -882,7 +890,8 @@ fn parse_teachers_from_bytes(
                     .get(0)
                     .ok_or_else(|| format!("Excel第{}行: 缺少姓名", idx + 1))?;
                 let name = name_cell.to_string().trim().to_string();
-                let department: Option<String> = row.get(1).map(|c| c.to_string().trim().to_string());
+                let department: Option<String> =
+                    row.get(1).map(|c| c.to_string().trim().to_string());
                 let department = if department.as_ref().map(|s| s.is_empty()).unwrap_or(true) {
                     None
                 } else {
@@ -938,8 +947,8 @@ fn parse_courses_from_bytes(
         "xlsx" => {
             let mut courses = Vec::new();
             let cursor = std::io::Cursor::new(data);
-            let mut workbook: calamine::Xlsx<std::io::Cursor<&[u8]>> = calamine::Xlsx::new(cursor)
-                .map_err(|e| format!("Excel文件解析错误: {:?}", e))?;
+            let mut workbook: calamine::Xlsx<std::io::Cursor<&[u8]>> =
+                calamine::Xlsx::new(cursor).map_err(|e| format!("Excel文件解析错误: {:?}", e))?;
             let range = workbook
                 .worksheet_range_at(0)
                 .ok_or("无法读取Excel第一个工作表")?
@@ -1337,7 +1346,8 @@ async fn admin_recalculate_resource_hash(
     let resource_id = path.into_inner();
     log::info!(
         "[Admin] 管理员重新计算资源hash | admin_id={}, resource_id={}",
-        user.id, resource_id
+        user.id,
+        resource_id
     );
 
     match AdminService::recalculate_resource_hash(&data.pool, &data.storage, resource_id).await {
@@ -1368,7 +1378,9 @@ async fn admin_recalculate_resource_hash(
             {
                 log::warn!(
                     "[Audit] 记录重新计算hash日志失败 | admin_id={}, resource_id={}, error={}",
-                    user.id, resource_id, e
+                    user.id,
+                    resource_id,
+                    e
                 );
             }
 
@@ -1377,7 +1389,9 @@ async fn admin_recalculate_resource_hash(
         Err(e) => {
             log::error!(
                 "[Admin] 资源hash重新计算失败 | admin_id={}, resource_id={}, error={}",
-                user.id, resource_id, e
+                user.id,
+                resource_id,
+                e
             );
             handle_admin_error(e)
         }
@@ -1424,7 +1438,9 @@ async fn delete_all_favorite_resources(
         favorite_id
     );
 
-    match AdminService::delete_all_favorite_resources(&data.pool, &user, &data.storage, favorite_id).await {
+    match AdminService::delete_all_favorite_resources(&data.pool, &user, &data.storage, favorite_id)
+        .await
+    {
         Ok(result) => {
             log::info!(
                 "[Admin] 收藏夹内资源删除成功 | admin_id={}, favorite_id={}, deleted_count={}",
@@ -1480,7 +1496,9 @@ async fn check_duplicate_resources(
         Ok(result) => {
             log::info!(
                 "[Admin] 重复资源检测完成 | admin_id={}, groups={}, duplicates={}",
-                user.id, result.total_groups, result.total_duplicate_resources
+                user.id,
+                result.total_groups,
+                result.total_duplicate_resources
             );
             HttpResponse::Ok().json(result)
         }

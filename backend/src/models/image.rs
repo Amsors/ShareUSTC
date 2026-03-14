@@ -71,15 +71,16 @@ impl ImageInfoResponse {
         ImageInfoResponse {
             id: image.id,
             url: image.get_public_url(base_url),
-            markdown_link: image.get_markdown_link(
-                base_url,
-                &image.original_name.as_deref().unwrap_or("image"),
-            ),
+            markdown_link: image
+                .get_markdown_link(base_url, &image.original_name.as_deref().unwrap_or("image")),
             original_name: image.original_name.clone(),
             file_size: image.file_size,
             mime_type: image.mime_type.clone(),
             created_at: image.created_at,
-            storage_type: image.storage_type.clone().unwrap_or_else(|| "local".to_string()),
+            storage_type: image
+                .storage_type
+                .clone()
+                .unwrap_or_else(|| "local".to_string()),
         }
     }
 }

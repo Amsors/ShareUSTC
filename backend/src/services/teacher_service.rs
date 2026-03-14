@@ -283,7 +283,7 @@ impl TeacherService {
             // 检查是否已存在同名教师（同姓名+同学院视为重复）
             let existing: Option<(i64,)> = if let Some(ref dept) = item.department {
                 sqlx::query_as(
-                    "SELECT sn FROM teachers WHERE name = $1 AND department = $2 LIMIT 1"
+                    "SELECT sn FROM teachers WHERE name = $1 AND department = $2 LIMIT 1",
                 )
                 .bind(&item.name)
                 .bind(dept)
@@ -292,7 +292,7 @@ impl TeacherService {
                 .map_err(|e| TeacherError::DatabaseError(e.to_string()))?
             } else {
                 sqlx::query_as(
-                    "SELECT sn FROM teachers WHERE name = $1 AND department IS NULL LIMIT 1"
+                    "SELECT sn FROM teachers WHERE name = $1 AND department IS NULL LIMIT 1",
                 )
                 .bind(&item.name)
                 .fetch_optional(pool)
@@ -314,7 +314,7 @@ impl TeacherService {
                 r#"
                 INSERT INTO teachers (name, department, is_active)
                 VALUES ($1, $2, true)
-                "#
+                "#,
             )
             .bind(&item.name)
             .bind(&item.department)
@@ -386,9 +386,7 @@ impl TeacherService {
                 }
             } else {
                 // 单个编号
-                let sn: i64 = part
-                    .parse()
-                    .map_err(|_| format!("无效的编号: {}", part))?;
+                let sn: i64 = part.parse().map_err(|_| format!("无效的编号: {}", part))?;
 
                 if sn <= 0 {
                     return Err("编号必须为正整数".to_string());
@@ -422,7 +420,9 @@ impl TeacherService {
         };
 
         if sns.is_empty() {
-            return Err(TeacherError::ValidationError("编号列表不能为空".to_string()));
+            return Err(TeacherError::ValidationError(
+                "编号列表不能为空".to_string(),
+            ));
         }
 
         let mut success_count = 0i32;

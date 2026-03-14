@@ -1433,8 +1433,8 @@ impl AdminService {
         storage: &Arc<dyn crate::services::StorageBackend>,
         favorite_id: Uuid,
     ) -> Result<DeleteFavoriteResourcesResult, AdminError> {
-        use crate::services::ResourceService;
         use crate::services::FavoriteService;
+        use crate::services::ResourceService;
 
         // 获取收藏夹详情（检查所有权）
         let favorite_detail = FavoriteService::get_favorite_detail(pool, favorite_id, user.id)
@@ -1472,7 +1472,8 @@ impl AdminService {
                 Err(e) => {
                     log::warn!(
                         "[AdminService] 删除资源失败 | resource_id={}, error={}",
-                        resource_id, e
+                        resource_id,
+                        e
                     );
                     // 继续删除其他资源
                 }
@@ -1500,18 +1501,17 @@ impl AdminService {
         storage: &Arc<dyn crate::services::StorageBackend>,
         resource_id: Uuid,
     ) -> Result<RecalculateHashResult, AdminError> {
-        use crate::services::{FileService, StorageBackendType};
         use crate::config::Config;
+        use crate::services::{FileService, StorageBackendType};
 
         // 获取资源信息
-        let resource: crate::models::Resource = sqlx::query_as(
-            "SELECT * FROM resources WHERE id = $1"
-        )
-        .bind(resource_id)
-        .fetch_optional(pool)
-        .await
-        .map_err(|e| AdminError::DatabaseError(e.to_string()))?
-        .ok_or_else(|| AdminError::NotFound(format!("资源 {} 不存在", resource_id)))?;
+        let resource: crate::models::Resource =
+            sqlx::query_as("SELECT * FROM resources WHERE id = $1")
+                .bind(resource_id)
+                .fetch_optional(pool)
+                .await
+                .map_err(|e| AdminError::DatabaseError(e.to_string()))?
+                .ok_or_else(|| AdminError::NotFound(format!("资源 {} 不存在", resource_id)))?;
 
         let old_hash = resource.file_hash.clone();
         let file_path = resource.file_path.clone();
@@ -1531,7 +1531,9 @@ impl AdminService {
                 // 当前是 local 模式，但需要读取 OSS 文件
                 let config = Config::from_env();
                 match crate::services::create_storage_backend(&config) {
-                    Ok(oss_storage) if oss_storage.backend_type() == StorageBackendType::Oss => oss_storage,
+                    Ok(oss_storage) if oss_storage.backend_type() == StorageBackendType::Oss => {
+                        oss_storage
+                    }
                     _ => return Err(AdminError::ValidationError("无法访问 OSS 存储".to_string())),
                 }
             }
@@ -1543,7 +1545,12 @@ impl AdminService {
                 let config = Config::from_env();
                 match crate::services::create_local_storage(&config) {
                     Ok(local_storage) => local_storage,
-                    Err(e) => return Err(AdminError::ValidationError(format!("无法访问本地存储: {}", e))),
+                    Err(e) => {
+                        return Err(AdminError::ValidationError(format!(
+                            "无法访问本地存储: {}",
+                            e
+                        )))
+                    }
                 }
             }
         };
@@ -1554,7 +1561,9 @@ impl AdminService {
             Err(e) => {
                 log::error!(
                     "[AdminService] 读取文件失败 | resource_id={}, path={}, error={}",
-                    resource_id, file_path, e
+                    resource_id,
+                    file_path,
+                    e
                 );
                 return Err(AdminError::DatabaseError(format!("读取文件失败: {}", e)));
             }
@@ -1565,18 +1574,19 @@ impl AdminService {
         let new_size = file_data.len() as i64;
 
         // 更新数据库
-        let updated = sqlx::query(
-            "UPDATE resources SET file_hash = $1, file_size = $2 WHERE id = $3"
-        )
-        .bind(&new_hash)
-        .bind(new_size)
-        .bind(resource_id)
-        .execute(pool)
-        .await
-        .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+        let updated =
+            sqlx::query("UPDATE resources SET file_hash = $1, file_size = $2 WHERE id = $3")
+                .bind(&new_hash)
+                .bind(new_size)
+                .bind(resource_id)
+                .execute(pool)
+                .await
+                .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
 
         if updated.rows_affected() == 0 {
-            return Err(AdminError::DatabaseError("更新hash失败，资源可能已被删除".to_string()));
+            return Err(AdminError::DatabaseError(
+                "更新hash失败，资源可能已被删除".to_string(),
+            ));
         }
 
         log::info!(
@@ -1602,24 +1612,31 @@ impl AdminService {
         user_id: Uuid,
     ) -> Result<UserRealInfoResponse, AdminError> {
         // 获取用户基本信息和实名信息
-        let row: (String, bool, Option<serde_json::Value>) = sqlx::query_as(
-            "SELECT username, is_verified, real_info FROM users WHERE id = $1"
-        )
-        .bind(user_id)
-        .fetch_optional(pool)
-        .await
-        .map_err(|e| AdminError::DatabaseError(format!("查询用户实名信息失败: {}", e)))?
-        .ok_or_else(|| AdminError::NotFound("用户不存在".to_string()))?;
+        let row: (String, bool, Option<serde_json::Value>) =
+            sqlx::query_as("SELECT username, is_verified, real_info FROM users WHERE id = $1")
+                .bind(user_id)
+                .fetch_optional(pool)
+                .await
+                .map_err(|e| AdminError::DatabaseError(format!("查询用户实名信息失败: {}", e)))?
+                .ok_or_else(|| AdminError::NotFound("用户不存在".to_string()))?;
 
         let (username, is_verified, real_info_json) = row;
 
         // 解析实名信息
         let (real_name, student_id, major, grade) = if let Some(info) = real_info_json {
             (
-                info.get("real_name").and_then(|v| v.as_str()).map(|s| s.to_string()),
-                info.get("student_id").and_then(|v| v.as_str()).map(|s| s.to_string()),
-                info.get("major").and_then(|v| v.as_str()).map(|s| s.to_string()),
-                info.get("grade").and_then(|v| v.as_str()).map(|s| s.to_string()),
+                info.get("real_name")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string()),
+                info.get("student_id")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string()),
+                info.get("major")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string()),
+                info.get("grade")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string()),
             )
         } else {
             (None, None, None, None)
@@ -1651,7 +1668,7 @@ impl AdminService {
             GROUP BY file_hash
             HAVING COUNT(*) > 1
             ORDER BY count DESC, file_hash
-            "#
+            "#,
         )
         .fetch_all(pool)
         .await
@@ -1686,19 +1703,21 @@ impl AdminService {
                 LEFT JOIN users u ON r.uploader_id = u.id
                 WHERE r.file_hash = $1
                 ORDER BY r.created_at ASC
-                "#
+                "#,
             )
             .bind(&file_hash)
             .fetch_all(pool)
             .await
             .map_err(|e| {
-                log::error!("[AdminService] 查询hash详情失败 | hash={}, error={}", file_hash, e);
+                log::error!(
+                    "[AdminService] 查询hash详情失败 | hash={}, error={}",
+                    file_hash,
+                    e
+                );
                 AdminError::DatabaseError(e.to_string())
             })?;
 
-            let total_file_size: i64 = resources.iter()
-                .map(|r| r.file_size.unwrap_or(0))
-                .sum();
+            let total_file_size: i64 = resources.iter().map(|r| r.file_size.unwrap_or(0)).sum();
 
             groups.push(DuplicateResourceGroup {
                 file_hash,
@@ -1710,7 +1729,8 @@ impl AdminService {
 
         log::info!(
             "[AdminService] 重复资源检测完成 | groups={}, duplicates={}",
-            total_groups, total_duplicate_resources
+            total_groups,
+            total_duplicate_resources
         );
 
         Ok(DuplicateResourceCheckResponse {
