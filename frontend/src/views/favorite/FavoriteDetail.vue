@@ -52,6 +52,10 @@
                   推荐
                 </el-tag>
               </el-dropdown-item>
+              <el-dropdown-item command="folder">
+                <el-icon><FolderOpened /></el-icon>
+                下载到文件夹
+              </el-dropdown-item>
               <el-dropdown-item command="server">
                 <el-icon><Download /></el-icon>
                 服务器打包下载
@@ -195,6 +199,15 @@
       @retry="handleBrowserDownloadRetry"
       @close="handleBrowserDownloadClose"
     />
+
+    <!-- 下载到文件夹进度弹窗 -->
+    <FolderDownloadProgressModal
+      v-model="showFolderDownloadModal"
+      :progress="folderDownloadProgress"
+      @cancel="handleFolderDownloadCancel"
+      @retry="handleFolderDownloadRetry"
+      @close="handleFolderDownloadClose"
+    />
   </div>
 </template>
 
@@ -212,14 +225,23 @@ import {
   Remove,
   Loading,
   ChromeFilled,
-  Document
+  Document,
+  FolderOpened
 } from '@element-plus/icons-vue';
 import { useDefaultFavorite } from '../../composables/useDefaultFavorite';
 import { useFavoriteStore } from '../../stores/favorite';
 import { downloadFavorite } from '../../api/favorite';
-import { browserDownloadFavorite, checkBrowserSupport, type DownloadProgress } from '../../utils/browserZip';
+import {
+  browserDownloadFavorite,
+  checkBrowserSupport,
+  downloadToFolder,
+  checkFileSystemAccessSupport,
+  type DownloadProgress,
+  type FolderDownloadProgress
+} from '../../utils/browserZip';
 import CreateFavoriteModal from '../../components/favorite/CreateFavoriteModal.vue';
 import BrowserDownloadProgressModal from '../../components/favorite/BrowserDownloadProgressModal.vue';
+import FolderDownloadProgressModal from '../../components/favorite/FolderDownloadProgressModal.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -245,6 +267,19 @@ const browserDownloadProgress = ref<DownloadProgress>({
   status: 'downloading',
   cachedCount: 0,
   downloadedCount: 0,
+  failedCount: 0,
+});
+
+// 下载到文件夹相关状态
+const showFolderDownloadModal = ref(false);
+const isFolderDownloading = ref(false);
+const folderDownloadProgress = ref<FolderDownloadProgress>({
+  currentFile: '',
+  currentIndex: 0,
+  totalFiles: 0,
+  percent: 0,
+  status: 'selecting',
+  savedCount: 0,
   failedCount: 0,
 });
 
@@ -330,6 +365,8 @@ const handleEditSuccess = () => {
 const handleDownloadCommand = (command: string) => {
   if (command === 'browser') {
     handleBrowserDownloadClick();
+  } else if (command === 'folder') {
+    handleFolderDownloadClick();
   } else if (command === 'server') {
     handleServerDownloadClick();
   }
@@ -480,6 +517,114 @@ const handleBrowserDownloadRetry = () => {
 // 关闭浏览器下载弹窗
 const handleBrowserDownloadClose = () => {
   showBrowserDownloadModal.value = false;
+};
+
+// 下载到文件夹点击（显示二次确认）
+const handleFolderDownloadClick = async () => {
+  if (resourceCount.value === 0) {
+    ElMessage.warning('收藏夹为空，无法下载');
+    return;
+  }
+
+  // 检查浏览器支持
+  const support = checkFileSystemAccessSupport();
+  if (!support.supported) {
+    ElMessageBox.alert(
+      support.reason || '您的浏览器不支持文件夹选择功能',
+      '浏览器不支持',
+      {
+        confirmButtonText: '知道了',
+        type: 'warning',
+      }
+    );
+    return;
+  }
+
+  const totalSize = calculateTotalSize();
+  const sizeText = totalSize > 0 ? formatFileSize(totalSize) : '未知大小';
+
+  try {
+    await ElMessageBox.confirm(
+      `即将将 ${resourceCount.value} 个资源直接下载到您选择的文件夹中，预计总大小：${sizeText}。\n\n下载过程中请勿关闭页面，首次下载可能需要您授权访问文件夹。`,
+      '确认下载到文件夹',
+      {
+        confirmButtonText: '选择文件夹并下载',
+        cancelButtonText: '取消',
+        type: 'info',
+      }
+    );
+    // 用户确认后开始下载
+    handleFolderDownload();
+  } catch {
+    // 用户取消，不做任何操作
+  }
+};
+
+// 下载到文件夹（实际执行）
+const handleFolderDownload = async () => {
+  // 检查是否已在下载中
+  if (isFolderDownloading.value) {
+    ElMessage.warning('下载正在进行中，请稍候');
+    return;
+  }
+
+  // 重置状态
+  isFolderDownloading.value = true;
+  folderDownloadProgress.value = {
+    currentFile: '',
+    currentIndex: 0,
+    totalFiles: resources.value.length,
+    percent: 0,
+    status: 'selecting',
+    savedCount: 0,
+    failedCount: 0,
+  };
+  showFolderDownloadModal.value = true;
+
+  try {
+    await downloadToFolder(
+      resources.value,
+      (progress) => {
+        folderDownloadProgress.value = progress;
+      }
+    );
+
+    if (folderDownloadProgress.value.status !== 'cancelled') {
+      ElMessage.success('文件已成功保存到文件夹');
+    }
+  } catch (error: any) {
+    folderDownloadProgress.value = {
+      ...folderDownloadProgress.value,
+      status: 'error',
+      error: error.message || '下载失败',
+    };
+    if (error.message && !error.message.includes('取消')) {
+      ElMessage.error(error.message || '下载到文件夹失败');
+    }
+  } finally {
+    isFolderDownloading.value = false;
+  }
+};
+
+// 取消下载到文件夹
+const handleFolderDownloadCancel = () => {
+  isFolderDownloading.value = false;
+  showFolderDownloadModal.value = false;
+  ElMessage.info('已取消下载');
+};
+
+// 重试下载到文件夹
+const handleFolderDownloadRetry = () => {
+  showFolderDownloadModal.value = false;
+  // 延迟一点再显示确认弹窗
+  setTimeout(() => {
+    handleFolderDownloadClick();
+  }, 300);
+};
+
+// 关闭下载到文件夹弹窗
+const handleFolderDownloadClose = () => {
+  showFolderDownloadModal.value = false;
 };
 
 // 删除收藏夹

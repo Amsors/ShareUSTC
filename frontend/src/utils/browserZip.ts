@@ -427,7 +427,7 @@ export const checkBrowserSupport = (): { supported: boolean; reason?: string } =
 export const estimateDownloadTime = (totalFiles: number, totalSize?: number): string => {
   // 假设每个文件平均请求耗时 500ms（含网络延迟）
   const baseTime = totalFiles * 500;
-  
+
   // 如果有总大小，加上传输时间（假设 1MB/s）
   let transferTime = 0;
   if (totalSize) {
@@ -435,7 +435,7 @@ export const estimateDownloadTime = (totalFiles: number, totalSize?: number): st
   }
 
   const totalTimeMs = baseTime + transferTime;
-  
+
   if (totalTimeMs < 1000) {
     return '约 1 秒';
   } else if (totalTimeMs < 60000) {
@@ -443,4 +443,251 @@ export const estimateDownloadTime = (totalFiles: number, totalSize?: number): st
   } else {
     return `约 ${Math.ceil(totalTimeMs / 60000)} 分钟`;
   }
+};
+
+// ==================== 下载到文件夹功能 ====================
+
+// 下载到文件夹的进度信息
+export interface FolderDownloadProgress {
+  currentFile: string;      // 当前正在下载的文件名
+  currentIndex: number;     // 当前文件索引
+  totalFiles: number;       // 总文件数
+  percent: number;          // 总体进度百分比 (0-100)
+  status: 'selecting' | 'downloading' | 'completed' | 'error' | 'cancelled';
+  error?: string;           // 错误信息
+  savedCount: number;       // 成功保存的文件数
+  failedCount: number;      // 下载失败的文件数
+  currentFileSource?: 'cache' | 'download' | 'error'; // 当前文件来源
+}
+
+// 进度回调函数类型
+export type FolderProgressCallback = (progress: FolderDownloadProgress) => void;
+
+// 检查浏览器是否支持 File System Access API
+export const checkFileSystemAccessSupport = (): { supported: boolean; reason?: string } => {
+  if (!('showDirectoryPicker' in window)) {
+    return {
+      supported: false,
+      reason: '您的浏览器不支持文件夹选择功能，请使用 Chrome、Edge 或其他基于 Chromium 的现代浏览器'
+    };
+  }
+  return { supported: true };
+};
+
+// 下载资源到文件夹
+export const downloadToFolder = async (
+  resources: FavoriteResourceItem[],
+  onProgress?: FolderProgressCallback
+): Promise<void> => {
+  if (resources.length === 0) {
+    throw new Error('收藏夹为空，无法下载');
+  }
+
+  // 检查浏览器支持
+  const support = checkFileSystemAccessSupport();
+  if (!support.supported) {
+    throw new Error(support.reason || '浏览器不支持文件夹选择功能');
+  }
+
+  // 请求用户选择文件夹
+  let directoryHandle: FileSystemDirectoryHandle;
+  try {
+    // @ts-ignore - showDirectoryPicker 可能不在 TypeScript 类型定义中
+    directoryHandle = await window.showDirectoryPicker({
+      mode: 'readwrite',
+      startIn: 'downloads'
+    });
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      // 用户取消了选择
+      onProgress?.({
+        currentFile: '',
+        currentIndex: 0,
+        totalFiles: resources.length,
+        percent: 0,
+        status: 'cancelled',
+        savedCount: 0,
+        failedCount: 0,
+      });
+      return;
+    }
+    throw new Error('无法访问所选文件夹，请检查权限设置');
+  }
+
+  const totalFiles = resources.length;
+  const existingNames = new Set<string>();
+  let savedCount = 0;
+  let failedCount = 0;
+
+  logger.info('[BrowserZip]', `开始下载到文件夹 | 文件数: ${totalFiles}`);
+
+  // 报告开始下载
+  onProgress?.({
+    currentFile: '',
+    currentIndex: 0,
+    totalFiles,
+    percent: 0,
+    status: 'downloading',
+    savedCount: 0,
+    failedCount: 0,
+  });
+
+  // 逐个下载资源
+  for (let i = 0; i < resources.length; i++) {
+    const resource = resources[i]!;
+    if (!resource) continue;
+
+    const safeFileName = buildSafeFileName(resource.title, resource.resourceType);
+    const finalFileName = resolveFileNameConflict(safeFileName, existingNames);
+    existingNames.add(finalFileName);
+
+    // 报告当前文件开始下载
+    onProgress?.({
+      currentFile: resource.title,
+      currentIndex: i + 1,
+      totalFiles,
+      percent: Math.round((i / totalFiles) * 100),
+      status: 'downloading',
+      savedCount,
+      failedCount,
+      currentFileSource: undefined,
+    });
+
+    try {
+      let blob: Blob;
+
+      // 首先检查本地缓存
+      const cached = await resourceCache.get(resource.id, resource.updatedAt);
+      if (cached) {
+        // 缓存命中
+        blob = cached.blob;
+        logger.info(
+          '[BrowserZip]',
+          `缓存命中 | resourceId=${resource.id}, title=${resource.title}`
+        );
+
+        onProgress?.({
+          currentFile: resource.title,
+          currentIndex: i + 1,
+          totalFiles,
+          percent: Math.round(((i + 0.5) / totalFiles) * 100),
+          status: 'downloading',
+          savedCount,
+          failedCount,
+          currentFileSource: 'cache',
+        });
+      } else {
+        // 缓存未命中，从网络下载
+        logger.debug('[BrowserZip]', `缓存未命中，从网络下载 | resourceId=${resource.id}`);
+
+        // 判断存储类型并选择下载方式
+        if (resource.storageType === 'oss') {
+          // OSS 资源：先获取预览信息，再直接下载
+          const previewInfo = await getResourcePreviewInfo(resource.id);
+
+          if (previewInfo.directAccess && previewInfo.storageType === 'oss') {
+            // OSS 直链下载
+            blob = await downloadFromOss(previewInfo.previewUrl);
+          } else {
+            // 回退到本地方式
+            blob = await downloadFromLocal(resource.id);
+          }
+        } else {
+          // 本地资源：通过 content 接口下载
+          blob = await downloadFromLocal(resource.id);
+        }
+
+        // 存入缓存供下次使用
+        try {
+          await resourceCache.set(
+            resource.id,
+            blob,
+            'application/octet-stream',
+            resource.updatedAt || new Date().toISOString(),
+            finalFileName
+          );
+        } catch (cacheError) {
+          logger.warn('[BrowserZip]', `存入缓存失败 | resourceId=${resource.id}`, cacheError);
+        }
+
+        onProgress?.({
+          currentFile: resource.title,
+          currentIndex: i + 1,
+          totalFiles,
+          percent: Math.round(((i + 0.5) / totalFiles) * 100),
+          status: 'downloading',
+          savedCount,
+          failedCount,
+          currentFileSource: 'download',
+        });
+      }
+
+      // 写入文件到所选文件夹
+      try {
+        // @ts-ignore - File System Access API 类型可能不完整
+        const fileHandle = await directoryHandle.getFileHandle(finalFileName, { create: true });
+        // @ts-ignore
+        const writable = await fileHandle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+
+        savedCount++;
+        logger.debug('[BrowserZip]', `文件已保存 | ${finalFileName}`);
+      } catch (writeError: any) {
+        throw new Error(`写入文件失败: ${writeError.message || '未知错误'}`);
+      }
+
+      // 记录下载
+      try {
+        await trackResourceDownload(resource.id);
+      } catch (e) {
+        logger.warn('[BrowserZip]', `记录下载失败 | resourceId=${resource.id}`, e);
+      }
+    } catch (error: any) {
+      failedCount++;
+      logger.error('[BrowserZip]', `文件下载失败 | ${resource.title}`, error);
+
+      onProgress?.({
+        currentFile: resource.title,
+        currentIndex: i + 1,
+        totalFiles,
+        percent: Math.round(((i + 1) / totalFiles) * 100),
+        status: 'downloading',
+        savedCount,
+        failedCount,
+        currentFileSource: 'error',
+        error: `下载失败: ${resource.title}`,
+      });
+    }
+  }
+
+  // 报告完成
+  if (savedCount === 0) {
+    onProgress?.({
+      currentFile: '',
+      currentIndex: totalFiles,
+      totalFiles,
+      percent: 100,
+      status: 'error',
+      savedCount,
+      failedCount,
+      error: '所有文件下载失败，请稍后重试',
+    });
+    throw new Error('所有文件下载失败，请稍后重试');
+  }
+
+  onProgress?.({
+    currentFile: '',
+    currentIndex: totalFiles,
+    totalFiles,
+    percent: 100,
+    status: 'completed',
+    savedCount,
+    failedCount,
+  });
+
+  logger.info(
+    '[BrowserZip]',
+    `下载到文件夹完成 | 成功: ${savedCount}, 失败: ${failedCount}`
+  );
 };
