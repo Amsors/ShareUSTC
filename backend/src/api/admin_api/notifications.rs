@@ -2,9 +2,12 @@ use actix_web::{post, web, HttpRequest, HttpResponse, Responder};
 
 use crate::db::AppState;
 use crate::models::CurrentUser;
-use crate::services::{AdminService, AuditLogService};
+use crate::services::{AdminService, AuditLogService, NotificationService};
 
-use super::{check_admin, utils::handle_admin_error};
+use super::{
+    check_admin,
+    utils::{handle_admin_error, handle_resource_error},
+};
 
 /// 发送系统通知
 #[post("/admin/notifications")]
@@ -28,13 +31,13 @@ async fn send_notification(
     // 提前保存需要的数据
     let title = req.title.clone();
 
-    // 获取接收者数量
+    // 获取接收者数量（用户总数查询移入 service 层；查询失败应冒泡为 500，不再吞掉）
     let recipient_count = if req.target == "all" {
         // 广播给所有用户，获取用户总数
-        sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM users WHERE is_active = true")
-            .fetch_one(&data.pool)
-            .await
-            .unwrap_or(0) as i32
+        match NotificationService::count_active_users(&data.pool).await {
+            Ok(count) => count as i32,
+            Err(e) => return handle_resource_error(e),
+        }
     } else {
         // 指定用户
         1

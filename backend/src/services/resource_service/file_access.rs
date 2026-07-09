@@ -123,6 +123,27 @@ pub async fn record_download(
     Ok(())
 }
 
+/// 记录一次下载事件（服务级编排）
+///
+/// 包含：递增下载计数、写入下载日志、记录审计日志。
+/// 三个动作均为尽力而为（best-effort），任一失败仅记录日志，不影响下载响应。
+/// 由 API 层在完成文件响应/重定向时调用（IP 提取等 Web 层职责留在 API 层）。
+pub async fn record_download_event(
+    pool: &PgPool,
+    resource_id: Uuid,
+    user_id: Option<Uuid>,
+    title: &str,
+    ip_address: &str,
+) {
+    use crate::services::AuditLogService;
+
+    let _ = increment_downloads(pool, resource_id).await;
+    let _ = record_download(pool, resource_id, user_id, ip_address).await;
+    let _ =
+        AuditLogService::log_download_resource(pool, user_id, resource_id, title, Some(ip_address))
+            .await;
+}
+
 /// 获取资源原始内容（用于编辑）
 pub async fn get_resource_content_raw(
     pool: &PgPool,

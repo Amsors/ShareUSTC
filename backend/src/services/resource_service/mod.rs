@@ -137,14 +137,15 @@ impl ResourceService {
         file_access::get_resource_file_path_for_preview(pool, resource_id, user).await
     }
 
-    /// 记录下载日志
-    pub async fn record_download(
+    /// 记录一次下载事件（递增计数 + 下载日志 + 审计日志，best-effort）
+    pub async fn record_download_event(
         pool: &PgPool,
         resource_id: Uuid,
         user_id: Option<Uuid>,
+        title: &str,
         ip_address: &str,
-    ) -> Result<(), ResourceError> {
-        file_access::record_download(pool, resource_id, user_id, ip_address).await
+    ) {
+        file_access::record_download_event(pool, resource_id, user_id, title, ip_address).await
     }
 
     /// 更新资源内容

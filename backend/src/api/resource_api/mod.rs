@@ -19,7 +19,7 @@ pub use pdf_challenge::*;
 pub use rating::*;
 pub use relation::*;
 
-/// 记录下载事件
+/// 记录下载事件（Web 层适配：提取 IP 后委托给 service 层编排）
 async fn record_download_events(
     state: &web::Data<AppState>,
     resource_id: Uuid,
@@ -27,23 +27,17 @@ async fn record_download_events(
     title: &str,
     req: &actix_web::HttpRequest,
 ) {
-    use crate::services::{AuditLogService, ResourceService};
-
-    let _ = ResourceService::increment_downloads(&state.pool, resource_id).await;
-
     let ip_address = req
         .peer_addr()
         .map(|addr| addr.ip().to_string())
         .unwrap_or_else(|| "0.0.0.0".to_string());
 
-    let _ = ResourceService::record_download(&state.pool, resource_id, user_id, &ip_address).await;
-
-    let _ = AuditLogService::log_download_resource(
+    crate::services::ResourceService::record_download_event(
         &state.pool,
-        user_id,
         resource_id,
+        user_id,
         title,
-        Some(&ip_address),
+        &ip_address,
     )
     .await;
 }

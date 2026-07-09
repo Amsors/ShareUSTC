@@ -29,15 +29,17 @@ pub async fn verify_pdf_preview_challenge(
     state: web::Data<AppState>,
     request: web::Json<VerifyPdfPreviewChallengeRequest>,
 ) -> impl Responder {
-    // 检查是否配置了挑战
-    if state.pdf_preview_challenge_uuid.is_none() || state.pdf_preview_challenge_code.is_none() {
+    // 检查是否配置了挑战（uuid 与 code 均须存在），未配置直接返回 503
+    // 使用 let-else 解构避免 unwrap 造成的 panic 风险
+    let (Some(_uuid), Some(expected_code)) = (
+        &state.pdf_preview_challenge_uuid,
+        &state.pdf_preview_challenge_code,
+    ) else {
         return HttpResponse::ServiceUnavailable().json(serde_json::json!({
             "error": "ServiceUnavailable",
             "message": "PDF预览检测功能未配置"
         }));
-    }
-
-    let expected_code = state.pdf_preview_challenge_code.as_ref().unwrap();
+    };
 
     // 验证答案
     if request.code.trim() == expected_code.trim() {

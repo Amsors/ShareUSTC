@@ -57,6 +57,17 @@ impl NotificationService {
         Ok(notification)
     }
 
+    /// 统计活跃用户数量（用于广播通知的接收者计数）
+    pub async fn count_active_users(pool: &PgPool) -> Result<i64, ResourceError> {
+        let count =
+            sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM users WHERE is_active = true")
+                .fetch_one(pool)
+                .await
+                .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+
+        Ok(count)
+    }
+
     /// 获取用户的通知列表
     pub async fn get_notifications(
         pool: &PgPool,
