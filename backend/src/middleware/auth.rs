@@ -1,7 +1,7 @@
 use actix_web::{
     body::MessageBody,
     dev::{Service, ServiceRequest, ServiceResponse, Transform},
-    error::ErrorUnauthorized,
+    error::InternalError,
     http::{header, Method},
     Error, HttpMessage,
 };
@@ -13,10 +13,19 @@ use std::{
 };
 
 use crate::models::CurrentUser;
-use crate::utils::{extract_current_user, verify_token};
+use crate::utils::{error_response_with_code, extract_current_user, verify_token};
 
 /// Cookie 名称常量
 const ACCESS_TOKEN_COOKIE: &str = "access_token";
+
+/// 构建统一格式（`{error, message}`）的 401 认证错误
+///
+/// `error` 为机器可读错误码：`TokenExpired` 表示 access token 过期（前端应静默刷新），
+/// 其余情况用 `Unauthorized`。详见 dev_docs/specs/api_design.md 第 2.1/3.2 节。
+fn auth_error(error_code: &str, message: &str) -> Error {
+    let response = error_response_with_code(401, error_code, message);
+    InternalError::from_response(message.to_string(), response).into()
+}
 
 /// 公开路径规则
 #[derive(Clone)]
@@ -149,7 +158,7 @@ where
             // 如果不是公开路径，必须有认证信息
             if !is_public && token.is_none() {
                 log::info!("[Auth] 非公开路径缺少认证信息: {} {}", method, path);
-                return Err(ErrorUnauthorized("缺少认证信息"));
+                return Err(auth_error("Unauthorized", "缺少认证信息"));
             }
 
             // 如果有认证信息，尝试验证
@@ -171,16 +180,19 @@ where
                                 log::warn!("提取用户信息失败: {}", e);
                                 // 非公开路径需要返回错误
                                 if !is_public {
-                                    return Err(ErrorUnauthorized("无效的认证信息"));
+                                    return Err(auth_error("Unauthorized", "无效的认证信息"));
                                 }
                             }
                         }
                     }
                     Err(e) => {
                         log::warn!("Token验证失败: {}", e);
-                        // 非公开路径需要返回错误
+                        // 非公开路径需要返回错误；区分“已过期”与“无效”
                         if !is_public {
-                            return Err(ErrorUnauthorized("认证已过期或无效"));
+                            if e == "TokenExpired" {
+                                return Err(auth_error("TokenExpired", "登录状态已过期，请刷新"));
+                            }
+                            return Err(auth_error("Unauthorized", "认证已过期或无效"));
                         }
                     }
                 }
@@ -196,7 +208,7 @@ where
             // 非公开路径，检查是否成功提取了用户信息
             if req.extensions().get::<CurrentUser>().is_none() {
                 log::info!("[Auth] 非公开路径认证失败: {} {}", method, path);
-                return Err(ErrorUnauthorized("需要登录"));
+                return Err(auth_error("Unauthorized", "需要登录"));
             }
 
             // 继续处理请求
@@ -268,7 +280,7 @@ where
     Fut: std::future::Future<Output = Result<ServiceResponse<actix_web::body::BoxBody>, Error>>,
 {
     if req.extensions().get::<CurrentUser>().is_none() {
-        return Err(ErrorUnauthorized("需要登录"));
+        return Err(auth_error("Unauthorized", "需要登录"));
     }
     f(req).await
 }

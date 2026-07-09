@@ -107,7 +107,11 @@ pub fn verify_token(token: &str, secret: &str, token_type: Option<&str>) -> Resu
         &DecodingKey::from_secret(secret.as_bytes()),
         &validation,
     )
-    .map_err(|e| format!("Token验证失败: {}", e))?;
+    .map_err(|e| match e.kind() {
+        // 过期签名返回可被上层识别的标记，用于中间件区分“需刷新”与“凭证无效”
+        jsonwebtoken::errors::ErrorKind::ExpiredSignature => "TokenExpired".to_string(),
+        _ => format!("Token验证失败: {}", e),
+    })?;
 
     // 如果指定了token类型，验证类型是否匹配
     if let Some(expected_type) = token_type {

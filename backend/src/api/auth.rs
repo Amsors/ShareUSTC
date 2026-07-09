@@ -1,7 +1,7 @@
 use crate::db::AppState;
 use crate::models::{LoginRequest, RegisterRequest};
 use crate::services::{AuditLogService, AuthError, AuthService};
-use crate::utils::{bad_request, conflict, internal_error, unauthorized};
+use crate::utils::{bad_request, conflict, error_response_with_code, internal_error, unauthorized};
 use actix_web::cookie::{time::Duration as CookieDuration, Cookie, SameSite};
 use actix_web::{post, web, HttpRequest, HttpResponse, Responder};
 
@@ -157,9 +157,11 @@ pub async fn login(
         Err(e) => {
             log::warn!("[Auth] 用户登录失败 | username={}, error={}", username, e);
             match e {
-                // 使用 400 而不是 401，因为 401 会触发前端刷新 token 逻辑
-                // 密码错误是业务错误，不是认证状态问题
-                AuthError::InvalidCredentials(msg) => bad_request(&msg),
+                // 登录凭证错误返回 401 + error: "InvalidCredentials"（见 api_design.md 2.1）
+                // 前端仅在 error == "TokenExpired" 时才刷新 token，故此处 401 不会触发刷新循环
+                AuthError::InvalidCredentials(msg) => {
+                    error_response_with_code(401, "InvalidCredentials", &msg)
+                }
                 AuthError::ValidationError(msg) => bad_request(&msg),
                 _ => internal_error("登录失败"),
             }
@@ -172,17 +174,14 @@ pub async fn login(
 pub async fn refresh(state: web::Data<AppState>, req: HttpRequest) -> impl Responder {
     log::info!("[Auth] Token刷新请求");
 
-    // 从 Cookie 中获取 refresh token
-    let refresh_token = req
+    // 从 Cookie 中获取 refresh token；缺失时直接返回 401，避免 unwrap 造成 panic
+    let Some(refresh_token) = req
         .cookie(REFRESH_TOKEN_COOKIE)
-        .map(|c| c.value().to_string());
-
-    if refresh_token.is_none() {
+        .map(|c| c.value().to_string())
+    else {
         log::warn!("[Auth] Token刷新失败 | 缺少refresh_token cookie");
         return unauthorized("缺少认证信息");
-    }
-
-    let refresh_token = refresh_token.unwrap();
+    };
 
     match AuthService::refresh_token(&state.pool, &state.jwt_secret, refresh_token).await {
         Ok(tokens) => {
