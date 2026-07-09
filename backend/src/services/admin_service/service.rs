@@ -23,6 +23,12 @@ impl AdminService {
         let admin_set: std::collections::HashSet<&str> =
             admin_usernames.iter().map(|s| s.as_str()).collect();
 
+        // 角色同步是一个逻辑整体（赋予 + 取消），使用事务保证要么全部生效要么全部回滚
+        let mut tx = pool
+            .begin()
+            .await
+            .map_err(|e| AdminError::DatabaseError(format!("开启事务失败: {}", e)))?;
+
         // 1. 将配置中的管理员用户设置为 admin
         let mut granted_count = 0usize;
         for username in admin_usernames {
@@ -33,7 +39,7 @@ impl AdminService {
                 "UPDATE users SET role = 'admin', updated_at = NOW() WHERE username = $1 AND role != 'admin'"
             )
             .bind(username)
-            .execute(pool)
+            .execute(&mut *tx)
             .await
             .map_err(|e| AdminError::DatabaseError(format!("更新管理员权限失败: {}", e)))?;
 
@@ -46,7 +52,7 @@ impl AdminService {
         // 2. 获取所有当前是 admin 的用户
         let current_admins: Vec<(String,)> =
             sqlx::query_as("SELECT username FROM users WHERE role = 'admin'")
-                .fetch_all(pool)
+                .fetch_all(&mut *tx)
                 .await
                 .map_err(|e| AdminError::DatabaseError(format!("查询当前管理员失败: {}", e)))?;
 
@@ -58,7 +64,7 @@ impl AdminService {
                     "UPDATE users SET role = 'user', updated_at = NOW() WHERE username = $1",
                 )
                 .bind(&username)
-                .execute(pool)
+                .execute(&mut *tx)
                 .await
                 .map_err(|e| AdminError::DatabaseError(format!("取消管理员权限失败: {}", e)))?;
 
@@ -68,6 +74,10 @@ impl AdminService {
                 }
             }
         }
+
+        tx.commit()
+            .await
+            .map_err(|e| AdminError::DatabaseError(format!("提交事务失败: {}", e)))?;
 
         log::info!(
             "管理员权限同步完成: 赋予 {} 个, 取消 {} 个",
