@@ -33,25 +33,27 @@ ShareUSTC 诞生于一个简单的想法：让优质的学习资源在校园内�
 ### 前端
 | 技术 | 版本 | 用途 |
 |------|------|------|
-| Vue.js | 3.4+ | 前端框架 |
-| TypeScript | 5.0+ | 类型安全 |
-| Vite | 5.0+ | 构建工具 |
-| Pinia | 2.1+ | 状态管理 |
-| Element Plus | 2.5+ | UI 组件库 |
-| PDF.js | 4.x | PDF 预览 |
-| Markdown-it | 14.x | Markdown 渲染 |
+| Vue.js | 3.5.24 | 前端框架 |
+| TypeScript | 5.9.3 | 类型安全 |
+| Vite | 7.2.4 | 构建工具 |
+| Pinia | 2.3.1 | 状态管理 |
+| Vue Router | 4.6.4 | 路由管理 |
+| Element Plus | 2.13.2 | UI 组件库 |
+| pdfjs-dist | 5.4.624 | PDF 预览 |
+| markdown-it | 14.1.0 | Markdown 渲染 |
+| md-editor-v3 | 6.3.1 | Markdown 在线编辑器 |
 
 ### 后端
 | 技术 | 版本 | 用途 |
 |------|------|------|
-| Rust | 1.75+ | 编程语言 |
+| Rust | edition 2021 | 编程语言 |
 | Actix-web | 4.x | Web 框架 |
-| Tokio | 1.35+ | 异步运行时 |
-| SQLx | 0.8+ | 异步 SQL 工具 |
-| PostgreSQL | 15+ | 关系型数据库 |
+| Tokio | 1.x | 异步运行时 |
+| SQLx | 0.8 | 异步 SQL 工具 |
+| PostgreSQL | 14+ | 关系型数据库 |
 | 阿里云 OSS | - | 对象存储（可选） |
-| Argon2 | 0.5+ | 密码哈希 |
-| JWT | 9.x | 身份验证 |
+| Argon2 | 0.5 | 密码哈希 |
+| jsonwebtoken | 9.x | 身份验证（JWT） |
 
 
 
@@ -62,9 +64,11 @@ ShareUSTC 诞生于一个简单的想法：让优质的学习资源在校园内�
 - **多格式支持**：PDF、Markdown、图片、文本等格式的在线预览
 - **双存储后端**：支持本地存储和阿里云 OSS 存储，可配置切换
 - **评分评论**：5维度评分（难度/总体质量/参考答案质量/格式质量/知识点详细程度）+ 评论互动
-- **收藏夹**：创建个人收藏夹，支持打包下载
+- **收藏夹**：创建个人收藏夹，支持后端打包下载与浏览器端一键下载到本地文件夹
+- **Markdown 在线编辑器**：在线创建/编辑 Markdown 类资源
+- **资源关联**：为资源建立与其他资源的关联，便于串联复习材料
 - **图床功能**：在线上传图片，获取 Markdown 引用链接
-- **个人主页**：展示个人简介、上传资源、统计数据
+- **个人主页与贡献榜**：展示个人简介、上传资源、统计数据与贡献排行
 - **教师与课程管理**：支持关联授课教师和课程，便于资源分类筛选
 
 ### 用户角色
@@ -107,16 +111,28 @@ ShareUSTC/
 ├── backend/           # Rust 后端项目
 │   ├── src/
 │   │   ├── api/       # API 路由层
-│   │   ├── services/  # 业务逻辑层
+│   │   ├── services/  # 业务逻辑层（SQL 集中在此）
 │   │   ├── models/    # 数据模型层
-│   │   ├── repositories/# 数据访问层
-│   │   └── middleware/# 中间件
+│   │   ├── middleware/# 中间件
+│   │   ├── tasks/     # 后台定时任务（文件哈希、孤儿文件清理）
+│   │   ├── utils/     # 工具（JWT、哈希、统一响应）
+│   │   ├── db/        # 数据库连接
+│   │   └── config/    # 配置管理
 │   └── Cargo.toml
-├── scripts/           # 部署脚本
-│   └── database/      # 数据库初始化脚本
-├── docs/              # 文档
+├── scripts/           # 部署与数据库脚本
+│   └── database/      # 数据库初始化脚本（当前 schema 事实来源）
+├── docs/              # 部署/使用文档
+├── dev_docs/          # 开发文档（规范/设计/过程记录）
 └── README.md
 ```
+
+## 开发文档
+
+开发规范、技术方案与过程记录集中在 [dev_docs/](./dev_docs/README.md)：
+
+- 开发规范（API / 后端 / 前端 / 测试 / 文档 / 工具链）：[dev_docs/specs/](./dev_docs/README.md)
+- 需求与设计（PRD、技术方案、数据库设计、项目进度）：[dev_docs/design/](./dev_docs/design/project_status.md)
+- 部署与运维文档：[docs/](./docs/deploy_guide.md)
 
 
 
