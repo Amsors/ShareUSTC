@@ -3,6 +3,16 @@ name = "backend"
 version = "0.1.0"
 edition = "2021"
 
+# 项目 lint 门禁，规则依据见 dev_docs/specs/backend_standards.md
+# 存量问题整改期间为 warn；整改完成后按 code_remediation_guide.md 升级为 deny
+[lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"
+dbg_macro = "warn"
+print_stdout = "warn"
+print_stderr = "warn"
+todo = "warn"
+
 [dependencies]
 actix-web = { version = "4", features = ["cookies"] }
 actix-cors = "0.6"

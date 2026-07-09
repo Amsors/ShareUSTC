@@ -1,0 +1,55 @@
+# CI 门禁：与 scripts/check.sh 保持一致
+# 注意：后端 clippy 当前允许 warning（存量整改中），整改完成后
+# 按 dev_docs/guides/code_remediation_guide.md 将 clippy 改为 -D warnings
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: backend
+      - name: rustfmt
+        run: cargo fmt --check
+      - name: clippy
+        run: cargo clippy --all-targets
+      - name: test
+        run: cargo test
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: install
+        run: npm ci
+      - name: prettier
+        run: npm run format:check
+        # 存量代码尚未全量格式化，整改期间允许失败；整改后移除 continue-on-error
+        continue-on-error: true
+      - name: eslint
+        run: npm run lint
+        # 存量 35 个 error 待整改；整改后移除 continue-on-error
+        continue-on-error: true
+      - name: typecheck
+        run: npm run typecheck

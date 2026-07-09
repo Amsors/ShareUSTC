@@ -7,7 +7,9 @@
 /backend/uploads/
 .claude
 AGENTS.md
+CLAUDE.md
 /dev_docs/
+/dev_docs_outdated/
 /aliyun/
 /code_review/
 
