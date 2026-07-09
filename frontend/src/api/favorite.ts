@@ -1,4 +1,5 @@
 import request from './request';
+import { getServerOrigin } from '../utils/apiUrl';
 import type {
   FavoriteListResponse,
   FavoriteDetail,
@@ -6,7 +7,7 @@ import type {
   CreateFavoriteResponse,
   UpdateFavoriteRequest,
   AddToFavoriteRequest,
-  CheckResourceInFavoriteResponse
+  CheckResourceInFavoriteResponse,
 } from '../types/favorite';
 
 /**
@@ -14,11 +15,13 @@ import type {
  * @param data 创建请求
  * @returns 创建的收藏夹信息
  */
-export const createFavorite = async (data: CreateFavoriteRequest): Promise<CreateFavoriteResponse> => {
+export const createFavorite = async (
+  data: CreateFavoriteRequest
+): Promise<CreateFavoriteResponse> => {
   return request({
     url: '/favorites',
     method: 'post',
-    data
+    data,
   }) as Promise<CreateFavoriteResponse>;
 };
 
@@ -29,7 +32,7 @@ export const createFavorite = async (data: CreateFavoriteRequest): Promise<Creat
 export const getFavorites = async (): Promise<FavoriteListResponse> => {
   return request({
     url: '/favorites',
-    method: 'get'
+    method: 'get',
   }) as Promise<FavoriteListResponse>;
 };
 
@@ -41,7 +44,7 @@ export const getFavorites = async (): Promise<FavoriteListResponse> => {
 export const getFavoriteDetail = async (favoriteId: string): Promise<FavoriteDetail> => {
   return request({
     url: `/favorites/${favoriteId}`,
-    method: 'get'
+    method: 'get',
   }) as Promise<FavoriteDetail>;
 };
 
@@ -50,11 +53,14 @@ export const getFavoriteDetail = async (favoriteId: string): Promise<FavoriteDet
  * @param favoriteId 收藏夹ID
  * @param data 更新请求
  */
-export const updateFavorite = async (favoriteId: string, data: UpdateFavoriteRequest): Promise<void> => {
+export const updateFavorite = async (
+  favoriteId: string,
+  data: UpdateFavoriteRequest
+): Promise<void> => {
   return request({
     url: `/favorites/${favoriteId}`,
     method: 'put',
-    data
+    data,
   }) as Promise<void>;
 };
 
@@ -65,7 +71,7 @@ export const updateFavorite = async (favoriteId: string, data: UpdateFavoriteReq
 export const deleteFavorite = async (favoriteId: string): Promise<void> => {
   return request({
     url: `/favorites/${favoriteId}`,
-    method: 'delete'
+    method: 'delete',
   }) as Promise<void>;
 };
 
@@ -74,11 +80,14 @@ export const deleteFavorite = async (favoriteId: string): Promise<void> => {
  * @param favoriteId 收藏夹ID
  * @param data 添加请求
  */
-export const addToFavorite = async (favoriteId: string, data: AddToFavoriteRequest): Promise<void> => {
+export const addToFavorite = async (
+  favoriteId: string,
+  data: AddToFavoriteRequest
+): Promise<void> => {
   return request({
     url: `/favorites/${favoriteId}/resources`,
     method: 'post',
-    data
+    data,
   }) as Promise<void>;
 };
 
@@ -90,7 +99,7 @@ export const addToFavorite = async (favoriteId: string, data: AddToFavoriteReque
 export const removeFromFavorite = async (favoriteId: string, resourceId: string): Promise<void> => {
   return request({
     url: `/favorites/${favoriteId}/resources/${resourceId}`,
-    method: 'delete'
+    method: 'delete',
   }) as Promise<void>;
 };
 
@@ -99,10 +108,12 @@ export const removeFromFavorite = async (favoriteId: string, resourceId: string)
  * @param resourceId 资源ID
  * @returns 收藏状态
  */
-export const checkResourceInFavorite = async (resourceId: string): Promise<CheckResourceInFavoriteResponse> => {
+export const checkResourceInFavorite = async (
+  resourceId: string
+): Promise<CheckResourceInFavoriteResponse> => {
   return request({
     url: `/favorites/check/${resourceId}`,
-    method: 'get'
+    method: 'get',
   }) as Promise<CheckResourceInFavoriteResponse>;
 };
 
@@ -146,15 +157,16 @@ function parseFilenameFromContentDisposition(
  * @param favoriteId 收藏夹ID
  * @param favoriteName 收藏夹名称（用于文件名）
  */
-export const downloadFavorite = async (favoriteId: string, favoriteName?: string): Promise<void> => {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
-  const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
-  const response = await fetch(
-    `${cleanBaseUrl}/api/favorites/${favoriteId}/download`,
-    {
-      credentials: 'include', // 关键：携带 Cookie 以支持跨域认证
-    }
-  );
+export const downloadFavorite = async (
+  favoriteId: string,
+  favoriteName?: string
+): Promise<void> => {
+  // 本站接口，但需读取 Content-Disposition 响应头与 zip Blob，request 拦截器会丢弃响应头，
+  // 故保留 fetch；credentials:'include' 携带 Cookie 完成鉴权。
+  // eslint-disable-next-line no-restricted-globals
+  const response = await fetch(`${getServerOrigin()}/api/favorites/${favoriteId}/download`, {
+    credentials: 'include', // 关键：携带 Cookie 以支持跨域认证
+  });
 
   if (!response.ok) {
     // 尝试解析错误消息

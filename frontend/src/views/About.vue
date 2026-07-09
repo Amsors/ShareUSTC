@@ -51,7 +51,13 @@
           <div class="tech-group">
             <h3>前端</h3>
             <div class="tech-tags">
-              <el-tag v-for="tech in frontendTech" :key="tech" class="tech-tag" effect="light" size="large">
+              <el-tag
+                v-for="tech in frontendTech"
+                :key="tech"
+                class="tech-tag"
+                effect="light"
+                size="large"
+              >
                 {{ tech }}
               </el-tag>
             </div>
@@ -59,7 +65,14 @@
           <div class="tech-group">
             <h3>后端</h3>
             <div class="tech-tags">
-              <el-tag v-for="tech in backendTech" :key="tech" class="tech-tag" effect="light" size="large" type="success">
+              <el-tag
+                v-for="tech in backendTech"
+                :key="tech"
+                class="tech-tag"
+                effect="light"
+                size="large"
+                type="success"
+              >
                 {{ tech }}
               </el-tag>
             </div>
@@ -67,7 +80,14 @@
           <div class="tech-group">
             <h3>数据库</h3>
             <div class="tech-tags">
-              <el-tag v-for="tech in dbTech" :key="tech" class="tech-tag" effect="light" size="large" type="warning">
+              <el-tag
+                v-for="tech in dbTech"
+                :key="tech"
+                class="tech-tag"
+                effect="light"
+                size="large"
+                type="warning"
+              >
                 {{ tech }}
               </el-tag>
             </div>
@@ -81,29 +101,45 @@
         <p>{{ platformConfig.openSourceDescription }}</p>
         <div class="opensource-container">
           <!-- 左侧：仓库信息 -->
-          <a :href="platformConfig.githubRepoUrl" target="_blank" rel="noopener noreferrer" class="github-link">
+          <a
+            :href="platformConfig.githubRepoUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="github-link"
+          >
             <div class="github-content">
               <svg class="github-icon" viewBox="0 0 98 96" xmlns="http://www.w3.org/2000/svg">
-                <path fill-rule="evenodd" clip-rule="evenodd" d="M48.854 0C21.839 0 0 22 0 49.217c0 21.756 13.993 40.172 33.405 46.69 2.427.49 3.316-1.059 3.316-2.362 0-1.141-.08-5.052-.08-9.127-13.59 2.934-16.42-5.867-16.42-5.867-2.184-5.704-5.42-7.17-5.42-7.17-4.448-3.015.324-3.015.324-3.015 4.934.326 7.523 5.052 7.523 5.052 4.367 7.496 11.404 5.378 14.235 4.074.404-3.178 1.699-5.378 3.074-6.6-10.839-1.141-22.243-5.378-22.243-24.283 0-5.378 1.94-9.778 5.014-13.2-.485-1.222-2.184-6.275.486-13.038 0 0 4.125-1.304 13.426 5.052a46.97 46.97 0 0 1 12.214-1.63c4.125 0 8.33.571 12.213 1.63 9.302-6.356 13.427-5.052 13.427-5.052 2.67 6.763.97 11.816.485 13.038 3.155 3.422 5.015 7.822 5.015 13.2 0 18.905-11.404 23.06-22.324 24.283 1.78 1.548 3.316 4.481 3.316 9.126 0 6.6-.08 11.897-.08 13.526 0 1.304.89 2.853 3.316 2.364 19.412-6.52 33.405-24.935 33.405-46.691C97.707 22 75.788 0 48.854 0z" fill="currentColor"/>
+                <path
+                  fill-rule="evenodd"
+                  clip-rule="evenodd"
+                  d="M48.854 0C21.839 0 0 22 0 49.217c0 21.756 13.993 40.172 33.405 46.69 2.427.49 3.316-1.059 3.316-2.362 0-1.141-.08-5.052-.08-9.127-13.59 2.934-16.42-5.867-16.42-5.867-2.184-5.704-5.42-7.17-5.42-7.17-4.448-3.015.324-3.015.324-3.015 4.934.326 7.523 5.052 7.523 5.052 4.367 7.496 11.404 5.378 14.235 4.074.404-3.178 1.699-5.378 3.074-6.6-10.839-1.141-22.243-5.378-22.243-24.283 0-5.378 1.94-9.778 5.014-13.2-.485-1.222-2.184-6.275.486-13.038 0 0 4.125-1.304 13.426 5.052a46.97 46.97 0 0 1 12.214-1.63c4.125 0 8.33.571 12.213 1.63 9.302-6.356 13.427-5.052 13.427-5.052 2.67 6.763.97 11.816.485 13.038 3.155 3.422 5.015 7.822 5.015 13.2 0 18.905-11.404 23.06-22.324 24.283 1.78 1.548 3.316 4.481 3.316 9.126 0 6.6-.08 11.897-.08 13.526 0 1.304.89 2.853 3.316 2.364 19.412-6.52 33.405-24.935 33.405-46.691C97.707 22 75.788 0 48.854 0z"
+                  fill="currentColor"
+                />
               </svg>
               <div class="github-info">
                 <span class="github-text">{{ platformConfig.githubRepoName }}</span>
                 <div class="github-stats">
                   <div class="stat-item">
                     <svg class="stat-icon star-icon" viewBox="0 0 16 17" fill="currentColor">
-                      <path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/>
+                      <path
+                        d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"
+                      />
                     </svg>
                     <span class="stat-count">{{ repoStats.stars }}</span>
                   </div>
                   <div class="stat-item">
                     <svg class="stat-icon fork-icon" viewBox="0 0 16 17" fill="currentColor">
-                      <path d="M5 5.372v.878c0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75v-.878a2.25 2.25 0 1 1 1.5 0v.878a2.25 2.25 0 0 1-2.25 2.25h-1.5v2.128a2.251 2.251 0 1 1-1.5 0V8.5h-1.5A2.25 2.25 0 0 1 3.5 6.25v-.878a2.25 2.25 0 1 1 1.5 0ZM5 3.25a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Zm6.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm-3 8.75a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Z"/>
+                      <path
+                        d="M5 5.372v.878c0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75v-.878a2.25 2.25 0 1 1 1.5 0v.878a2.25 2.25 0 0 1-2.25 2.25h-1.5v2.128a2.251 2.251 0 1 1-1.5 0V8.5h-1.5A2.25 2.25 0 0 1 3.5 6.25v-.878a2.25 2.25 0 1 1 1.5 0ZM5 3.25a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Zm6.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm-3 8.75a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Z"
+                      />
                     </svg>
                     <span class="stat-count">{{ repoStats.forks }}</span>
                   </div>
                   <div class="stat-item">
                     <svg class="stat-icon issue-icon" viewBox="0 0 16 17" fill="currentColor">
-                      <path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm4.879-2.773 4.264 2.559a.25.25 0 0 1 0 .428l-4.264 2.559A.25.25 0 0 1 6 10.559V5.442a.25.25 0 0 1 .379-.215Z"/>
+                      <path
+                        d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm4.879-2.773 4.264 2.559a.25.25 0 0 1 0 .428l-4.264 2.559A.25.25 0 0 1 6 10.559V5.442a.25.25 0 0 1 .379-.215Z"
+                      />
                     </svg>
                     <span class="stat-count">{{ repoStats.issues }}</span>
                   </div>
@@ -138,18 +174,27 @@
                 :key="contributor.login"
                 class="contributor-item"
               >
-                <div class="contributor-rank" :class="{ 'top-three': index < 3 }">{{ index + 1 }}</div>
-                <img :src="contributor.avatarUrl" :alt="contributor.login" class="contributor-avatar">
+                <div class="contributor-rank" :class="{ 'top-three': index < 3 }">
+                  {{ index + 1 }}
+                </div>
+                <img
+                  :src="contributor.avatarUrl"
+                  :alt="contributor.login"
+                  class="contributor-avatar"
+                />
                 <div class="contributor-info">
                   <a
                     :href="contributor.htmlUrl"
                     target="_blank"
                     rel="noopener noreferrer"
                     class="contributor-name"
-                  >{{ contributor.login }}</a>
+                    >{{ contributor.login }}</a
+                  >
                   <div class="contributor-stats">
                     <span class="stat-commits">{{ contributor.commits }} commits</span>
-                    <span class="stat-lines">+{{ contributor.additions }} -{{ contributor.deletions }}</span>
+                    <span class="stat-lines"
+                      >+{{ contributor.additions }} -{{ contributor.deletions }}</span
+                    >
                   </div>
                 </div>
               </div>
@@ -162,7 +207,6 @@
       <section class="section">
         <h2>当前资源来源</h2>
         <div class="resource-source-list">
-
           <div v-for="source in resourceSources" :key="source.id" class="resource-source-item">
             <div class="source-main">
               <div class="source-info">
@@ -185,26 +229,16 @@
                 </router-link>
               </div>
             </div>
-            <el-button
-              type="primary"
-              size="small"
-              @click="showSourceDetail(source.detailId)"
-            >
+            <el-button type="primary" size="small" @click="showSourceDetail(source.detailId)">
               <el-icon><InfoFilled /></el-icon>
               查看详情
             </el-button>
           </div>
-
         </div>
       </section>
 
       <!-- 资源来源详情弹窗 -->
-      <el-dialog
-        v-model="sourceDetailVisible"
-        title="资料来源详情"
-        width="600px"
-        destroy-on-close
-      >
+      <el-dialog v-model="sourceDetailVisible" title="资料来源详情" width="600px" destroy-on-close>
         <div v-if="selectedSource" class="source-detail-content">
           <h3 class="detail-title">{{ selectedSource.name }}</h3>
           <div class="detail-section">
@@ -247,7 +281,9 @@
           <div v-for="(item, index) in changelog" :key="index" class="changelog-item">
             <div class="changelog-date">{{ item.date }}</div>
             <div class="changelog-content">
-              <span class="changelog-tag" :class="getChangelogTagClass(item.type)">{{ getChangelogTagText(item.type) }}</span>
+              <span class="changelog-tag" :class="getChangelogTagClass(item.type)">{{
+                getChangelogTagText(item.type)
+              }}</span>
               <span class="changelog-text">{{ item.content }}</span>
             </div>
           </div>
@@ -266,7 +302,17 @@
 
 <script setup lang="ts">
 import { ref, onMounted, nextTick } from 'vue';
-import { Upload, Search, Star, HomeFilled, Trophy, Loading, Link, User, InfoFilled } from '@element-plus/icons-vue';
+import {
+  Upload,
+  Search,
+  Star,
+  HomeFilled,
+  Trophy,
+  Loading,
+  Link,
+  User,
+  InfoFilled,
+} from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import logger from '../utils/logger';
 import {
@@ -374,13 +420,23 @@ const setCachedContributors = (data: Contributor[]) => {
   }
 };
 
-const frontendTech = ['Vue 3', 'TypeScript', 'Vite', 'Pinia', 'Element Plus', 'Vue Router', 'Axios'];
+const frontendTech = [
+  'Vue 3',
+  'TypeScript',
+  'Vite',
+  'Pinia',
+  'Element Plus',
+  'Vue Router',
+  'Axios',
+];
 const backendTech = ['Rust', 'Actix-web', 'Tokio', 'SQLx'];
 const dbTech = ['PostgreSQL'];
 
 // 获取 GitHub 仓库信息
 const fetchRepoStats = async () => {
   try {
+    // 外部 GitHub API，非本站接口，不能走 request
+    // eslint-disable-next-line no-restricted-globals
     const response = await fetch(`https://api.github.com/repos/${platformConfig.githubRepoName}`);
     if (response.ok) {
       const data = await response.json();
@@ -429,9 +485,14 @@ const fetchContributors = async (retryCount = 0): Promise<void> => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-    const response = await fetch(`https://api.github.com/repos/${platformConfig.githubRepoName}/stats/contributors`, {
-      signal: controller.signal,
-    });
+    // 外部 GitHub API，非本站接口，不能走 request
+    // eslint-disable-next-line no-restricted-globals
+    const response = await fetch(
+      `https://api.github.com/repos/${platformConfig.githubRepoName}/stats/contributors`,
+      {
+        signal: controller.signal,
+      }
+    );
     clearTimeout(timeoutId);
 
     // 处理 403 速率限制错误
@@ -447,7 +508,7 @@ const fetchContributors = async (retryCount = 0): Promise<void> => {
       // 使用指数退避策略，最多重试 10 次
       if (retryCount < 10) {
         const delay = getRetryDelay(retryCount);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
         return fetchContributors(retryCount + 1);
       }
       contributorsError.value = true;
@@ -503,8 +564,9 @@ const fetchContributors = async (retryCount = 0): Promise<void> => {
       });
 
       // 转换为数组并按commits排序
-      const sortedContributors = Array.from(contributorMap.values())
-        .sort((a, b) => b.commits - a.commits);
+      const sortedContributors = Array.from(contributorMap.values()).sort(
+        (a, b) => b.commits - a.commits
+      );
 
       contributors.value = sortedContributors;
 
@@ -516,7 +578,7 @@ const fetchContributors = async (retryCount = 0): Promise<void> => {
       contributorsError.value = true;
       contributorsLoading.value = false;
     }
-  } catch (err) {
+  } catch {
     contributorsError.value = true;
     contributorsComputing.value = false;
     contributorsLoading.value = false;
@@ -874,8 +936,12 @@ const copyQQGroup = async () => {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .contributors-list {

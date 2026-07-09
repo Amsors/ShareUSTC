@@ -12,7 +12,7 @@ const request: AxiosInstance = axios.create({
   baseURL,
   timeout: 10000,
   headers: {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
   },
   withCredentials: true, // 启用 Cookie 支持，使浏览器自动发送 HttpOnly Cookie
   paramsSerializer: {
@@ -32,8 +32,8 @@ const request: AxiosInstance = axios.create({
         }
       }
       return parts.join('&');
-    }
-  }
+    },
+  },
 });
 
 // 请求拦截器
@@ -112,46 +112,40 @@ request.interceptors.response.use(
           ElMessage.error(message);
           // 标记错误已处理，避免调用方重复显示
           return Promise.reject(new ApiError(message, true));
-        case 401:
-          // 如果标记为跳过认证错误，静默处理
+        case 401: {
+          // 如果标记为跳过认证错误，静默处理（会话检查、静默刷新等）
           if (skipAuthError) {
             return Promise.reject(error);
           }
 
-          // 防止递归刷新：如果当前请求本身就是刷新token请求，直接跳转登录
-          const isRefreshRequest = config?.url?.includes('/auth/refresh');
-          if (isRefreshRequest) {
+          const errorCode = data?.error;
+          const isAuthPath = (config?.url || '').includes('/auth/');
+
+          // 仅当 access token 过期（error === "TokenExpired"）且请求不属于 /auth/* 时，
+          // 才自动刷新并重放原请求；其余 401（凭证错误、缺少认证等）不触发刷新
+          if (errorCode === 'TokenExpired' && !isAuthPath) {
             const authStore = useAuthStore();
+            const refreshed = await authStore.refreshAccessToken();
+
+            if (refreshed && config) {
+              // 刷新成功，重试原请求（Cookie 自动发送，无需重设 Authorization）
+              return request(config);
+            }
+
+            // 刷新失败（refresh token 也已过期）：清除状态并跳转登录页
             authStore.clearAuth();
             ElMessage.error('登录已失效，请重新登录');
             if (router.currentRoute.value.path !== '/login') {
+              // 使用 window.location.href 硬跳转，确保所有组件状态重置
               window.location.href = '/login';
             }
             return Promise.reject(new ApiError('登录已失效', true));
           }
 
-          // Token 过期，尝试刷新
-          const authStore = useAuthStore();
-          const refreshed = await authStore.refreshAccessToken();
-
-          if (refreshed) {
-            // 刷新成功，重试原请求
-            if (config) {
-              // Cookie 会自动发送，不需要重新设置 Authorization
-              return request(config);
-            }
-          } else {
-            // 刷新失败，清除登录状态并提示
-            authStore.clearAuth();
-            ElMessage.error('登录已失效，请重新登录');
-            // 如果不在登录页面，强制跳转到登录（使用硬跳转确保状态完全重置）
-            if (router.currentRoute.value.path !== '/login') {
-              // 使用 window.location.href 强制刷新，确保所有组件状态重置
-              window.location.href = '/login';
-            }
-          }
-          // 标记错误已处理，避免调用方重复显示
-          return Promise.reject(new ApiError('登录已失效', true));
+          // 其余 401：凭证错误 / 缺少认证 / 认证域失败，直接提示，不触发刷新
+          ElMessage.error(message);
+          return Promise.reject(new ApiError(message, true));
+        }
         case 403:
           if (!skipAuthError) {
             ElMessage.error('没有权限访问');

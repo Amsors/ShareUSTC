@@ -1,4 +1,5 @@
 import request from './request';
+import type { AxiosRequestConfig } from 'axios';
 import type { User } from '../types/auth';
 import type { ResourceListItem } from '../types/resource';
 
@@ -63,8 +64,9 @@ export interface SiteConfig {
 }
 
 // 获取当前用户信息
-export const getCurrentUser = (): Promise<User> => {
-  return request.get('/users/me');
+// config 可传入 skipAuthError 等自定义字段（如会话检查时静默处理 401）
+export const getCurrentUser = (config?: AxiosRequestConfig): Promise<User> => {
+  return request.get('/users/me', config);
 };
 
 // 更新当前用户资料
@@ -84,7 +86,10 @@ export const getUserProfile = (userId: string): Promise<UserProfile> => {
 };
 
 // 获取用户主页数据（包含资源列表）
-export const getUserHomepage = (userId: string, query?: UserHomepageQuery): Promise<UserHomepage> => {
+export const getUserHomepage = (
+  userId: string,
+  query?: UserHomepageQuery
+): Promise<UserHomepage> => {
   return request.get(`/users/${userId}/homepage`, { params: query });
 };
 

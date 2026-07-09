@@ -1,9 +1,6 @@
 import request from './request';
-import type {
-  LoginRequest,
-  RegisterRequest,
-  AuthResponse
-} from '../types/auth';
+import type { AxiosRequestConfig } from 'axios';
+import type { LoginRequest, RegisterRequest, AuthResponse } from '../types/auth';
 
 // 用户注册
 export const register = (data: RegisterRequest): Promise<AuthResponse> => {
@@ -17,8 +14,9 @@ export const login = (data: LoginRequest): Promise<AuthResponse> => {
 
 // 刷新 Token
 // 后端从 HttpOnly Cookie 中读取 refresh_token，不需要前端传递
-export const refreshToken = (): Promise<{ message: string }> => {
-  return request.post('/auth/refresh');
+// config 可传入 skipAuthError（静默刷新，失败由调用方按返回值处理）
+export const refreshToken = (config?: AxiosRequestConfig): Promise<{ message: string }> => {
+  return request.post('/auth/refresh', undefined, config);
 };
 
 // 用户登出
