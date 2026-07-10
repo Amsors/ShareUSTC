@@ -31,10 +31,10 @@
 
     <template #footer>
       <div class="priority-footer">
-        <el-button v-if="pendingCount > 1" @click="handleDismissAndNext" :loading="dismissing">
+        <el-button v-if="pendingCount > 1" :loading="dismissing" @click="handleDismissAndNext">
           下一条
         </el-button>
-        <el-button type="primary" @click="handleDismiss" :loading="dismissing">
+        <el-button type="primary" :loading="dismissing" @click="handleDismiss">
           {{ pendingCount > 1 ? '我知道了' : '关闭' }}
         </el-button>
       </div>

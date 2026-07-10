@@ -24,7 +24,7 @@
             </el-button>
           </div>
 
-          <div class="notification-list" v-if="recentNotifications.length > 0">
+          <div v-if="recentNotifications.length > 0" class="notification-list">
             <el-dropdown-item
               v-for="notification in recentNotifications"
               :key="notification.id"
@@ -34,7 +34,7 @@
             >
               <div class="notification-content">
                 <div class="notification-title">{{ notification.title }}</div>
-                <div class="notification-text" v-if="notification.content">
+                <div v-if="notification.content" class="notification-text">
                   {{ truncateText(notification.content, 50) }}
                 </div>
                 <div class="notification-time">{{ formatTime(notification.createdAt) }}</div>

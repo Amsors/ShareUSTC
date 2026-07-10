@@ -17,10 +17,10 @@
         @click="toggleFullscreen"
       />
       <div class="image-overlay">
-        <el-button circle size="small" @click.stop="zoomIn" :disabled="scale >= 3">
+        <el-button circle size="small" :disabled="scale >= 3" @click.stop="zoomIn">
           <el-icon><ZoomIn /></el-icon>
         </el-button>
-        <el-button circle size="small" @click.stop="zoomOut" :disabled="scale <= 0.5">
+        <el-button circle size="small" :disabled="scale <= 0.5" @click.stop="zoomOut">
           <el-icon><ZoomOut /></el-icon>
         </el-button>
         <el-button circle size="small" @click.stop="toggleFullscreen">

@@ -2,15 +2,15 @@
   <div class="notification-center">
     <div class="page-header">
       <h1 class="page-title">通知中心</h1>
-      <div class="header-actions" v-if="notificationStore.hasUnread">
-        <el-button type="primary" @click="handleMarkAllRead" :loading="markingAllRead">
+      <div v-if="notificationStore.hasUnread" class="header-actions">
+        <el-button type="primary" :loading="markingAllRead" @click="handleMarkAllRead">
           <el-icon><Check /></el-icon>
           全部标记为已读
         </el-button>
       </div>
     </div>
 
-    <el-card class="notification-card" v-loading="notificationStore.loading">
+    <el-card v-loading="notificationStore.loading" class="notification-card">
       <el-tabs v-model="activeTab" @tab-change="handleTabChange">
         <el-tab-pane label="全部通知" name="all">
           <NotificationList
@@ -41,7 +41,7 @@
       </el-empty>
 
       <!-- 分页 -->
-      <div class="pagination-wrapper" v-if="notificationStore.total > notificationStore.perPage">
+      <div v-if="notificationStore.total > notificationStore.perPage" class="pagination-wrapper">
         <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"

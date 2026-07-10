@@ -32,7 +32,7 @@
             <el-icon><Lock /></el-icon>
             <span>修改密码</span>
           </el-menu-item>
-          <el-menu-item index="verification" v-if="!authStore.isVerified">
+          <el-menu-item v-if="!authStore.isVerified" index="verification">
             <el-icon><CircleCheck /></el-icon>
             <span>实名认证</span>
           </el-menu-item>
@@ -94,6 +94,7 @@
             <!-- 个人简介 Markdown 渲染 -->
             <div class="bio-section">
               <h4>个人简介</h4>
+              <!-- eslint-disable vue/no-v-html 内容经 markdown-it（html:false）渲染，原始 HTML 已转义 -->
               <div
                 v-if="authStore.user?.bio"
                 class="bio-content markdown-body"
@@ -102,6 +103,7 @@
               <el-empty v-else description="这个人很懒，还没有写简介...">
                 <el-button type="primary" @click="activeMenu = 'settings'">去编辑</el-button>
               </el-empty>
+              <!-- eslint-enable vue/no-v-html -->
             </div>
           </el-card>
         </div>
@@ -206,7 +208,7 @@
                 <span class="resource-category">{{ resource.category }}</span>
               </div>
 
-              <div class="resource-tags" v-if="resource.tags && resource.tags.length > 0">
+              <div v-if="resource.tags && resource.tags.length > 0" class="resource-tags">
                 <el-tag
                   v-for="tag in resource.tags.slice(0, 3)"
                   :key="tag"
@@ -319,9 +321,9 @@
                 <div v-else class="bio-editor-wrapper-wide">
                   <MarkdownEditor
                     :model-value="profileForm.bio || ''"
-                    @update:model-value="(val: string) => (profileForm.bio = val)"
                     :auto-save-key="`user_bio_${authStore.user?.id}`"
                     style="height: 600px"
+                    @update:model-value="(val: string) => (profileForm.bio = val)"
                   />
                 </div>
                 <p v-if="authStore.isVerified" class="form-hint">
@@ -329,7 +331,7 @@
                 </p>
               </el-form-item>
               <el-form-item>
-                <el-button type="primary" @click="saveProfile" :loading="saving"
+                <el-button type="primary" :loading="saving" @click="saveProfile"
                   >保存修改</el-button
                 >
                 <el-button v-if="authStore.isVerified" @click="previewVisible = true"
@@ -414,7 +416,7 @@
                   <el-input v-model="verifyForm.grade" placeholder="例如：2023级" />
                 </el-form-item>
                 <el-form-item>
-                  <el-button type="primary" @click="submitVerification" :loading="verifying">
+                  <el-button type="primary" :loading="verifying" @click="submitVerification">
                     立即认证
                   </el-button>
                 </el-form-item>
@@ -435,10 +437,8 @@
 
     <!-- Bio 预览对话框 -->
     <el-dialog v-model="previewVisible" title="个人简介预览" width="700px" destroy-on-close>
-      <div
-        class="bio-preview markdown-body"
-        v-html="renderedBio || '<p style=\'color: #999;\'>暂无内容</p>'"
-      ></div>
+      <!-- eslint-disable-next-line vue/no-v-html 内容经 markdown-it（html:false）渲染，兜底为静态字符串 -->
+      <div class="bio-preview markdown-body" v-html="renderedBioPreview"></div>
     </el-dialog>
   </div>
 </template>
@@ -517,6 +517,11 @@ const renderedBio = computed(() => {
   if (!authStore.user?.bio) return '';
   return md.render(authStore.user.bio);
 });
+
+// 预览对话框中的 Bio（无内容时给出静态兜底提示）
+const renderedBioPreview = computed(
+  () => renderedBio.value || '<p style="color: #999;">暂无内容</p>'
+);
 
 // 预览对话框
 const previewVisible = ref(false);

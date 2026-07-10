@@ -16,7 +16,7 @@
         @keyup.enter="handleCreateNew"
       >
         <template #append>
-          <el-button @click="handleCreateNew" :loading="creating">
+          <el-button :loading="creating" @click="handleCreateNew">
             <el-icon><Plus /></el-icon>
           </el-button>
         </template>
@@ -134,7 +134,7 @@ const fetchData = async () => {
 
     // 设置已选中的收藏夹
     selectedFavorites.value = new Set(statusRes.inFavorites);
-  } catch (error) {
+  } catch {
     ElMessage.error('获取数据失败');
   } finally {
     loading.value = false;

@@ -14,10 +14,10 @@
       />
       <el-button
         type="primary"
-        @click="handleSubmit"
         :loading="submitting"
         :disabled="!newComment.trim()"
         class="submit-btn"
+        @click="handleSubmit"
       >
         发表评论
       </el-button>

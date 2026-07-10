@@ -76,8 +76,8 @@
                 size="large"
                 :loading="verifying"
                 :disabled="!isValidCode"
-                @click="handleSubmit"
                 class="submit-btn"
+                @click="handleSubmit"
               >
                 提交验证
               </el-button>

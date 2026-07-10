@@ -72,7 +72,7 @@
       </div>
 
       <template v-else>
-        <el-table :data="logs" stripe style="width: 100%" v-if="logs.length > 0">
+        <el-table v-if="logs.length > 0" :data="logs" stripe style="width: 100%">
           <el-table-column label="时间" width="180">
             <template #default="{ row }">
               {{ formatDateTime(row.createdAt) }}
@@ -144,7 +144,7 @@
         <el-empty v-else description="暂无日志记录" />
 
         <!-- 分页 -->
-        <div class="pagination-wrapper" v-if="total > 0">
+        <div v-if="total > 0" class="pagination-wrapper">
           <el-pagination
             v-model:current-page="query.page"
             v-model:page-size="query.perPage"

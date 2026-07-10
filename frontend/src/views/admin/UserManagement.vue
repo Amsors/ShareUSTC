@@ -51,7 +51,7 @@
         </div>
       </template>
 
-      <el-table :data="filteredUsers" v-loading="loading" style="width: 100%" stripe>
+      <el-table v-loading="loading" :data="filteredUsers" style="width: 100%" stripe>
         <el-table-column prop="sn" label="编号" width="80">
           <template #default="{ row }">
             <span class="user-sn">#{{ row.sn ?? '-' }}</span>

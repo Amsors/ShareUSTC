@@ -29,8 +29,8 @@
         <el-button
           type="primary"
           :disabled="stats.totalEntries === 0"
-          @click="handleClearExpired"
           :loading="clearingExpired"
+          @click="handleClearExpired"
         >
           <el-icon><Timer /></el-icon>
           清理过期缓存
@@ -40,14 +40,14 @@
           type="danger"
           plain
           :disabled="stats.totalEntries === 0"
-          @click="handleClearAll"
           :loading="clearingAll"
+          @click="handleClearAll"
         >
           <el-icon><Delete /></el-icon>
           清空所有缓存
         </el-button>
 
-        <el-button @click="refreshStats" :loading="loading">
+        <el-button :loading="loading" @click="refreshStats">
           <el-icon><Refresh /></el-icon>
           刷新
         </el-button>
@@ -116,7 +116,7 @@ const refreshStats = async () => {
   loading.value = true;
   try {
     stats.value = await resourceCache.getStats();
-  } catch (error) {
+  } catch {
     ElMessage.error('获取缓存信息失败');
   } finally {
     loading.value = false;
@@ -130,7 +130,7 @@ const handleClearExpired = async () => {
     const count = await resourceCache.clearExpired();
     ElMessage.success(`已清理 ${count} 个过期缓存`);
     await refreshStats();
-  } catch (error) {
+  } catch {
     ElMessage.error('清理失败');
   } finally {
     clearingExpired.value = false;

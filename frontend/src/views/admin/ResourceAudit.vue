@@ -29,7 +29,7 @@
       <template #header>
         <div class="card-header">
           <span>待审核资源列表</span>
-          <el-button @click="fetchResources" :icon="Refresh">刷新</el-button>
+          <el-button :icon="Refresh" @click="fetchResources">刷新</el-button>
         </div>
       </template>
 

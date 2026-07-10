@@ -29,7 +29,7 @@
     </div>
 
     <!-- 数据表格 -->
-    <el-table :data="teachers" v-loading="loading" border>
+    <el-table v-loading="loading" :data="teachers" border>
       <el-table-column prop="sn" label="编号" width="80" />
       <el-table-column prop="name" label="姓名" width="150" />
       <el-table-column prop="department" label="所在学院" min-width="200">
@@ -55,10 +55,10 @@
           <el-switch
             v-model="row.isActive"
             size="small"
-            @change="(val: boolean) => handleStatusChange(row, val)"
             style="margin-left: 8px"
+            @change="(val: boolean) => handleStatusChange(row, val)"
           />
-          <el-button size="small" type="danger" @click="handleDelete(row)" style="margin-left: 8px">
+          <el-button size="small" type="danger" style="margin-left: 8px" @click="handleDelete(row)">
             删除
           </el-button>
         </template>
@@ -80,7 +80,7 @@
 
     <!-- 添加/编辑弹窗 -->
     <el-dialog v-model="dialogVisible" :title="isEditing ? '编辑教师' : '添加教师'" width="500px">
-      <el-form :model="form" :rules="rules" ref="formRef" label-width="80px">
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="姓名" prop="name">
           <el-input v-model="form.name" placeholder="请输入教师姓名" />
         </el-form-item>
@@ -90,7 +90,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmit" :loading="submitting">
+        <el-button type="primary" :loading="submitting" @click="handleSubmit">
           {{ isEditing ? '保存' : '添加' }}
         </el-button>
       </template>
@@ -205,7 +205,7 @@
 
       <template #footer>
         <el-button @click="batchImportVisible = false">关闭</el-button>
-        <el-button type="primary" @click="handleBatchImport" :loading="batchImportLoading">
+        <el-button type="primary" :loading="batchImportLoading" @click="handleBatchImport">
           开始导入
         </el-button>
       </template>
@@ -270,7 +270,7 @@
 
       <template #footer>
         <el-button @click="batchDeleteVisible = false">关闭</el-button>
-        <el-button type="danger" @click="handleBatchDelete" :loading="batchDeleteLoading">
+        <el-button type="danger" :loading="batchDeleteLoading" @click="handleBatchDelete">
           确认删除
         </el-button>
       </template>
@@ -406,7 +406,7 @@ const handleBatchImport = async () => {
         ElMessage.error('JSON格式错误：必须为数组格式');
         return;
       }
-    } catch (error) {
+    } catch {
       ElMessage.error('JSON解析失败，请检查格式');
       return;
     }
@@ -502,7 +502,7 @@ const fetchTeachers = async () => {
     });
     teachers.value = res.teachers;
     total.value = res.total;
-  } catch (error) {
+  } catch {
     ElMessage.error('获取教师列表失败');
   } finally {
     loading.value = false;
@@ -558,7 +558,7 @@ const handleStatusChange = async (row: TeacherListItem, val: boolean) => {
   try {
     await updateTeacherStatus(row.sn, val);
     ElMessage.success(val ? '教师已启用' : '教师已禁用');
-  } catch (error) {
+  } catch {
     row.isActive = !val; // 回滚
     ElMessage.error('操作失败');
   }

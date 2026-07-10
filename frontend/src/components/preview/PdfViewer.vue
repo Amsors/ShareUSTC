@@ -8,13 +8,13 @@
         <p v-if="!isUserVerified" class="lazy-load-desc">通过检测后可自动加载预览</p>
       </div>
       <div class="lazy-load-actions">
-        <el-button type="primary" @click="loadPdf" size="large">
+        <el-button type="primary" size="large" @click="loadPdf">
           <el-icon class="el-icon--left"><View /></el-icon>加载预览
         </el-button>
-        <el-button v-if="!isUserVerified" @click="goToChallenge" size="large">
+        <el-button v-if="!isUserVerified" size="large" @click="goToChallenge">
           <el-icon class="el-icon--left"><Check /></el-icon>前往检测页面
         </el-button>
-        <el-button v-else @click="enableAutoLoad" size="large">
+        <el-button v-else size="large" @click="enableAutoLoad">
           <el-icon class="el-icon--left"><Check /></el-icon>以后自动加载预览
         </el-button>
       </div>
@@ -32,10 +32,10 @@
         <p class="lazy-load-hint">您可以手动加载此文件，或调整自动加载阈值</p>
       </div>
       <div class="lazy-load-actions">
-        <el-button type="primary" @click="loadPdf" size="large">
+        <el-button type="primary" size="large" @click="loadPdf">
           <el-icon class="el-icon--left"><View /></el-icon>加载预览
         </el-button>
-        <el-button @click="goToSettings" size="large">
+        <el-button size="large" @click="goToSettings">
           <el-icon class="el-icon--left"><Setting /></el-icon>编辑自动加载阈值
         </el-button>
       </div>
@@ -69,7 +69,7 @@
       <!-- 工具栏 -->
       <div class="pdf-toolbar">
         <div class="toolbar-left">
-          <el-button circle size="small" @click="prevPage" :disabled="currentPage <= 1">
+          <el-button circle size="small" :disabled="currentPage <= 1" @click="prevPage">
             <el-icon><ArrowLeft /></el-icon>
           </el-button>
           <span class="page-info">
@@ -83,17 +83,17 @@
             />
             <span class="page-total">/ {{ totalPages }}</span>
           </span>
-          <el-button circle size="small" @click="nextPage" :disabled="currentPage >= totalPages">
+          <el-button circle size="small" :disabled="currentPage >= totalPages" @click="nextPage">
             <el-icon><ArrowRight /></el-icon>
           </el-button>
         </div>
 
         <div class="toolbar-right">
-          <el-button circle size="small" @click="zoomOut" :disabled="scale <= 0.5">
+          <el-button circle size="small" :disabled="scale <= 0.5" @click="zoomOut">
             <el-icon><ZoomOut /></el-icon>
           </el-button>
           <span class="zoom-info">{{ Math.round(scale * 100) }}%</span>
-          <el-button circle size="small" @click="zoomIn" :disabled="scale >= 3">
+          <el-button circle size="small" :disabled="scale >= 3" @click="zoomIn">
             <el-icon><ZoomIn /></el-icon>
           </el-button>
           <el-button circle size="small" @click="toggleFullscreen">
@@ -103,7 +103,7 @@
       </div>
 
       <!-- PDF 渲染区域 -->
-      <div class="pdf-content" ref="pdfContentRef">
+      <div ref="pdfContentRef" class="pdf-content">
         <canvas ref="canvasRef" class="pdf-canvas"></canvas>
       </div>
     </div>
@@ -117,19 +117,19 @@
       class="fullscreen-pdf"
     >
       <div class="fullscreen-toolbar">
-        <el-button circle size="small" @click="prevPage" :disabled="currentPage <= 1">
+        <el-button circle size="small" :disabled="currentPage <= 1" @click="prevPage">
           <el-icon><ArrowLeft /></el-icon>
         </el-button>
         <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
-        <el-button circle size="small" @click="nextPage" :disabled="currentPage >= totalPages">
+        <el-button circle size="small" :disabled="currentPage >= totalPages" @click="nextPage">
           <el-icon><ArrowRight /></el-icon>
         </el-button>
         <el-divider direction="vertical" />
-        <el-button circle size="small" @click="zoomOut" :disabled="scale <= 0.5">
+        <el-button circle size="small" :disabled="scale <= 0.5" @click="zoomOut">
           <el-icon><ZoomOut /></el-icon>
         </el-button>
         <span class="zoom-info">{{ Math.round(scale * 100) }}%</span>
-        <el-button circle size="small" @click="zoomIn" :disabled="scale >= 3">
+        <el-button circle size="small" :disabled="scale >= 3" @click="zoomIn">
           <el-icon><ZoomIn /></el-icon>
         </el-button>
       </div>
@@ -224,7 +224,7 @@ const isUserVerified = computed(() => {
     }
     const verified = JSON.parse(verifiedData);
     return verified.verified === true;
-  } catch (e) {
+  } catch {
     return false;
   }
 });

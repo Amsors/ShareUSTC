@@ -50,7 +50,5 @@ jobs:
         run: npm run format:check
       - name: eslint
         run: npm run lint
-        # 存量 35 个 error 待整改；整改后移除 continue-on-error
-        continue-on-error: true
       - name: typecheck
         run: npm run typecheck

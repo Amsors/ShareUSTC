@@ -67,7 +67,7 @@
           <el-checkbox v-model="dontShowAgain" size="small"> 不再显示 </el-checkbox>
         </div>
         <div class="footer-right">
-          <el-button type="primary" @click="handleClose" size="default"> 我知道了 </el-button>
+          <el-button type="primary" size="default" @click="handleClose"> 我知道了 </el-button>
         </div>
       </div>
     </template>

@@ -24,7 +24,7 @@
     </div>
 
     <!-- 收藏夹管理区域 -->
-    <el-card class="favorites-card" v-if="isAdmin">
+    <el-card v-if="isAdmin" class="favorites-card">
       <template #header>
         <div class="card-header">
           <span>收藏夹管理</span>
@@ -45,7 +45,7 @@
         </el-alert>
 
         <div class="table-wrapper">
-          <el-table :data="favorites" v-loading="favoritesLoading" border>
+          <el-table v-loading="favoritesLoading" :data="favorites" border>
             <el-table-column prop="name" label="收藏夹名称" min-width="180">
               <template #default="{ row }">
                 <div class="favorite-name">
@@ -94,7 +94,7 @@
       </template>
 
       <div class="table-wrapper">
-        <el-table :data="resources" v-loading="loading" border stripe style="width: 100%">
+        <el-table v-loading="loading" :data="resources" border stripe style="width: 100%">
           <el-table-column prop="title" label="资源标题" min-width="200" show-overflow-tooltip>
             <template #default="{ row }">
               <div class="resource-title">

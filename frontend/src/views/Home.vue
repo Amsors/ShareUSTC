@@ -9,7 +9,7 @@
         <!-- 顶部栏：欢迎信息 + 日历（占满一行） -->
         <div class="top-bar">
           <!-- 欢迎区域（左侧小长方形） -->
-          <div class="welcome-box" v-if="authStore.isAuthenticated">
+          <div v-if="authStore.isAuthenticated" class="welcome-box">
             <el-avatar :size="40" class="user-avatar">
               {{ authStore.user?.username?.charAt(0).toUpperCase() }}
             </el-avatar>
@@ -25,7 +25,7 @@
             </div>
           </div>
 
-          <div class="welcome-box guest" v-else @click="$router.push('/login')">
+          <div v-else class="welcome-box guest" @click="$router.push('/login')">
             <el-icon :size="22" class="guest-icon"><User /></el-icon>
             <span class="guest-text">点击登录</span>
           </div>
@@ -51,7 +51,7 @@
           <p class="subtitle">{{ homeConfig.heroSubtitle }}</p>
           <p class="description">{{ homeConfig.heroDescription }}</p>
 
-          <div class="hero-actions" v-if="!authStore.isAuthenticated">
+          <div v-if="!authStore.isAuthenticated" class="hero-actions">
             <el-button type="primary" size="large" @click="$router.push('/register')">
               <el-icon class="btn-icon"><User /></el-icon>
               注册 / 登录
@@ -109,9 +109,9 @@
           </div>
 
           <div
+            v-if="authStore.isAuthenticated"
             class="quick-link-card"
             @click="$router.push('/upload')"
-            v-if="authStore.isAuthenticated"
           >
             <div class="link-icon green">
               <el-icon :size="32"><Upload /></el-icon>
@@ -123,7 +123,7 @@
             <el-icon class="link-arrow"><ArrowRight /></el-icon>
           </div>
 
-          <div class="quick-link-card" @click="$router.push('/register')" v-else>
+          <div v-else class="quick-link-card" @click="$router.push('/register')">
             <div class="link-icon green">
               <el-icon :size="32"><Plus /></el-icon>
             </div>
@@ -178,7 +178,7 @@
             <el-icon><Trophy /></el-icon>
             热门资源
           </h3>
-          <div class="hot-resources-list" v-loading="loadingHot">
+          <div v-loading="loadingHot" class="hot-resources-list">
             <div
               v-for="(item, index) in hotResources"
               :key="item.id"
@@ -203,7 +203,7 @@
                   </el-tag>
                 </div>
                 <div class="resource-meta">
-                  <span class="course-tag" v-if="item.courseName">{{ item.courseName }}</span>
+                  <span v-if="item.courseName" class="course-tag">{{ item.courseName }}</span>
                   <span class="view-count">
                     <el-icon><View /></el-icon>
                     {{ formatNumber(item.views) }} 浏览

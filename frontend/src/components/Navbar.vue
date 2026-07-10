@@ -1,7 +1,7 @@
 <template>
   <nav class="navbar">
     <div class="nav-brand">
-      <h1 @click="$router.push('/')" style="cursor: pointer">
+      <h1 style="cursor: pointer" @click="$router.push('/')">
         {{ brandConfig.siteName }}
         <span v-if="isDevMode" class="dev-badge">开发版</span>
       </h1>
@@ -65,7 +65,7 @@ const handleCommand = async (command: string) => {
       });
       await authStore.logoutUser();
       router.push('/');
-    } catch (error) {
+    } catch {
       // 用户取消
     }
   }

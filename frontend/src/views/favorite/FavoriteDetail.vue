@@ -117,7 +117,7 @@
                 <p v-if="resource.courseName" class="resource-course">
                   {{ resource.courseName }}
                 </p>
-                <div class="resource-tags" v-if="resource.tags?.length">
+                <div v-if="resource.tags?.length" class="resource-tags">
                   <el-tag
                     v-for="tag in resource.tags.slice(0, 3)"
                     :key="tag"
@@ -323,7 +323,7 @@ const fetchDetail = async () => {
   loading.value = true;
   try {
     await favoriteStore.fetchFavoriteDetail(favoriteId.value);
-  } catch (error) {
+  } catch {
     ElMessage.error('获取收藏夹详情失败');
     router.push('/favorites');
   } finally {

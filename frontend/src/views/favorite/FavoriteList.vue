@@ -65,7 +65,7 @@
                   <el-icon><Edit /></el-icon>
                   重命名
                 </el-dropdown-item>
-                <el-dropdown-item @click="handleDelete(favorite)" divided>
+                <el-dropdown-item divided @click="handleDelete(favorite)">
                   <el-icon><Delete /></el-icon>
                   <span style="color: #f56c6c">删除</span>
                 </el-dropdown-item>
@@ -140,7 +140,7 @@ const fetchFavorites = async () => {
   loading.value = true;
   try {
     await favoriteStore.fetchFavorites();
-  } catch (error) {
+  } catch {
     ElMessage.error('获取收藏夹列表失败');
   } finally {
     loading.value = false;

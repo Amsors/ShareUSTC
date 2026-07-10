@@ -46,7 +46,7 @@
 import { Bell, Check, Document, Star, Warning, ChatDotRound } from '@element-plus/icons-vue';
 import type { Notification, NotificationType } from '../../types/notification';
 
-const props = defineProps<{
+defineProps<{
   notifications: Notification[];
 }>();
 

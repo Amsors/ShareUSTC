@@ -28,7 +28,7 @@
 
     <template #footer>
       <el-button @click="visible = false">取消</el-button>
-      <el-button type="primary" @click="handleSubmit" :loading="loading">
+      <el-button type="primary" :loading="loading" @click="handleSubmit">
         {{ isEdit ? '保存' : '创建' }}
       </el-button>
     </template>

@@ -33,7 +33,7 @@
           <el-radio-button label="approved">已通过</el-radio-button>
           <el-radio-button label="rejected">已拒绝</el-radio-button>
         </el-radio-group>
-        <el-button @click="fetchComments" :icon="Refresh">刷新</el-button>
+        <el-button :icon="Refresh" @click="fetchComments">刷新</el-button>
       </div>
     </el-card>
 

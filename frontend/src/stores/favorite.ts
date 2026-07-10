@@ -160,22 +160,18 @@ export const useFavoriteStore = defineStore('favorite', () => {
    * 从收藏夹移除资源
    */
   const removeResourceFromFavorite = async (favoriteId: string, resourceId: string) => {
-    try {
-      await favoriteApi.removeFromFavorite(favoriteId, resourceId);
-      // 更新本地收藏夹计数
-      const favorite = favorites.value.find((f) => f.id === favoriteId);
-      if (favorite) {
-        favorite.resourceCount = Math.max(0, favorite.resourceCount - 1);
-      }
-      // 如果当前查看的是这个收藏夹，从列表中移除
-      if (currentFavorite.value?.id === favoriteId) {
-        currentFavorite.value.resources = currentFavorite.value.resources.filter(
-          (r) => r.id !== resourceId
-        );
-        currentFavorite.value.resourceCount = currentFavorite.value.resources.length;
-      }
-    } catch (err) {
-      throw err;
+    await favoriteApi.removeFromFavorite(favoriteId, resourceId);
+    // 更新本地收藏夹计数
+    const favorite = favorites.value.find((f) => f.id === favoriteId);
+    if (favorite) {
+      favorite.resourceCount = Math.max(0, favorite.resourceCount - 1);
+    }
+    // 如果当前查看的是这个收藏夹，从列表中移除
+    if (currentFavorite.value?.id === favoriteId) {
+      currentFavorite.value.resources = currentFavorite.value.resources.filter(
+        (r) => r.id !== resourceId
+      );
+      currentFavorite.value.resourceCount = currentFavorite.value.resources.length;
     }
   };
 
@@ -186,7 +182,7 @@ export const useFavoriteStore = defineStore('favorite', () => {
     try {
       const response = await favoriteApi.checkResourceInFavorite(resourceId);
       return response;
-    } catch (err) {
+    } catch {
       return { inFavorites: [], isFavorited: false };
     }
   };

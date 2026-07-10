@@ -86,7 +86,7 @@ const handleDownload = async () => {
         resourceType: props.resourceType,
       },
     });
-  } catch (error: any) {
+  } catch {
     // 错误已在API中处理
   }
 };

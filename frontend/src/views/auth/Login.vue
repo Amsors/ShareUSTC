@@ -38,8 +38,8 @@
             type="primary"
             size="large"
             :loading="authStore.isLoading"
-            @click="handleSubmit"
             style="width: 100%"
+            @click="handleSubmit"
           >
             登录
           </el-button>
@@ -101,7 +101,7 @@ const handleSubmit = async () => {
       const redirect = route.query.redirect as string;
       router.push(redirect || '/');
     }
-  } catch (error) {
+  } catch {
     // 验证失败，不执行登录
     logger.debug('[Login]', '表单验证失败');
   }

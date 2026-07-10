@@ -8,6 +8,7 @@
       <el-button type="primary" @click="loadContent">重试</el-button>
     </div>
     <div v-else class="markdown-container">
+      <!-- eslint-disable-next-line vue/no-v-html 内容经 markdown-it（html:false）渲染，原始 HTML 已转义 -->
       <div class="markdown-body" v-html="renderedContent"></div>
     </div>
   </div>

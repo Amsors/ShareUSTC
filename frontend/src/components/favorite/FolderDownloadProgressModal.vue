@@ -41,7 +41,7 @@
         </template>
         <template v-else-if="progress.status === 'downloading'">
           <p class="main-text">正在下载文件...</p>
-          <p class="sub-text" v-if="progress.currentFile">
+          <p v-if="progress.currentFile" class="sub-text">
             当前: {{ progress.currentFile }}
             <el-tag
               v-if="progress.currentFileSource === 'cache'"
@@ -104,7 +104,7 @@
       </div>
 
       <!-- 统计信息 -->
-      <div class="stats-info" v-if="progress.totalFiles > 0 && progress.status !== 'selecting'">
+      <div v-if="progress.totalFiles > 0 && progress.status !== 'selecting'" class="stats-info">
         <el-tag size="small" type="info"> 共 {{ progress.totalFiles }} 个文件 </el-tag>
         <el-tag v-if="progress.savedCount > 0" size="small" type="success">
           <el-icon><Check /></el-icon>
@@ -175,7 +175,7 @@ import {
 import type { FolderDownloadProgress } from '../../utils/browserZip';
 
 interface Props {
-  modelValue: boolean;
+  modelValue?: boolean;
   progress: FolderDownloadProgress;
 }
 

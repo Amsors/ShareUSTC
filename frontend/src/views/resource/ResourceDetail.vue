@@ -99,7 +99,7 @@
                 编辑
               </el-button>
 
-              <el-button size="large" v-if="canDelete" type="danger" @click="handleDelete">
+              <el-button v-if="canDelete" size="large" type="danger" @click="handleDelete">
                 <el-icon><Delete /></el-icon>
                 删除
               </el-button>

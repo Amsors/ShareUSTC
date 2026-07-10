@@ -95,12 +95,12 @@
           <el-button
             v-if="hasUserRating"
             type="danger"
-            @click="handleDeleteRating"
             :loading="submitting"
+            @click="handleDeleteRating"
           >
             删除评分
           </el-button>
-          <el-button type="primary" @click="handleSubmitRating" :loading="submitting">
+          <el-button type="primary" :loading="submitting" @click="handleSubmitRating">
             提交评分
           </el-button>
         </div>

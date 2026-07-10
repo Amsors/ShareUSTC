@@ -79,7 +79,7 @@
         </el-row>
 
         <!-- 资源类型分布 -->
-        <div class="distribution-section" v-if="stats.resourceStats.typeDistribution.length > 0">
+        <div v-if="stats.resourceStats.typeDistribution.length > 0" class="distribution-section">
           <h4 class="subsection-title">资源类型分布</h4>
           <div class="type-distribution">
             <div
@@ -130,7 +130,7 @@
         </el-row>
 
         <!-- 热门资源排行 -->
-        <div class="top-resources-section" v-if="stats.downloadStats.topResources.length > 0">
+        <div v-if="stats.downloadStats.topResources.length > 0" class="top-resources-section">
           <h4 class="subsection-title">热门资源排行（Top 10）</h4>
           <el-table :data="stats.downloadStats.topResources" stripe style="width: 100%">
             <el-table-column type="index" width="50" label="排名" />
@@ -185,8 +185,8 @@
 
         <!-- 评分分布 -->
         <div
-          class="rating-distribution"
           v-if="stats.interactionStats.ratingDistribution.length > 0"
+          class="rating-distribution"
         >
           <h4 class="subsection-title">评分分布</h4>
           <div class="rating-bars">

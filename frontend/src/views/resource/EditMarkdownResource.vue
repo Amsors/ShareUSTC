@@ -9,7 +9,7 @@
         <h1>编辑 Markdown 资源</h1>
       </div>
       <div class="header-actions">
-        <el-button @click="loadDraft" v-if="hasDraft">
+        <el-button v-if="hasDraft" @click="loadDraft">
           <el-icon><Document /></el-icon>
           恢复草稿
         </el-button>
@@ -61,6 +61,7 @@
 
     <!-- 预览对话框 -->
     <el-dialog v-model="previewVisible" title="预览" width="900px" destroy-on-close>
+      <!-- eslint-disable-next-line vue/no-v-html 内容经 markdown-it（html:false）渲染，原始 HTML 已转义 -->
       <div class="preview-content markdown-body" v-html="renderedContent"></div>
     </el-dialog>
   </div>

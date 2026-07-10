@@ -49,7 +49,7 @@
             data-lpignore="true"
             @input="checkPasswordStrength"
           />
-          <div class="password-strength" v-if="form.password">
+          <div v-if="form.password" class="password-strength">
             <div class="strength-bar">
               <div
                 class="strength-fill"
@@ -83,8 +83,8 @@
             type="primary"
             size="large"
             :loading="authStore.isLoading"
-            @click="handleSubmit"
             style="width: 100%"
+            @click="handleSubmit"
           >
             注册
           </el-button>
@@ -221,7 +221,7 @@ const handleSubmit = async () => {
       // 注册成功，跳转到首页
       router.push('/');
     }
-  } catch (error) {
+  } catch {
     // 验证失败，不执行注册
     logger.debug('[Register]', '表单验证失败');
   }

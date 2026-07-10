@@ -19,12 +19,12 @@
     <div class="editor-container">
       <md-editor
         v-model="content"
-        :toolbars="toolbars as any"
-        :footers="footers as any"
-        @on-upload-img="handleUploadImg"
-        @on-change="handleChange"
+        :toolbars="toolbars"
+        :footers="footers"
         placeholder="开始编写你的 Markdown 内容..."
         class="md-editor"
+        @on-upload-img="handleUploadImg"
+        @on-change="handleChange"
       />
     </div>
 
@@ -38,6 +38,8 @@ import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Picture } from '@element-plus/icons-vue';
 import { MdEditor } from 'md-editor-v3';
+// 工具栏/底栏类型未从包入口导出，从内部类型路径引入（类型导入编译期擦除，不影响运行时）
+import type { ToolbarNames, Footers } from 'md-editor-v3/lib/types/MdEditor/type';
 import 'md-editor-v3/lib/style.css';
 import ImageSelector from './ImageSelector.vue';
 import { uploadImage } from '../../api/imageHost';
@@ -61,8 +63,7 @@ const showImageSelector = ref(false);
 const hasDraft = ref(false);
 
 // 工具栏配置
-// @ts-ignore
-const toolbars = [
+const toolbars: ToolbarNames[] = [
   'bold',
   'underline',
   'italic',
@@ -93,14 +94,13 @@ const toolbars = [
 ];
 
 // 底部工具栏
-// @ts-ignore
-const footers = ['markdownTotal'];
+const footers: Footers[] = ['markdownTotal'];
 
 // 字数统计
 const wordCount = computed(() => {
   // 移除Markdown语法标记后计算字数
   const plainText = content.value
-    .replace(/[#*_~`\[\](){}|]/g, '')
+    .replace(/[#*_~`[\](){}|]/g, '')
     .replace(/!\[.*?\]\(.*?\)/g, '[图片]')
     .replace(/\[.*?\]\(.*?\)/g, '$1')
     .replace(/```[\s\S]*?```/g, '[代码块]')

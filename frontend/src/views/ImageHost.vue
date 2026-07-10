@@ -82,7 +82,7 @@
         <template #header>
           <div class="gallery-header">
             <span>我的图片</span>
-            <el-button type="primary" size="small" @click="loadImages" :loading="loading">
+            <el-button type="primary" size="small" :loading="loading" @click="loadImages">
               <el-icon><Refresh /></el-icon>
               刷新
             </el-button>

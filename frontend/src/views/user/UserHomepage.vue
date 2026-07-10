@@ -51,10 +51,11 @@
         </el-card>
 
         <!-- 个人简介 -->
-        <el-card class="bio-card" v-if="homepage.bio">
+        <el-card v-if="homepage.bio" class="bio-card">
           <template #header>
             <span>个人简介</span>
           </template>
+          <!-- eslint-disable-next-line vue/no-v-html 内容经 markdown-it（html:false）渲染，原始 HTML 已转义 -->
           <div class="bio-content markdown-body" v-html="renderedBio"></div>
         </el-card>
 
@@ -90,7 +91,7 @@
                     {{ getResourceTypeLabel(resource.resourceType) }}
                   </el-tag>
                 </div>
-                <div class="resource-tags" v-if="resource.tags && resource.tags.length > 0">
+                <div v-if="resource.tags && resource.tags.length > 0" class="resource-tags">
                   <el-tag
                     v-for="tag in resource.tags.slice(0, 3)"
                     :key="tag"

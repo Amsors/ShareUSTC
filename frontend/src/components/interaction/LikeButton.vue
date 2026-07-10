@@ -3,8 +3,8 @@
     <el-button
       :type="isLiked ? 'primary' : 'default'"
       size="large"
-      @click="handleToggleLike"
       :loading="loading"
+      @click="handleToggleLike"
     >
       <el-icon><Star /></el-icon>
       <span>{{ isLiked ? '取消点赞' : '点赞' }}</span>
