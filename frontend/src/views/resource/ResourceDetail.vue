@@ -424,6 +424,7 @@ import {
   type ResourceTypeType,
 } from '../../types/resource';
 import type { ResourceRatingInfo } from '../../types/rating';
+import { getErrorMessage, isHandledError } from '@/api/request';
 
 const route = useRoute();
 const router = useRouter();
@@ -618,9 +619,9 @@ const loadResourceDetail = async () => {
     if (authStore.isAuthenticated) {
       await checkDefaultFavoriteStatus();
     }
-  } catch (error: any) {
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '加载资源详情失败');
+  } catch (error) {
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '加载资源详情失败'));
     }
     resource.value = null;
   } finally {
@@ -644,9 +645,9 @@ const handleDownload = async () => {
     ElMessage.success('开始下载');
     // 更新下载次数
     resource.value.stats.downloads++;
-  } catch (error: any) {
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '下载失败');
+  } catch (error) {
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '下载失败'));
     }
   } finally {
     downloading.value = false;
@@ -667,9 +668,9 @@ const handleDelete = async () => {
     await deleteResource(resourceId.value);
     ElMessage.success('删除成功');
     router.push('/resources');
-  } catch (error: any) {
-    if (error !== 'cancel' && !error.isHandled) {
-      ElMessage.error(error.message || '删除失败');
+  } catch (error) {
+    if (error !== 'cancel' && !isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '删除失败'));
     }
   }
 };
@@ -718,9 +719,9 @@ const addToDefaultFavorite = async () => {
       isInDefaultFavorite.value = true;
       ElMessage.warning('该资源已在默认收藏夹中');
     }
-  } catch (error: any) {
+  } catch (error) {
     // 只有非业务错误才显示错误弹窗
-    const errorMessage = error.response?.data?.message || error.message || '添加到默认收藏夹失败';
+    const errorMessage = getErrorMessage(error, '添加到默认收藏夹失败');
     ElMessage.error(errorMessage);
   } finally {
     addingToDefault.value = false;
@@ -745,8 +746,8 @@ const saveDescription = async () => {
     ElMessage.success('资源描述更新成功');
     resource.value.description = description ?? undefined;
     showEditDescription.value = false;
-  } catch (error: any) {
-    const errorMessage = error.response?.data?.message || error.message || '更新失败';
+  } catch (error) {
+    const errorMessage = getErrorMessage(error, '更新失败');
     ElMessage.error(errorMessage);
   } finally {
     savingDescription.value = false;

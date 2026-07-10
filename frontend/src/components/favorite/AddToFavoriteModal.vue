@@ -75,6 +75,7 @@ import { Plus, Folder, Check } from '@element-plus/icons-vue';
 import { useFavoriteStore } from '../../stores/favorite';
 import { storeToRefs } from 'pinia';
 import * as favoriteApi from '../../api/favorite';
+import { getErrorMessage } from '@/api/request';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -167,8 +168,8 @@ const toggleFavorite = async (favoriteId: string) => {
       }
     }
     emit('success');
-  } catch (error: any) {
-    const errorMessage = error.response?.data?.message || error.message || '操作失败';
+  } catch (error) {
+    const errorMessage = getErrorMessage(error, '操作失败');
     ElMessage.error(errorMessage);
   }
 };
@@ -202,8 +203,8 @@ const handleCreateNew = async () => {
     } else {
       ElMessage.success('创建成功');
     }
-  } catch (error: any) {
-    ElMessage.error(error.message || '创建失败');
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '创建失败'));
   } finally {
     creating.value = false;
   }

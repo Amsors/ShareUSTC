@@ -122,6 +122,7 @@ import { getLeaderboard } from '../../api/user';
 import type { LeaderboardUser, LeaderboardResponse } from '../../api/user';
 import { Trophy, Medal, UserFilled, ArrowRight, Loading } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
+import { getErrorMessage } from '@/api/request';
 
 const router = useRouter();
 
@@ -156,8 +157,8 @@ const loadLeaderboard = async () => {
     const data: LeaderboardResponse = await getLeaderboard({ limit: 50 });
     users.value = data.users;
     total.value = data.total;
-  } catch (error: any) {
-    ElMessage.error(error.message || '加载榜单失败');
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '加载榜单失败'));
   } finally {
     loading.value = false;
   }

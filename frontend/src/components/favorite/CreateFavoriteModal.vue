@@ -37,10 +37,11 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import type { FormInstance, FormRules } from 'element-plus';
+import type { FormInstance, FormRules, InputInstance } from 'element-plus';
 import { ElMessage } from 'element-plus';
 import { useFavoriteStore } from '../../stores/favorite';
 import type { Favorite } from '../../types/favorite';
+import { getErrorMessage } from '@/api/request';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -95,7 +96,7 @@ watch(
 
 // 表单
 const formRef = ref<FormInstance>();
-const inputRef = ref<any>(null);
+const inputRef = ref<InputInstance>();
 const form = ref({
   name: '',
 });
@@ -128,8 +129,8 @@ const handleSubmit = async () => {
 
       form.value.name = '';
       emit('success');
-    } catch (error: any) {
-      ElMessage.error(error.message || (props.isEdit ? '更新失败' : '创建失败'));
+    } catch (error) {
+      ElMessage.error(getErrorMessage(error, props.isEdit ? '更新失败' : '创建失败'));
     } finally {
       loading.value = false;
     }

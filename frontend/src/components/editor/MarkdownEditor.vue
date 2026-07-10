@@ -43,6 +43,7 @@ import type { ToolbarNames, Footers } from 'md-editor-v3/lib/types/MdEditor/type
 import 'md-editor-v3/lib/style.css';
 import ImageSelector from './ImageSelector.vue';
 import { uploadImage } from '../../api/imageHost';
+import { getErrorMessage } from '@/api/request';
 
 // 定义props和emits
 const props = defineProps<{
@@ -141,8 +142,8 @@ const handleUploadImg = async (files: File[], callback: (urls: string[]) => void
     }
     callback(urls);
     ElMessage.success('图片上传成功');
-  } catch (error: any) {
-    ElMessage.error(error.message || '图片上传失败');
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '图片上传失败'));
     callback([]);
   }
 };

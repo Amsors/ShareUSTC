@@ -49,6 +49,7 @@ import { WarningFilled } from '@element-plus/icons-vue';
 import { useNotificationStore } from '../../stores/notification';
 import type { Notification } from '../../types/notification';
 import { ElMessage } from 'element-plus';
+import { isHandledError } from '@/api/request';
 
 const router = useRouter();
 const notificationStore = useNotificationStore();
@@ -92,8 +93,8 @@ async function handleDismiss() {
   try {
     await notificationStore.dismissPriority(currentNotification.value.id);
     showNext();
-  } catch (error: any) {
-    if (!error.isHandled) {
+  } catch (error) {
+    if (!isHandledError(error)) {
       ElMessage.error('操作失败');
     }
   } finally {
@@ -113,8 +114,8 @@ async function handleDismissAndNext() {
       showNext();
       dismissing.value = false;
     }, 200);
-  } catch (error: any) {
-    if (!error.isHandled) {
+  } catch (error) {
+    if (!isHandledError(error)) {
       ElMessage.error('操作失败');
     }
     dismissing.value = false;

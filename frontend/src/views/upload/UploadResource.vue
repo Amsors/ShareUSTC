@@ -165,6 +165,7 @@ import FileUploader from '../../components/upload/FileUploader.vue';
 import MetadataForm from '../../components/upload/MetadataForm.vue';
 import MarkdownEditor from '../../components/editor/MarkdownEditor.vue';
 import { uploadResource } from '../../api/resource';
+import { getErrorMessage, isHandledError } from '@/api/request';
 import {
   formatFileSize,
   getResourceTypeFromFileName,
@@ -327,11 +328,11 @@ const handleUpload = async () => {
     }, 1000);
 
     ElMessage.success('上传成功！');
-  } catch (error: any) {
+  } catch (error) {
     auditStatus.value = 'rejected';
-    auditMessage.value = error.message || '上传失败，请重试';
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '上传失败');
+    auditMessage.value = getErrorMessage(error, '上传失败，请重试');
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '上传失败'));
     }
   } finally {
     isUploading.value = false;

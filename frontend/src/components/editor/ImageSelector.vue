@@ -128,6 +128,7 @@ import { ElMessage } from 'element-plus';
 import { Loading, Check, Upload } from '@element-plus/icons-vue';
 import { getMyImages, uploadImage } from '../../api/imageHost';
 import type { Image } from '../../types/image';
+import { getErrorMessage, isHandledError } from '@/api/request';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -187,9 +188,9 @@ const loadImages = async () => {
     });
     images.value = result.images;
     total.value = result.total;
-  } catch (error: any) {
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '加载图片列表失败');
+  } catch (error) {
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '加载图片列表失败'));
     }
   } finally {
     loading.value = false;
@@ -259,7 +260,7 @@ const uploadFile = async (file: File) => {
       originalName: result.originalName,
       fileSize: result.fileSize,
       createdAt: result.createdAt,
-      storageType: (result as any).storageType || 'local',
+      storageType: result.storageType || 'local',
     };
 
     lastUploadedImage.value = image;
@@ -268,9 +269,9 @@ const uploadFile = async (file: File) => {
 
     // 刷新图片列表
     await loadImages();
-  } catch (error: any) {
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '上传失败');
+  } catch (error) {
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '上传失败'));
     }
   } finally {
     uploading.value = false;

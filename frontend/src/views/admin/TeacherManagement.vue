@@ -299,6 +299,7 @@ import type {
   BatchDeleteTeachersResult,
 } from '@/api/admin';
 import type { UploadFile } from 'element-plus';
+import { getErrorMessage } from '@/api/request';
 
 const loading = ref(false);
 const submitting = ref(false);
@@ -387,8 +388,8 @@ const handleBatchImport = async () => {
       if (result.successCount > 0) {
         fetchTeachers();
       }
-    } catch (error: any) {
-      ElMessage.error(error.message || '导入失败');
+    } catch (error) {
+      ElMessage.error(getErrorMessage(error, '导入失败'));
     } finally {
       batchImportLoading.value = false;
     }
@@ -425,8 +426,8 @@ const handleBatchImport = async () => {
       if (result.successCount > 0) {
         fetchTeachers();
       }
-    } catch (error: any) {
-      ElMessage.error(error.message || '导入失败');
+    } catch (error) {
+      ElMessage.error(getErrorMessage(error, '导入失败'));
     } finally {
       batchImportLoading.value = false;
     }
@@ -472,8 +473,8 @@ const handleBatchDelete = async () => {
     if (result.successCount > 0) {
       fetchTeachers();
     }
-  } catch (error: any) {
-    ElMessage.error(error.message || '删除失败');
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '删除失败'));
   } finally {
     batchDeleteLoading.value = false;
   }
@@ -546,8 +547,8 @@ const handleSubmit = async () => {
     }
     dialogVisible.value = false;
     fetchTeachers();
-  } catch (error: any) {
-    ElMessage.error(error.message || '操作失败');
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '操作失败'));
   } finally {
     submitting.value = false;
   }
@@ -573,9 +574,9 @@ const handleDelete = async (row: TeacherListItem) => {
     await deleteTeacher(row.sn);
     ElMessage.success('教师已删除');
     fetchTeachers();
-  } catch (error: any) {
+  } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '删除失败');
+      ElMessage.error(getErrorMessage(error, '删除失败'));
     }
   }
 };

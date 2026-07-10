@@ -70,6 +70,7 @@ import { getComments, createComment, deleteComment } from '../../api/comment';
 import { useAuthStore } from '../../stores/auth';
 import type { Comment } from '../../types/comment';
 import logger from '../../utils/logger';
+import { getErrorMessage, isHandledError } from '@/api/request';
 
 const props = defineProps<{
   resourceId: string;
@@ -92,9 +93,9 @@ const loadComments = async () => {
     });
     comments.value = result.comments;
     total.value = result.total;
-  } catch (error: any) {
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '获取评论失败');
+  } catch (error) {
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '获取评论失败'));
     }
   }
 };
@@ -111,13 +112,13 @@ const handleSubmit = async () => {
     ElMessage.success('评论成功');
     newComment.value = '';
     loadComments();
-  } catch (error: any) {
+  } catch (error) {
     logger.error('[CommentSection]', '评论提交失败', {
-      message: error.message,
-      data: error.response?.data,
+      message: getErrorMessage(error),
+      data: error,
     });
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '评论失败');
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '评论失败'));
     }
   } finally {
     submitting.value = false;
@@ -153,15 +154,15 @@ const handleDelete = async (comment: Comment) => {
     logger.info('[CommentSection]', '评论删除成功');
     ElMessage.success('评论已删除');
     loadComments();
-  } catch (error: any) {
+  } catch (error) {
     if (error === 'cancel') return;
 
     logger.error('[CommentSection]', '删除评论失败', {
-      message: error.message,
-      data: error.response?.data,
+      message: getErrorMessage(error),
+      data: error,
     });
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '删除失败');
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '删除失败'));
     }
   } finally {
     deleting.value = false;

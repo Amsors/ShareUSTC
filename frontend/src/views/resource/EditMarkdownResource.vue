@@ -80,6 +80,7 @@ import {
   updateResourceContent,
 } from '../../api/resource';
 import type { ResourceDetail } from '../../types/resource';
+import { getErrorMessage } from '@/api/request';
 
 const route = useRoute();
 const router = useRouter();
@@ -116,8 +117,8 @@ const loadResource = async () => {
       error.value = '只有 Markdown 类型资源可以在线编辑';
       return;
     }
-  } catch (err: any) {
-    error.value = err.message || '加载资源失败';
+  } catch (err) {
+    error.value = getErrorMessage(err, '加载资源失败');
   }
 };
 
@@ -132,8 +133,8 @@ const loadContent = async () => {
     const response = await getResourceRawContent(resourceId);
     content.value = response.content;
     checkDraft();
-  } catch (err: any) {
-    error.value = err.message || '加载内容失败';
+  } catch (err) {
+    error.value = getErrorMessage(err, '加载内容失败');
   } finally {
     loading.value = false;
   }
@@ -212,8 +213,8 @@ const handleSave = async () => {
     } catch {
       // 用户选择继续编辑
     }
-  } catch (err: any) {
-    ElMessage.error(err.message || '保存失败');
+  } catch (err) {
+    ElMessage.error(getErrorMessage(err, '保存失败'));
   } finally {
     saving.value = false;
   }

@@ -339,6 +339,7 @@ import type {
 import { SemesterOptions } from '@/types/course';
 import type { CourseListItem, CreateCourseRequest, UpdateCourseRequest } from '@/types/course';
 import type { UploadFile } from 'element-plus';
+import { getErrorMessage } from '@/api/request';
 
 const loading = ref(false);
 const submitting = ref(false);
@@ -428,8 +429,8 @@ const handleBatchImport = async () => {
       if (result.successCount > 0) {
         fetchCourses();
       }
-    } catch (error: any) {
-      ElMessage.error(error.message || '导入失败');
+    } catch (error) {
+      ElMessage.error(getErrorMessage(error, '导入失败'));
     } finally {
       batchImportLoading.value = false;
     }
@@ -466,8 +467,8 @@ const handleBatchImport = async () => {
       if (result.successCount > 0) {
         fetchCourses();
       }
-    } catch (error: any) {
-      ElMessage.error(error.message || '导入失败');
+    } catch (error) {
+      ElMessage.error(getErrorMessage(error, '导入失败'));
     } finally {
       batchImportLoading.value = false;
     }
@@ -513,8 +514,8 @@ const handleBatchDelete = async () => {
     if (result.successCount > 0) {
       fetchCourses();
     }
-  } catch (error: any) {
-    ElMessage.error(error.message || '删除失败');
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '删除失败'));
   } finally {
     batchDeleteLoading.value = false;
   }
@@ -566,7 +567,7 @@ const handleSubmit = async () => {
 
   submitting.value = true;
   try {
-    const data: any = {
+    const data: CreateCourseRequest = {
       name: form.value.name.trim(),
       semester: form.value.semester || undefined,
       credits: form.value.credits,
@@ -581,8 +582,8 @@ const handleSubmit = async () => {
     }
     dialogVisible.value = false;
     fetchCourses();
-  } catch (error: any) {
-    ElMessage.error(error.message || '操作失败');
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '操作失败'));
   } finally {
     submitting.value = false;
   }
@@ -608,9 +609,9 @@ const handleDelete = async (row: CourseListItem) => {
     await deleteCourse(row.sn);
     ElMessage.success('课程已删除');
     fetchCourses();
-  } catch (error: any) {
+  } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '删除失败');
+      ElMessage.error(getErrorMessage(error, '删除失败'));
     }
   }
 };

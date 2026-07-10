@@ -119,6 +119,7 @@ import {
 } from '../../types/resource';
 import { calculateFileHash } from '../../utils/fileHash';
 import { getResourcesByFileHash } from '../../api/resource';
+import { getErrorMessage } from '@/api/request';
 import logger from '../../utils/logger';
 
 const props = defineProps<{
@@ -205,8 +206,11 @@ const checkDuplicateFile = async (file: File) => {
       logger.debug('[FileUploader]', '未发现重复资源: ' + file.name);
       selectedFile.value = file;
     }
-  } catch (error: any) {
-    logger.error('[FileUploader]', '检查文件哈希失败: ' + file.name + ', 错误: ' + error.message);
+  } catch (error) {
+    logger.error(
+      '[FileUploader]',
+      '检查文件哈希失败: ' + file.name + ', 错误: ' + getErrorMessage(error)
+    );
     // 如果哈希检查失败，仍然允许上传（降级处理）
     ElMessage.warning('文件检查失败，仍可进行上传');
     selectedFile.value = file;

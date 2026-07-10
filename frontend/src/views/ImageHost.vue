@@ -195,6 +195,7 @@ import {
   formatFileSize,
 } from '../api/imageHost';
 import type { Image, ImageUploadResponse } from '../types/image';
+import { getErrorMessage, isHandledError } from '@/api/request';
 import { StorageTypeLabels } from '../types/resource';
 import { Picture, Upload, CopyDocument, Refresh, Delete } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -268,9 +269,9 @@ const uploadFile = async (file: File) => {
 
     // 刷新图片列表
     await loadImages();
-  } catch (error: any) {
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '上传失败');
+  } catch (error) {
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '上传失败'));
     }
   } finally {
     uploading.value = false;
@@ -287,9 +288,9 @@ const loadImages = async () => {
     });
     images.value = result.images;
     total.value = result.total;
-  } catch (error: any) {
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '加载图片列表失败');
+  } catch (error) {
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '加载图片列表失败'));
     }
   } finally {
     loading.value = false;
@@ -329,9 +330,9 @@ const confirmDelete = async (image: Image) => {
     }
 
     await loadImages();
-  } catch (error: any) {
-    if (error !== 'cancel' && !error.isHandled) {
-      ElMessage.error(error.message || '删除失败');
+  } catch (error) {
+    if (error !== 'cancel' && !isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '删除失败'));
     }
   }
 };

@@ -174,7 +174,7 @@ const checkPasswordStrength = () => {
 };
 
 // 验证确认密码
-const validateConfirmPassword = (_rule: any, value: string, callback: any) => {
+const validateConfirmPassword: FormItemRule['validator'] = (_rule, value, callback) => {
   if (value !== form.password) {
     callback(new Error('两次输入的密码不一致'));
   } else {

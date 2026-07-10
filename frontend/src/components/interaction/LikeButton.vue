@@ -19,6 +19,7 @@ import { Star } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { toggleLike, getLikeStatus } from '../../api/like';
 import logger from '../../utils/logger';
+import { getErrorMessage, isHandledError } from '@/api/request';
 
 const props = defineProps<{
   resourceId: string;
@@ -60,9 +61,9 @@ const handleToggleLike = async () => {
     likeCount.value = result.likeCount;
     ElMessage.success(result.message);
     emit('update', isLiked.value, likeCount.value);
-  } catch (error: any) {
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '操作失败');
+  } catch (error) {
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '操作失败'));
     }
   } finally {
     loading.value = false;

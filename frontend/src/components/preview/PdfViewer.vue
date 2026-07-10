@@ -158,6 +158,7 @@ import {
   Setting,
 } from '@element-plus/icons-vue';
 import * as pdfjsLib from 'pdfjs-dist';
+import type { PDFDocumentProxy, OnProgressParameters } from 'pdfjs-dist';
 import PDFWorker from 'pdfjs-dist/build/pdf.worker.mjs?worker';
 import {
   getResourcePreviewInfo,
@@ -167,6 +168,7 @@ import {
 } from '../../api/resource';
 import logger from '../../utils/logger';
 import { ElMessage } from 'element-plus';
+import { getErrorMessage } from '@/api/request';
 
 // 设置 PDF.js worker - 使用 Vite 的 worker 导入
 pdfjsLib.GlobalWorkerOptions.workerPort = new PDFWorker();
@@ -211,7 +213,7 @@ const PDF_PREVIEW_USER_ENABLED_KEY = 'pdfPreviewUserEnabled';
 const DEFAULT_SIZE_THRESHOLD = 5 * 1024 * 1024;
 
 // 使用普通变量而非 ref，避免 Vue 响应式代理破坏 PDF.js 内部私有成员
-let pdfDoc: any = null;
+let pdfDoc: PDFDocumentProxy | null = null;
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const fullscreenCanvasRef = ref<HTMLCanvasElement | null>(null);
 
@@ -395,7 +397,7 @@ const loadPdf = async () => {
       stopAtErrors: false,
       maxImageSize: 50 * 1024 * 1024, // 最大支持 50MB 的图片
     });
-    loadingTask.onProgress = (progress: any) => {
+    loadingTask.onProgress = (progress: OnProgressParameters) => {
       logger.debug('[PdfViewer]', `加载进度 | loaded=${progress.loaded}, total=${progress.total}`);
     };
 
@@ -409,8 +411,11 @@ const loadPdf = async () => {
     // 等待 DOM 更新后再渲染，确保 canvasRef 已存在
     await nextTick();
     await renderPage();
-  } catch (err: any) {
-    logger.error('[PdfViewer]', 'PDF加载失败', { message: err.message, stack: err.stack });
+  } catch (err) {
+    logger.error('[PdfViewer]', 'PDF加载失败', {
+      message: getErrorMessage(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
     error.value = true;
     loading.value = false;
   }
@@ -432,8 +437,8 @@ const renderPage = async () => {
     try {
       const textContent = await page.getTextContent();
       const fontNames = new Set<string>();
-      textContent.items.forEach((item: any) => {
-        if (item.fontName) {
+      textContent.items.forEach((item) => {
+        if ('fontName' in item && item.fontName) {
           fontNames.add(item.fontName);
         }
       });
@@ -470,6 +475,7 @@ const renderPage = async () => {
     );
 
     const renderContext = {
+      canvas: canvas,
       canvasContext: context,
       viewport: viewport,
       // 启用背景填充，避免透明背景导致的渲染问题
@@ -480,7 +486,7 @@ const renderPage = async () => {
     const renderTask = page.render(renderContext);
     await renderTask.promise;
     logger.debug('[PdfViewer]', '渲染完成');
-  } catch (err: any) {
+  } catch (err) {
     logger.error('[PdfViewer]', '渲染页面失败', err);
   }
 };
@@ -500,6 +506,7 @@ const renderFullscreenPage = async () => {
   canvas.style.width = `${viewport.width}px`;
 
   await page.render({
+    canvas: canvas,
     canvasContext: context,
     viewport: viewport,
     background: 'white',
@@ -575,7 +582,7 @@ const downloadPdf = async () => {
           : undefined,
     });
     ElMessage.success('已开始下载');
-  } catch (err: any) {
+  } catch (err) {
     logger.error('[PdfViewer]', 'PDF下载失败', err);
     ElMessage.error('下载失败，请稍后重试');
   }

@@ -3,6 +3,7 @@ import logger from './logger';
 import { resourceCache } from './resourceCache';
 import { getServerOrigin } from './apiUrl';
 import { trackResourceDownload } from '../api/resource';
+import { getErrorMessage } from '../api/request';
 import type { PreviewUrlResponse } from '../api/resource';
 import type { FavoriteResourceItem } from '../types/favorite';
 
@@ -498,8 +499,8 @@ export const downloadToFolder = async (
       mode: 'readwrite',
       startIn: 'downloads',
     });
-  } catch (error: any) {
-    if (error.name === 'AbortError') {
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
       // 用户取消了选择
       onProgress?.({
         currentFile: '',
@@ -633,9 +634,9 @@ export const downloadToFolder = async (
 
         savedCount++;
         logger.debug('[BrowserZip]', `文件已保存 | ${finalFileName}`);
-      } catch (writeError: any) {
+      } catch (writeError) {
         // eslint-disable-next-line preserve-caught-error -- Error cause 需 ES2022 lib，随阶段4.2 统一处理
-        throw new Error(`写入文件失败: ${writeError.message || '未知错误'}`);
+        throw new Error(`写入文件失败: ${getErrorMessage(writeError, '未知错误')}`);
       }
 
       // 记录下载
@@ -644,7 +645,7 @@ export const downloadToFolder = async (
       } catch (e) {
         logger.warn('[BrowserZip]', `记录下载失败 | resourceId=${resource.id}`, e);
       }
-    } catch (error: any) {
+    } catch (error) {
       failedCount++;
       logger.error('[BrowserZip]', `文件下载失败 | ${resource.title}`, error);
 

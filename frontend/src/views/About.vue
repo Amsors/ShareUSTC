@@ -335,6 +335,12 @@ interface Contributor {
   htmlUrl: string;
 }
 
+// GitHub 贡献者统计 API（/stats/contributors）返回项
+interface GithubContributorStat {
+  author?: { login?: string; avatar_url?: string; html_url?: string } | null;
+  weeks?: Array<{ c?: number; a?: number; d?: number }>;
+}
+
 // 更新日志标签样式映射
 const getChangelogTagClass = (type: ChangelogItem['type']) => {
   const classMap = {
@@ -536,7 +542,7 @@ const fetchContributors = async (retryCount = 0): Promise<void> => {
       // 计算每个贡献者的总commits、additions和deletions
       const contributorMap = new Map<string, Contributor>();
 
-      data.forEach((item: any) => {
+      data.forEach((item: GithubContributorStat) => {
         const login = item.author?.login;
         const avatarUrl = item.author?.avatar_url;
         const htmlUrl = item.author?.html_url;
@@ -547,7 +553,7 @@ const fetchContributors = async (retryCount = 0): Promise<void> => {
         let additions = 0;
         let deletions = 0;
 
-        item.weeks?.forEach((week: any) => {
+        item.weeks?.forEach((week) => {
           commits += week.c || 0;
           additions += week.a || 0;
           deletions += week.d || 0;
@@ -558,8 +564,8 @@ const fetchContributors = async (retryCount = 0): Promise<void> => {
           commits,
           additions,
           deletions,
-          avatarUrl,
-          htmlUrl,
+          avatarUrl: avatarUrl ?? '',
+          htmlUrl: htmlUrl ?? '',
         });
       });
 

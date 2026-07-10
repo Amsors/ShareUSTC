@@ -278,9 +278,12 @@ const getResourceTypeLabel = (type: string): string => {
   return ResourceTypeLabels[type as keyof typeof ResourceTypeLabels] || type;
 };
 
+// Element Plus el-tag 的 type 取值
+type ElTagType = 'primary' | 'success' | 'warning' | 'info' | 'danger' | '';
+
 // 获取资源类型标签样式
-const getResourceTypeTagType = (type: string): any => {
-  const typeMap: Record<string, any> = {
+const getResourceTypeTagType = (type: string): ElTagType => {
+  const typeMap: Record<string, ElTagType> = {
     pdf: 'danger',
     ppt: 'warning',
     pptx: 'warning',
@@ -325,7 +328,7 @@ const fetchHotResources = async () => {
     } else {
       logger.warn('[Home]', '返回数据不是数组:', result);
     }
-  } catch (error: any) {
+  } catch (error) {
     logger.error('[Home]', '获取热门资源失败:', error);
     ElMessage.error('获取热门资源失败');
   } finally {

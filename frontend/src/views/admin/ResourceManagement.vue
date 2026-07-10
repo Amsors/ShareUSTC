@@ -212,8 +212,12 @@ import {
   type AdminResource,
   type AdminFavorite,
 } from '../../api/admin';
+import { getErrorMessage } from '@/api/request';
 
 const authStore = useAuthStore();
+
+// Element Plus el-tag 的 type 取值
+type ElTagType = 'primary' | 'success' | 'warning' | 'info' | 'danger' | '';
 
 // 检查是否为管理员
 const isAdmin = authStore.isAdmin;
@@ -242,8 +246,8 @@ const fetchResources = async () => {
     });
     resources.value = response.resources;
     total.value = response.total;
-  } catch (error: any) {
-    ElMessage.error(error.message || '获取资源列表失败');
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '获取资源列表失败'));
   } finally {
     loading.value = false;
   }
@@ -255,8 +259,8 @@ const fetchFavorites = async () => {
   try {
     const response = await getAdminFavorites();
     favorites.value = response.favorites;
-  } catch (error: any) {
-    ElMessage.error(error.message || '获取收藏夹列表失败');
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '获取收藏夹列表失败'));
   } finally {
     favoritesLoading.value = false;
   }
@@ -298,9 +302,9 @@ const handleDeleteResource = async (resource: AdminResource) => {
     await adminDeleteResource(resource.id);
     ElMessage.success('资源删除成功');
     fetchResources();
-  } catch (error: any) {
+  } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '删除失败');
+      ElMessage.error(getErrorMessage(error, '删除失败'));
     }
   } finally {
     loading.value = false;
@@ -326,9 +330,9 @@ const handleDeleteFavoriteResources = async (favorite: AdminFavorite) => {
     ElMessage.success(`成功删除 ${result.deletedCount} 个资源`);
     fetchFavorites();
     fetchResources();
-  } catch (error: any) {
+  } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '删除失败');
+      ElMessage.error(getErrorMessage(error, '删除失败'));
     }
   } finally {
     favoritesLoading.value = false;
@@ -368,9 +372,9 @@ const handleRecalculateHash = async (resource: AdminResource) => {
 
     // 刷新列表以更新显示
     fetchResources();
-  } catch (error: any) {
+  } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '重新计算Hash失败');
+      ElMessage.error(getErrorMessage(error, '重新计算Hash失败'));
     }
   } finally {
     recalculatingId.value = null;
@@ -421,7 +425,7 @@ const formatResourceType = (type: string) => {
 
 // 获取资源类型标签样式
 const getResourceTypeType = (type: string) => {
-  const typeMap: Record<string, any> = {
+  const typeMap: Record<string, ElTagType> = {
     web_markdown: 'primary',
     pdf: 'danger',
     ppt: 'warning',
@@ -457,7 +461,7 @@ const formatAuditStatus = (status: string) => {
 
 // 获取审核状态标签样式
 const getAuditStatusType = (status: string) => {
-  const typeMap: Record<string, any> = {
+  const typeMap: Record<string, ElTagType> = {
     pending: 'warning',
     approved: 'success',
     rejected: 'danger',

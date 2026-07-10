@@ -109,6 +109,7 @@ import { useFavoriteStore } from '../../stores/favorite';
 import type { Favorite } from '../../types/favorite';
 import CreateFavoriteModal from '../../components/favorite/CreateFavoriteModal.vue';
 import { useDefaultFavorite } from '../../composables/useDefaultFavorite';
+import { getErrorMessage } from '@/api/request';
 
 const router = useRouter();
 const favoriteStore = useFavoriteStore();
@@ -179,9 +180,9 @@ const handleDelete = async (favorite: Favorite) => {
     }
 
     ElMessage.success('删除成功');
-  } catch (error: any) {
+  } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '删除失败');
+      ElMessage.error(getErrorMessage(error, '删除失败'));
     }
   }
 };

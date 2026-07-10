@@ -222,6 +222,7 @@ import {
 } from '@element-plus/icons-vue';
 import { useDefaultFavorite } from '../../composables/useDefaultFavorite';
 import { useFavoriteStore } from '../../stores/favorite';
+import { getErrorMessage } from '@/api/request';
 import { downloadFavorite } from '../../api/favorite';
 import {
   browserDownloadFavorite,
@@ -341,8 +342,8 @@ const removeResource = async (resourceId: string) => {
   try {
     await favoriteStore.removeResourceFromFavorite(favoriteId.value, resourceId);
     ElMessage.success('移除成功');
-  } catch (error: any) {
-    ElMessage.error(error.message || '移除失败');
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '移除失败'));
   }
 };
 
@@ -437,8 +438,8 @@ const handleServerDownload = async () => {
   try {
     await downloadFavorite(favoriteId.value, currentFavorite.value?.name);
     ElMessage.success('开始下载');
-  } catch (error: any) {
-    ElMessage.error(error.message || '下载失败');
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '下载失败'));
   } finally {
     downloading.value = false;
   }
@@ -476,13 +477,13 @@ const handleBrowserDownload = async () => {
     );
 
     ElMessage.success('浏览器打包下载完成');
-  } catch (error: any) {
+  } catch (error) {
     browserDownloadProgress.value = {
       ...browserDownloadProgress.value,
       status: 'error',
-      error: error.message || '下载失败',
+      error: getErrorMessage(error, '下载失败'),
     };
-    ElMessage.error(error.message || '浏览器打包下载失败');
+    ElMessage.error(getErrorMessage(error, '浏览器打包下载失败'));
   } finally {
     isBrowserDownloading.value = false;
   }
@@ -577,14 +578,15 @@ const handleFolderDownload = async () => {
     if (folderDownloadProgress.value.status !== 'cancelled') {
       ElMessage.success('文件已成功保存到文件夹');
     }
-  } catch (error: any) {
+  } catch (error) {
+    const message = getErrorMessage(error, '');
     folderDownloadProgress.value = {
       ...folderDownloadProgress.value,
       status: 'error',
-      error: error.message || '下载失败',
+      error: message || '下载失败',
     };
-    if (error.message && !error.message.includes('取消')) {
-      ElMessage.error(error.message || '下载到文件夹失败');
+    if (message && !message.includes('取消')) {
+      ElMessage.error(message || '下载到文件夹失败');
     }
   } finally {
     isFolderDownloading.value = false;
@@ -634,9 +636,9 @@ const handleDelete = async () => {
 
     ElMessage.success('删除成功');
     router.push('/favorites');
-  } catch (error: any) {
+  } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '删除失败');
+      ElMessage.error(getErrorMessage(error, '删除失败'));
     }
   }
 };

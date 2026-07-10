@@ -154,7 +154,7 @@ const handleClearAll = async () => {
     await resourceCache.clearAll();
     ElMessage.success('已清空所有缓存');
     await refreshStats();
-  } catch (error: any) {
+  } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error('清空失败');
     }

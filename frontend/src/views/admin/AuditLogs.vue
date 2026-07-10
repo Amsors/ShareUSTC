@@ -165,6 +165,7 @@ import { reactive, ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Search, User, Loading } from '@element-plus/icons-vue';
 import { getAuditLogs, type AuditLogItem, type AuditLogQuery } from '../../api/admin';
+import { isHandledError } from '@/api/request';
 
 const logs = ref<AuditLogItem[]>([]);
 const total = ref(0);
@@ -207,8 +208,8 @@ const fetchLogs = async () => {
     const response = await getAuditLogs(query);
     logs.value = response.logs;
     total.value = response.total;
-  } catch (error: any) {
-    if (!error.isHandled) {
+  } catch (error) {
+    if (!isHandledError(error)) {
       ElMessage.error('获取操作日志失败');
     }
   } finally {

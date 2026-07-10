@@ -459,7 +459,7 @@ import {
 } from '../api/user';
 import MarkdownEditor from '../components/editor/MarkdownEditor.vue';
 import type { UpdateProfileRequest, VerificationRequest } from '../api/user';
-import type { FormInstance, FormRules } from 'element-plus';
+import type { FormInstance, FormRules, FormItemRule } from 'element-plus';
 import { getMyResources, deleteResource } from '../api/resource';
 import type { ResourceListItem } from '../types/resource';
 import {
@@ -486,6 +486,7 @@ import {
   Lock,
 } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import { getErrorMessage, isHandledError, isApiError } from '@/api/request';
 
 const authStore = useAuthStore();
 const siteConfigStore = useSiteConfigStore();
@@ -540,7 +541,7 @@ const passwordForm = reactive({
 });
 
 // 验证确认密码
-const validateConfirmPassword = (_rule: any, value: string, callback: any) => {
+const validateConfirmPassword: FormItemRule['validator'] = (_rule, value, callback) => {
   if (value === '') {
     callback(new Error('请再次输入新密码'));
   } else if (value !== passwordForm.newPassword) {
@@ -582,9 +583,9 @@ const handleChangePassword = async () => {
         });
         ElMessage.success('密码修改成功');
         resetPasswordForm();
-      } catch (error: any) {
+      } catch (error) {
         // 错误已在 request.ts 中统一处理
-        if (error.response?.status === 401) {
+        if (isApiError(error) && error.status === 401) {
           ElMessage.error('原密码错误');
         }
       } finally {
@@ -638,9 +639,9 @@ const loadUserImages = async () => {
     });
     userImages.value = result.images;
     imagesTotal.value = result.total;
-  } catch (error: any) {
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '加载图片失败');
+  } catch (error) {
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '加载图片失败'));
     }
   } finally {
     imagesLoading.value = false;
@@ -685,9 +686,9 @@ const deleteUserImage = async (image: Image) => {
     }
 
     await loadUserImages();
-  } catch (error: any) {
-    if (error !== 'cancel' && !error.isHandled) {
-      ElMessage.error(error.message || '删除失败');
+  } catch (error) {
+    if (error !== 'cancel' && !isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '删除失败'));
     }
   }
 };
@@ -705,9 +706,9 @@ const loadUserResources = async () => {
     });
     userResources.value = result.resources;
     resourcesTotal.value = result.total;
-  } catch (error: any) {
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '加载资源失败');
+  } catch (error) {
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '加载资源失败'));
     }
   } finally {
     resourcesLoading.value = false;
@@ -732,9 +733,9 @@ const deleteUserResource = async (resource: ResourceListItem) => {
     }
 
     await loadUserResources();
-  } catch (error: any) {
-    if (error !== 'cancel' && !error.isHandled) {
-      ElMessage.error(error.message || '删除失败');
+  } catch (error) {
+    if (error !== 'cancel' && !isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '删除失败'));
     }
   }
 };
@@ -829,9 +830,9 @@ const saveProfile = async () => {
     // 使用 store 的方法更新用户信息，确保全局状态同步
     authStore.updateUserInfo(updatedUser);
     ElMessage.success('资料更新成功');
-  } catch (error: any) {
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '更新失败');
+  } catch (error) {
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '更新失败'));
     }
   } finally {
     saving.value = false;
@@ -849,9 +850,9 @@ const submitVerification = async () => {
     ElMessage.success('实名认证成功');
     // 切换到概览页面，让用户看到已认证状态
     activeMenu.value = 'overview';
-  } catch (error: any) {
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '认证失败');
+  } catch (error) {
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '认证失败'));
     }
   } finally {
     verifying.value = false;

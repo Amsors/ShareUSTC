@@ -113,6 +113,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import type { FormInstance, FormRules } from 'element-plus';
 import { Bell, Promotion } from '@element-plus/icons-vue';
 import { sendNotification, type SendNotificationRequest } from '../../api/admin';
+import { isHandledError, getErrorMessage } from '@/api/request';
 
 const formRef = ref<FormInstance>();
 const sending = ref(false);
@@ -209,9 +210,9 @@ const handleSend = async () => {
       await sendNotification(requestData);
       ElMessage.success('通知发送成功');
       handleReset();
-    } catch (error: any) {
-      if (!error.isHandled) {
-        ElMessage.error(error.message || '发送失败');
+    } catch (error) {
+      if (!isHandledError(error)) {
+        ElMessage.error(getErrorMessage(error, '发送失败'));
       }
     } finally {
       sending.value = false;

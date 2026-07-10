@@ -227,6 +227,7 @@ import {
   Loading,
 } from '@element-plus/icons-vue';
 import { getDetailedStats, type DetailedStats } from '../../api/admin';
+import { isHandledError } from '@/api/request';
 
 const router = useRouter();
 const stats = ref<DetailedStats | null>(null);
@@ -237,8 +238,8 @@ const fetchStats = async () => {
   try {
     const data = await getDetailedStats();
     stats.value = data;
-  } catch (error: any) {
-    if (!error.isHandled) {
+  } catch (error) {
+    if (!isHandledError(error)) {
       ElMessage.error('获取统计数据失败');
     }
   } finally {

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { login, register, refreshToken, logout } from '../api/auth';
 import { getCurrentUser } from '../api/user';
+import { getErrorMessage, isHandledError } from '@/api/request';
 import axios from 'axios';
 import type { User, LoginRequest, RegisterRequest, AuthResponse } from '../types/auth';
 import { UserRole } from '../types/auth';
@@ -74,11 +75,11 @@ export const useAuthStore = defineStore('auth', () => {
       setAuthData(response);
       ElMessage.success('登录成功');
       return true;
-    } catch (error: any) {
+    } catch (error) {
       logger.error('[Auth]', '登录失败', error);
       // 如果错误已经被拦截器处理（显示过消息），则不再显示
-      if (!error.isHandled) {
-        ElMessage.error(error.message || '登录失败');
+      if (!isHandledError(error)) {
+        ElMessage.error(getErrorMessage(error, '登录失败'));
       }
       return false;
     } finally {
@@ -94,11 +95,11 @@ export const useAuthStore = defineStore('auth', () => {
       setAuthData(response);
       ElMessage.success('注册成功');
       return true;
-    } catch (error: any) {
+    } catch (error) {
       logger.error('[Auth]', '注册失败', error);
       // 如果错误已经被拦截器处理（显示过消息），则不再显示
-      if (!error.isHandled) {
-        ElMessage.error(error.message || '注册失败');
+      if (!isHandledError(error)) {
+        ElMessage.error(getErrorMessage(error, '注册失败'));
       }
       return false;
     } finally {

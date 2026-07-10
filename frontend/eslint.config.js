@@ -33,9 +33,8 @@ export default tseslint.config(
     rules: {
       // ---- 与 dev_docs/specs/frontend_standards.md 对应的项目规则 ----
 
-      // 禁止 any。存量约 120 处，整改期间为 warn；
-      // 代码整改完成后升级为 'error'（见 dev_docs/guides/code_remediation_guide.md 阶段3）
-      '@typescript-eslint/no-explicit-any': 'warn',
+      // 禁止 any（存量已在整改阶段 4.3 清零，此处收紧为 error）
+      '@typescript-eslint/no-explicit-any': 'error',
 
       // 禁止直接使用 console，必须走 src/utils/logger.ts（logger.ts 自身在下方豁免）
       'no-console': 'error',

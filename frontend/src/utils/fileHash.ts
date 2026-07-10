@@ -14,7 +14,7 @@ export const calculateFileHash = async (
   onProgress?: (progress: number) => void
 ): Promise<string> => {
   // 使用 Web Crypto API 计算 SHA256
-  const crypto = window.crypto || (window as any).msCrypto;
+  const crypto = window.crypto || (window as unknown as { msCrypto?: Crypto }).msCrypto;
   if (!crypto || !crypto.subtle) {
     throw new Error('浏览器不支持 Web Crypto API，无法计算文件哈希');
   }
@@ -44,7 +44,7 @@ export const calculateFileHashChunked = async (
   file: File,
   onProgress?: (progress: number) => void
 ): Promise<string> => {
-  const crypto = window.crypto || (window as any).msCrypto;
+  const crypto = window.crypto || (window as unknown as { msCrypto?: Crypto }).msCrypto;
   if (!crypto || !crypto.subtle) {
     throw new Error('浏览器不支持 Web Crypto API，无法计算文件哈希');
   }

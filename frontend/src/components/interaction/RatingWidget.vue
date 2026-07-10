@@ -119,6 +119,7 @@ import type { ResourceRatingInfo, CreateRatingRequest } from '../../types/rating
 import { RatingDimensionsConfig } from '../../types/rating';
 import logger from '../../utils/logger';
 import { useAuthStore } from '../../stores/auth';
+import { getErrorMessage, isHandledError } from '@/api/request';
 
 const props = defineProps<{
   resourceId: string;
@@ -212,9 +213,9 @@ const handleSubmitRating = async () => {
     ElMessage.success('评分提交成功！');
     showRatingDialog.value = false;
     await loadRatingInfo();
-  } catch (error: any) {
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '评分提交失败');
+  } catch (error) {
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '评分提交失败'));
     }
   } finally {
     submitting.value = false;
@@ -243,9 +244,9 @@ const handleDeleteRating = async () => {
     ratingForm.detailLevel = 5;
 
     await loadRatingInfo();
-  } catch (error: any) {
+  } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '删除失败');
+      ElMessage.error(getErrorMessage(error, '删除失败'));
     }
   } finally {
     submitting.value = false;

@@ -190,6 +190,7 @@ import {
 } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { checkDuplicateResources, type DuplicateResourceCheckResponse } from '../../api/admin';
+import { isHandledError, getErrorMessage } from '@/api/request';
 import { ResourceTypeLabels, type ResourceTypeType, formatFileSize } from '../../types/resource';
 
 const loading = ref(false);
@@ -226,9 +227,9 @@ const handleCheck = async () => {
     } else {
       ElMessage.success('未发现重复资源');
     }
-  } catch (error: any) {
-    if (!error.isHandled) {
-      ElMessage.error('检测失败：' + error.message);
+  } catch (error) {
+    if (!isHandledError(error)) {
+      ElMessage.error('检测失败：' + getErrorMessage(error));
     }
   } finally {
     loading.value = false;

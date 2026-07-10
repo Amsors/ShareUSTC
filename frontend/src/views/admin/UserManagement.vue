@@ -178,6 +178,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { UserFilled, Search } from '@element-plus/icons-vue';
 import { adminApi } from '../../api/admin';
 import type { UserRealInfo } from '../../api/admin';
+import { isHandledError } from '@/api/request';
 
 interface User {
   id: string;
@@ -244,8 +245,8 @@ const fetchUsers = async () => {
     const data = await adminApi.getUserList(page.value, perPage.value);
     users.value = data.users;
     total.value = data.total;
-  } catch (error: any) {
-    if (!error.isHandled) {
+  } catch (error) {
+    if (!isHandledError(error)) {
       ElMessage.error('获取用户列表失败');
     }
   } finally {
@@ -265,8 +266,8 @@ const toggleUserStatus = async (user: User) => {
     await adminApi.updateUserStatus(user.id, !user.isActive);
     ElMessage.success(`用户已${action}`);
     fetchUsers();
-  } catch (error: any) {
-    if (error !== 'cancel' && !error.isHandled) {
+  } catch (error) {
+    if (error !== 'cancel' && !isHandledError(error)) {
       ElMessage.error('操作失败');
     }
   }
@@ -281,8 +282,8 @@ const showUserRealInfo = async (user: User) => {
   try {
     const data = await adminApi.getUserRealInfo(user.id);
     currentRealInfo.value = data;
-  } catch (error: any) {
-    if (!error.isHandled) {
+  } catch (error) {
+    if (!isHandledError(error)) {
       ElMessage.error('获取实名信息失败');
     }
     realInfoDialogVisible.value = false;

@@ -67,6 +67,7 @@ import { useNotificationStore } from '../../stores/notification';
 import { useAuthStore } from '../../stores/auth';
 import type { Notification } from '../../types/notification';
 import { ElMessage } from 'element-plus';
+import { isHandledError } from '@/api/request';
 
 const router = useRouter();
 const notificationStore = useNotificationStore();
@@ -105,8 +106,8 @@ async function handleMarkAllRead() {
   try {
     await notificationStore.markAllNotificationsAsRead();
     ElMessage.success('已全部标记为已读');
-  } catch (error: any) {
-    if (!error.isHandled) {
+  } catch (error) {
+    if (!isHandledError(error)) {
       ElMessage.error('操作失败');
     }
   }

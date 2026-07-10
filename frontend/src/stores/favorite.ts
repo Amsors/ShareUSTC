@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { Favorite, FavoriteDetail } from '../types/favorite';
 import * as favoriteApi from '../api/favorite';
-import request from '../api/request';
+import request, { isBusinessError } from '../api/request';
 
 export const useFavoriteStore = defineStore('favorite', () => {
   // State
@@ -133,7 +133,7 @@ export const useFavoriteStore = defineStore('favorite', () => {
         method: 'post',
         data: { resourceId },
         skipErrorHandler: true, // 标记跳过错误处理，由调用方处理
-      } as any);
+      });
 
       // 更新本地收藏夹计数
       const favorite = favorites.value.find((f) => f.id === favoriteId);
@@ -146,9 +146,9 @@ export const useFavoriteStore = defineStore('favorite', () => {
       }
 
       return true; // 添加成功
-    } catch (err: any) {
+    } catch (err) {
       // 检查是否是资源已存在的错误（409状态码）
-      if (err.status === 409 || err.response?.status === 409) {
+      if (isBusinessError(err) && err.status === 409) {
         return false; // 资源已存在，返回false但不抛出错误
       }
       // 其他错误继续抛出

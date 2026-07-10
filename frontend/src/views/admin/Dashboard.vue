@@ -103,6 +103,7 @@ import { ref, onMounted, computed } from 'vue';
 import { UserFilled, Document, Download, Warning, ChatDotSquare } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { adminApi } from '../../api/admin';
+import { isHandledError } from '@/api/request';
 
 interface DashboardStats {
   totalUsers: number;
@@ -149,8 +150,8 @@ const fetchStats = async () => {
   try {
     const data = await adminApi.getDashboardStats();
     stats.value = data;
-  } catch (error: any) {
-    if (!error.isHandled) {
+  } catch (error) {
+    if (!isHandledError(error)) {
       ElMessage.error('获取统计数据失败');
     }
   } finally {

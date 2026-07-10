@@ -117,6 +117,7 @@ import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Refresh, UserFilled, Document, Clock } from '@element-plus/icons-vue';
 import { adminApi } from '../../api/admin';
+import { isHandledError } from '@/api/request';
 
 interface Comment {
   id: string;
@@ -176,8 +177,8 @@ const fetchComments = async () => {
     );
     comments.value = data.comments;
     total.value = data.total;
-  } catch (error: any) {
-    if (!error.isHandled) {
+  } catch (error) {
+    if (!isHandledError(error)) {
       ElMessage.error('获取评论列表失败');
     }
   } finally {
@@ -205,8 +206,8 @@ const handleApprove = async (comment: Comment) => {
     await adminApi.auditComment(comment.id, 'approved');
     ElMessage.success('评论已通过');
     fetchComments();
-  } catch (error: any) {
-    if (error !== 'cancel' && !error.isHandled) {
+  } catch (error) {
+    if (error !== 'cancel' && !isHandledError(error)) {
       ElMessage.error('操作失败');
     }
   }
@@ -223,8 +224,8 @@ const handleReject = async (comment: Comment) => {
     await adminApi.auditComment(comment.id, 'rejected');
     ElMessage.success('评论已拒绝');
     fetchComments();
-  } catch (error: any) {
-    if (error !== 'cancel' && !error.isHandled) {
+  } catch (error) {
+    if (error !== 'cancel' && !isHandledError(error)) {
       ElMessage.error('操作失败');
     }
   }
@@ -241,8 +242,8 @@ const handleDelete = async (comment: Comment) => {
     await adminApi.deleteComment(comment.id);
     ElMessage.success('评论已删除');
     fetchComments();
-  } catch (error: any) {
-    if (error !== 'cancel' && !error.isHandled) {
+  } catch (error) {
+    if (error !== 'cancel' && !isHandledError(error)) {
       ElMessage.error('删除失败');
     }
   }

@@ -94,6 +94,7 @@ import { ElMessage } from 'element-plus';
 import { getTeachers } from '../../api/teacher';
 import { getCourses } from '../../api/course';
 import { searchResourcesForRelation, updateResourceRelations } from '../../api/resource';
+import { getErrorMessage } from '@/api/request';
 import { ResourceTypeLabels } from '../../types/resource';
 import type { Teacher } from '../../types/teacher';
 import type { Course } from '../../types/course';
@@ -225,8 +226,8 @@ const handleSubmit = async () => {
     ElMessage.success('关联信息修改成功');
     emit('success');
     visible.value = false;
-  } catch (error: any) {
-    ElMessage.error(error.message || '修改失败');
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '修改失败'));
   } finally {
     submitting.value = false;
   }

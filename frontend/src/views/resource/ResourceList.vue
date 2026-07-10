@@ -308,6 +308,7 @@ import { useAuthStore } from '../../stores/auth';
 import type { Favorite } from '../../types/favorite';
 import logger from '../../utils/logger';
 import ResourceGuideModal from '../../components/common/ResourceGuideModal.vue';
+import { getErrorMessage, isHandledError } from '@/api/request';
 
 const router = useRouter();
 const route = useRoute();
@@ -398,7 +399,7 @@ const handleAddAllCurrentPage = async () => {
         } else {
           existCount++;
         }
-      } catch (error: any) {
+      } catch (error) {
         failCount++;
         logger.error('[ResourceList]', `批量添加资源失败: ${resource.id}`, error);
       }
@@ -416,7 +417,7 @@ const handleAddAllCurrentPage = async () => {
     } else if (failCount > 0) {
       ElMessage.error(`添加失败，${failCount} 份资源未能加入收藏夹`);
     }
-  } catch (error: any) {
+  } catch (error) {
     ElMessage.error('批量添加失败，请稍后重试');
     logger.error('[ResourceList]', '批量添加所有资源失败:', error);
   } finally {
@@ -450,9 +451,9 @@ const handleResourceCardClick = async (resource: ResourceListItem) => {
       // 资源已存在，显示黄色提示
       ElMessage.warning('该资源已在收藏夹中');
     }
-  } catch (error: any) {
+  } catch (error) {
     // 只有非业务错误才显示错误弹窗
-    const errorMessage = error.response?.data?.message || error.message || '添加失败';
+    const errorMessage = getErrorMessage(error, '添加失败');
     ElMessage.error(errorMessage);
   } finally {
     addingResourceId.value = null;
@@ -534,7 +535,7 @@ const loadTeachers = async () => {
     const withResourcesOnly = getFilterSetting();
     const teachers = await getTeachers(withResourcesOnly);
     teacherList.value = teachers;
-  } catch (error: any) {
+  } catch (error) {
     logger.error('[ResourceList]', '加载教师列表失败:', error);
   } finally {
     loadingTeachers.value = false;
@@ -548,7 +549,7 @@ const loadCourses = async () => {
     const withResourcesOnly = getFilterSetting();
     const courses = await getCourses(withResourcesOnly);
     courseList.value = courses;
-  } catch (error: any) {
+  } catch (error) {
     logger.error('[ResourceList]', '加载课程列表失败:', error);
   } finally {
     loadingCourses.value = false;
@@ -590,9 +591,9 @@ const loadResources = async () => {
 
     resources.value = response.resources;
     total.value = response.total;
-  } catch (error: any) {
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '加载资源列表失败');
+  } catch (error) {
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '加载资源列表失败'));
     }
   } finally {
     loading.value = false;

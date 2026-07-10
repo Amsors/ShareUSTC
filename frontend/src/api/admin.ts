@@ -135,7 +135,7 @@ export const getCommentList = (
   perPage: number = 20,
   auditStatus?: string
 ): Promise<CommentListResponse> => {
-  const params: Record<string, any> = { page, perPage };
+  const params: Record<string, string | number> = { page, perPage };
   if (auditStatus) {
     params.auditStatus = auditStatus;
   }
@@ -243,7 +243,7 @@ export interface AuditLogItem {
   action: string;
   targetType: string | null;
   targetId: string | null;
-  details: Record<string, any> | null;
+  details: Record<string, unknown> | null;
   ipAddress: string | null;
   createdAt: string;
 }
