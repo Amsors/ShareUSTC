@@ -1,10 +1,10 @@
 # ShareUSTC 前端
 
-校园学习资源分享平台的 Web 前端，基于 Vue 3 + TypeScript + Vite + Element Plus。
+
 
 ## 技术栈
 
-- **Vue 3**（`<script setup>` SFC）+ **TypeScript**
+- **Vue 3**+ **TypeScript**
 - **Vite** 构建 / 开发服务器
 - **Vue Router** 路由，**Pinia** 状态管理
 - **Element Plus** 组件库（`@element-plus/icons-vue` 图标）
@@ -50,11 +50,9 @@ npm run check        # format:check + lint + typecheck 一次性执行
 
 ## 开发规范
 
-改代码前请阅读 [`dev_docs/specs/frontend_standards.md`](../dev_docs/specs/frontend_standards.md)，核心约束：
-
-- 类型统一 camelCase，禁用 `any`。
+- 类型统一 camelCase，不要用 `any`。
 - 所有接口调用走 `src/api/request.ts`，禁止绕过统一请求层直接调用。
-- `console.*` 仅允许出现在 `src/utils/logger.ts`，其余代码使用 `logger`。
-- 样式优先使用 Element Plus 语义色变量（`var(--el-*)`）与 `src/styles/tokens.css` 中的品牌 token。
+- `console.*` 仅允许出现在 `src/utils/logger.ts`，其余代码请使用 `logger`。
+- 样式优先使用 Element Plus 语义色变量（`var(--el-*)`）与 `src/styles/tokens.css` 中定义的 token。
 
 提交前运行仓库根目录的 `scripts/check.sh frontend`（或 `npm run check`）确保全绿。

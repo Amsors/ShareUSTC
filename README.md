@@ -122,19 +122,8 @@ ShareUSTC/
 ├── scripts/           # 部署与数据库脚本
 │   └── database/      # 数据库初始化脚本（当前 schema 事实来源）
 ├── docs/              # 部署/使用文档
-├── dev_docs/          # 开发文档（规范/设计/过程记录）
 └── README.md
 ```
-
-## 开发文档
-
-开发规范、技术方案与过程记录集中在 [dev_docs/](./dev_docs/README.md)：
-
-- 开发规范（API / 后端 / 前端 / 测试 / 文档 / 工具链）：[dev_docs/specs/](./dev_docs/README.md)
-- 需求与设计（PRD、技术方案、数据库设计、项目进度）：[dev_docs/design/](./dev_docs/design/project_status.md)
-- 部署与运维文档：[docs/](./docs/deploy_guide.md)
-
-
 
 ## 快速开始
 
