@@ -51,7 +51,7 @@ pub async fn search_resources_for_relation(
                 query,
                 e
             );
-            ResourceError::DatabaseError(e.to_string())
+            ResourceError::Database(e)
         })?;
 
     Ok(resources)
@@ -81,7 +81,7 @@ pub async fn get_related_resources(
             resource_id,
             e
         );
-        ResourceError::DatabaseError(e.to_string())
+        ResourceError::Database(e)
     })?;
 
     Ok(resources)

@@ -1,4 +1,4 @@
-use actix_web::{delete, get, put, web, HttpRequest, HttpResponse, Responder};
+use actix_web::{delete, get, put, web, HttpRequest, HttpResponse};
 use uuid::Uuid;
 
 use crate::db::AppState;
@@ -6,7 +6,7 @@ use crate::models::CurrentUser;
 use crate::services::{AdminService, AuditLogService};
 use crate::utils::no_content;
 
-use super::{check_admin, utils::handle_admin_error};
+use super::check_admin;
 
 /// 获取评论列表
 #[get("/admin/comments")]
@@ -14,13 +14,11 @@ async fn get_comment_list(
     data: web::Data<AppState>,
     current_user: actix_web::web::ReqData<CurrentUser>,
     query: web::Query<std::collections::HashMap<String, String>>,
-) -> impl Responder {
+) -> Result<actix_web::HttpResponse, actix_web::Error> {
     let user = current_user.into_inner();
     log::info!("[Admin] 获取评论列表 | admin_id={}", user.id);
 
-    if let Err(e) = check_admin(&user) {
-        return handle_admin_error(e);
-    }
+    check_admin(&user)?;
 
     let page = query
         .get("page")
@@ -32,10 +30,8 @@ async fn get_comment_list(
         .unwrap_or(20);
     let audit_status = query.get("auditStatus").cloned();
 
-    match AdminService::get_comment_list(&data.pool, page, per_page, audit_status).await {
-        Ok(response) => HttpResponse::Ok().json(response),
-        Err(e) => handle_admin_error(e),
-    }
+    let response = AdminService::get_comment_list(&data.pool, page, per_page, audit_status).await?;
+    Ok(HttpResponse::Ok().json(response))
 }
 
 /// 删除评论
@@ -45,12 +41,10 @@ async fn delete_comment(
     current_user: actix_web::web::ReqData<CurrentUser>,
     path: web::Path<Uuid>,
     req: HttpRequest,
-) -> impl Responder {
+) -> Result<actix_web::HttpResponse, actix_web::Error> {
     let user = current_user.into_inner();
 
-    if let Err(e) = check_admin(&user) {
-        return handle_admin_error(e);
-    }
+    check_admin(&user)?;
 
     let comment_id = path.into_inner();
     log::info!(
@@ -59,37 +53,34 @@ async fn delete_comment(
         comment_id
     );
 
-    match AdminService::delete_comment(&data.pool, comment_id).await {
-        Ok(_) => {
-            log::info!(
-                "[Admin] 评论删除成功 | admin_id={}, comment_id={}",
-                user.id,
-                comment_id
-            );
+    AdminService::delete_comment(&data.pool, comment_id).await?;
 
-            // 记录审计日志
-            let ip_address = req.peer_addr().map(|addr| addr.ip().to_string());
-            if let Err(e) = AuditLogService::log_delete_comment(
-                &data.pool,
-                user.id,
-                comment_id,
-                true, // is_admin
-                ip_address.as_deref(),
-            )
-            .await
-            {
-                log::warn!(
-                    "[Audit] 记录删除评论日志失败 | admin_id={}, comment_id={}, error={}",
-                    user.id,
-                    comment_id,
-                    e
-                );
-            }
+    log::info!(
+        "[Admin] 评论删除成功 | admin_id={}, comment_id={}",
+        user.id,
+        comment_id
+    );
 
-            no_content()
-        }
-        Err(e) => handle_admin_error(e),
+    // 记录审计日志
+    let ip_address = req.peer_addr().map(|addr| addr.ip().to_string());
+    if let Err(e) = AuditLogService::log_delete_comment(
+        &data.pool,
+        user.id,
+        comment_id,
+        true, // is_admin
+        ip_address.as_deref(),
+    )
+    .await
+    {
+        log::warn!(
+            "[Audit] 记录删除评论日志失败 | admin_id={}, comment_id={}, error={}",
+            user.id,
+            comment_id,
+            e
+        );
     }
+
+    Ok(no_content())
 }
 
 /// 审核评论
@@ -99,12 +90,10 @@ async fn audit_comment(
     current_user: actix_web::web::ReqData<CurrentUser>,
     path: web::Path<Uuid>,
     req: web::Json<std::collections::HashMap<String, String>>,
-) -> impl Responder {
+) -> Result<actix_web::HttpResponse, actix_web::Error> {
     let user = current_user.into_inner();
 
-    if let Err(e) = check_admin(&user) {
-        return handle_admin_error(e);
-    }
+    check_admin(&user)?;
 
     let comment_id = path.into_inner();
     let status = req.get("status").cloned().unwrap_or_default();
@@ -115,19 +104,16 @@ async fn audit_comment(
         status
     );
 
-    match AdminService::audit_comment(&data.pool, comment_id, status).await {
-        Ok(_) => {
-            log::info!(
-                "[Admin] 评论审核完成 | admin_id={}, comment_id={}",
-                user.id,
-                comment_id
-            );
-            HttpResponse::Ok().json(serde_json::json!({
-                "message": "评论审核完成"
-            }))
-        }
-        Err(e) => handle_admin_error(e),
-    }
+    AdminService::audit_comment(&data.pool, comment_id, status).await?;
+
+    log::info!(
+        "[Admin] 评论审核完成 | admin_id={}, comment_id={}",
+        user.id,
+        comment_id
+    );
+    Ok(HttpResponse::Ok().json(serde_json::json!({
+        "message": "评论审核完成"
+    })))
 }
 
 /// 配置路由

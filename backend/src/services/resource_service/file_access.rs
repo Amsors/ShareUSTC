@@ -11,8 +11,7 @@ pub async fn increment_downloads(pool: &PgPool, resource_id: Uuid) -> Result<(),
     sqlx::query("UPDATE resource_stats SET downloads = downloads + 1 WHERE resource_id = $1")
         .bind(resource_id)
         .execute(pool)
-        .await
-        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+        .await?;
 
     Ok(())
 }
@@ -22,8 +21,7 @@ pub async fn increment_views(pool: &PgPool, resource_id: Uuid) -> Result<(), Res
     sqlx::query("UPDATE resource_stats SET views = views + 1 WHERE resource_id = $1")
         .bind(resource_id)
         .execute(pool)
-        .await
-        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+        .await?;
 
     Ok(())
 }
@@ -42,8 +40,7 @@ pub async fn get_resource_file_path(
     )
     .bind(resource_id)
     .fetch_optional(pool)
-    .await
-    .map_err(|e| ResourceError::DatabaseError(e.to_string()))?
+    .await?
     .ok_or_else(|| ResourceError::NotFound(format!("资源 {} 不存在", resource_id)))?;
 
     let audit_status = row.4;
@@ -77,8 +74,7 @@ pub async fn get_resource_file_path_for_preview(
         sqlx::query_as("SELECT file_path, resource_type, storage_type, updated_at, audit_status, uploader_id FROM resources WHERE id = $1")
             .bind(resource_id)
             .fetch_optional(pool)
-            .await
-            .map_err(|e| ResourceError::DatabaseError(e.to_string()))?
+            .await?
             .ok_or_else(|| ResourceError::NotFound(format!("资源 {} 不存在", resource_id)))?;
 
     let audit_status = row.4;
@@ -117,7 +113,7 @@ pub async fn record_download(
     .await
     .map_err(|e| {
         log::warn!("记录下载日志失败: {}", e);
-        ResourceError::DatabaseError(e.to_string())
+        ResourceError::Database(e)
     })?;
 
     Ok(())
@@ -155,8 +151,7 @@ pub async fn get_resource_content_raw(
     let resource: Resource = sqlx::query_as::<_, Resource>("SELECT * FROM resources WHERE id = $1")
         .bind(resource_id)
         .fetch_optional(pool)
-        .await
-        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?
+        .await?
         .ok_or_else(|| ResourceError::NotFound(format!("资源 {} 不存在", resource_id)))?;
 
     // 检查权限（上传者或管理员）

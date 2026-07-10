@@ -7,7 +7,6 @@ pub mod notifications;
 pub mod resources;
 pub mod teachers;
 pub mod users;
-pub mod utils;
 
 use actix_web::web;
 

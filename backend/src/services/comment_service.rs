@@ -4,7 +4,32 @@ use uuid::Uuid;
 use crate::models::{
     Comment, CommentListQuery, CommentListResponse, CommentResponse, CreateCommentRequest,
 };
-use crate::services::{NotificationService, ResourceError};
+use crate::services::NotificationService;
+
+/// 评论服务错误类型
+#[derive(Debug, thiserror::Error)]
+pub enum CommentError {
+    #[error("验证错误: {0}")]
+    ValidationError(String),
+    #[error("未找到: {0}")]
+    NotFound(String),
+    #[error("数据库错误: {0}")]
+    Database(#[from] sqlx::Error),
+}
+
+impl actix_web::ResponseError for CommentError {
+    fn error_response(&self) -> actix_web::HttpResponse {
+        use crate::utils::{bad_request, internal_error, not_found};
+        match self {
+            CommentError::ValidationError(msg) => bad_request(msg),
+            CommentError::NotFound(msg) => not_found(msg),
+            CommentError::Database(e) => {
+                log::error!("[Comment] 数据库错误 | error={}", e);
+                internal_error("服务器内部错误")
+            }
+        }
+    }
+}
 
 pub struct CommentService;
 
@@ -33,16 +58,16 @@ impl CommentService {
         resource_id: Uuid,
         user_id: Uuid,
         request: CreateCommentRequest,
-    ) -> Result<CommentResponse, ResourceError> {
+    ) -> Result<CommentResponse, CommentError> {
         // 验证评论内容
         let content = request.content.trim();
         if content.is_empty() {
-            return Err(ResourceError::ValidationError(
+            return Err(CommentError::ValidationError(
                 "评论内容不能为空".to_string(),
             ));
         }
         if content.len() > 1000 {
-            return Err(ResourceError::ValidationError(
+            return Err(CommentError::ValidationError(
                 "评论内容不能超过1000字".to_string(),
             ));
         }
@@ -55,11 +80,10 @@ impl CommentService {
             sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM resources WHERE id = $1)")
                 .bind(resource_id)
                 .fetch_one(pool)
-                .await
-                .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+                .await?;
 
         if !resource_exists {
-            return Err(ResourceError::NotFound(format!(
+            return Err(CommentError::NotFound(format!(
                 "资源 {} 不存在",
                 resource_id
             )));
@@ -84,11 +108,7 @@ impl CommentService {
         .bind(user_id)
         .bind(content)
         .fetch_one(pool)
-        .await
-        .map_err(|e| {
-            log::error!("[CommentService] 插入评论失败: {}", e);
-            ResourceError::DatabaseError(e.to_string())
-        })?;
+        .await?;
 
         log::debug!("[CommentService] 评论插入成功: comment_id={}", comment.id);
 
@@ -171,7 +191,7 @@ impl CommentService {
         pool: &PgPool,
         resource_id: Uuid,
         query: CommentListQuery,
-    ) -> Result<CommentListResponse, ResourceError> {
+    ) -> Result<CommentListResponse, CommentError> {
         let page = query.page.unwrap_or(1).max(1);
         let per_page = query.per_page.unwrap_or(20).min(100);
         let offset = (page - 1) * per_page;
@@ -241,7 +261,7 @@ impl CommentService {
         comment_id: Uuid,
         user_id: Uuid,
         is_admin: bool,
-    ) -> Result<bool, ResourceError> {
+    ) -> Result<bool, CommentError> {
         // 检查评论是否存在且属于该用户（或用户是管理员）
         let comment = sqlx::query_as::<_, Comment>("SELECT * FROM comments WHERE id = $1")
             .bind(comment_id)

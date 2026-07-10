@@ -1,23 +1,29 @@
 use crate::models::resource::AiAuditResult;
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum AiError {
     #[allow(dead_code)]
+    #[error("AI API 错误: {0}")]
     ApiError(String),
     #[allow(dead_code)]
+    #[error("AI 请求超时: {0}")]
     TimeoutError(String),
 }
 
-impl std::fmt::Display for AiError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl actix_web::ResponseError for AiError {
+    fn error_response(&self) -> actix_web::HttpResponse {
         match self {
-            AiError::ApiError(msg) => write!(f, "AI API 错误: {}", msg),
-            AiError::TimeoutError(msg) => write!(f, "AI 请求超时: {}", msg),
+            AiError::ApiError(msg) => {
+                log::error!("[Ai] API 错误 | error={}", msg);
+                crate::utils::internal_error("服务器内部错误")
+            }
+            AiError::TimeoutError(msg) => {
+                log::error!("[Ai] 请求超时 | error={}", msg);
+                crate::utils::internal_error("服务器内部错误")
+            }
         }
     }
 }
-
-impl std::error::Error for AiError {}
 
 pub struct AiService;
 

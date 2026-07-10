@@ -69,10 +69,7 @@ pub async fn create_resource_from_oss_callback(
         .map(|tags| serde_json::to_value(tags).unwrap_or(serde_json::Value::Array(vec![])));
     let storage_type = storage.backend_type().as_str().to_string();
 
-    let mut tx = pool
-        .begin()
-        .await
-        .map_err(|e| ResourceError::DatabaseError(format!("开启事务失败: {}", e)))?;
+    let mut tx = pool.begin().await.map_err(|e| ResourceError::Database(e))?;
 
     let resource: Resource = match sqlx::query_as::<_, Resource>(
         r#"
@@ -118,7 +115,7 @@ pub async fn create_resource_from_oss_callback(
                     cleanup_err
                 );
             }
-            return Err(ResourceError::DatabaseError(format!("插入资源失败: {}", e)));
+            return Err(ResourceError::Database(e));
         }
     };
 
@@ -139,7 +136,7 @@ pub async fn create_resource_from_oss_callback(
                 cleanup_err
             );
         }
-        return Err(ResourceError::DatabaseError(format!("创建统计记录失败: {}", e)));
+        return Err(ResourceError::Database(e));
     }
 
     // 插入教师关联
@@ -252,7 +249,7 @@ pub async fn create_resource_from_oss_callback(
                 cleanup_err
             );
         }
-        return Err(ResourceError::DatabaseError(format!("提交事务失败: {}", e)));
+        return Err(ResourceError::Database(e));
     }
 
     Ok(UploadResourceResponse {
@@ -335,7 +332,7 @@ pub async fn upload_resource(
                     cleanup_err
                 );
             }
-            return Err(ResourceError::DatabaseError(format!("开启事务失败: {}", e)));
+            return Err(ResourceError::Database(e));
         }
     };
 
@@ -396,7 +393,7 @@ pub async fn upload_resource(
                     cleanup_err
                 );
             }
-            return Err(ResourceError::DatabaseError(format!("插入资源失败: {}", e)));
+            return Err(ResourceError::Database(e));
         }
     };
 
@@ -417,7 +414,7 @@ pub async fn upload_resource(
         if let Err(cleanup_err) = storage.delete_file(&file_path).await {
             log::error!("[Resource] 创建统计记录失败后清理文件出错 | path={}, error={}", file_path, cleanup_err);
         }
-        return Err(ResourceError::DatabaseError(format!("创建统计记录失败: {}", e)));
+        return Err(ResourceError::Database(e));
     }
 
     // 插入教师关联记录
@@ -505,7 +502,7 @@ pub async fn upload_resource(
             );
         }
 
-        return Err(ResourceError::DatabaseError(format!("提交事务失败: {}", e)));
+        return Err(ResourceError::Database(e));
     }
     Ok(UploadResourceResponse {
         id: resource.id,

@@ -3,6 +3,24 @@ use uuid::Uuid;
 
 use crate::models::{LikeStatusResponse, LikeToggleResponse};
 
+/// 点赞服务错误类型
+#[derive(Debug, thiserror::Error)]
+pub enum LikeError {
+    #[error("数据库错误: {0}")]
+    Database(#[from] sqlx::Error),
+}
+
+impl actix_web::ResponseError for LikeError {
+    fn error_response(&self) -> actix_web::HttpResponse {
+        match self {
+            LikeError::Database(e) => {
+                log::error!("[Like] 数据库错误 | error={}", e);
+                crate::utils::internal_error("服务器内部错误")
+            }
+        }
+    }
+}
+
 pub struct LikeService;
 
 impl LikeService {
@@ -12,7 +30,7 @@ impl LikeService {
         pool: &PgPool,
         resource_id: Uuid,
         user_id: Uuid,
-    ) -> Result<LikeToggleResponse, sqlx::Error> {
+    ) -> Result<LikeToggleResponse, LikeError> {
         let is_liked;
         let message;
 
@@ -60,7 +78,7 @@ impl LikeService {
         pool: &PgPool,
         resource_id: Uuid,
         user_id: Uuid,
-    ) -> Result<LikeStatusResponse, sqlx::Error> {
+    ) -> Result<LikeStatusResponse, LikeError> {
         let is_liked = sqlx::query_scalar::<_, bool>(
             "SELECT EXISTS(SELECT 1 FROM likes WHERE resource_id = $1 AND user_id = $2)",
         )
@@ -78,7 +96,7 @@ impl LikeService {
     }
 
     /// 获取资源的点赞数
-    pub async fn get_like_count(pool: &PgPool, resource_id: Uuid) -> Result<i64, sqlx::Error> {
+    pub async fn get_like_count(pool: &PgPool, resource_id: Uuid) -> Result<i64, LikeError> {
         let count =
             sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM likes WHERE resource_id = $1")
                 .bind(resource_id)
@@ -89,7 +107,7 @@ impl LikeService {
     }
 
     /// 更新资源统计表中的点赞数
-    async fn update_like_count(pool: &PgPool, resource_id: Uuid) -> Result<(), sqlx::Error> {
+    async fn update_like_count(pool: &PgPool, resource_id: Uuid) -> Result<(), LikeError> {
         let count = Self::get_like_count(pool, resource_id).await?;
 
         sqlx::query(

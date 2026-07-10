@@ -1,5 +1,5 @@
 use actix_multipart::Multipart;
-use actix_web::{delete, get, post, web, HttpResponse, Responder};
+use actix_web::{delete, get, post, web, HttpResponse};
 use futures_util::StreamExt;
 use uuid::Uuid;
 
@@ -7,7 +7,7 @@ use crate::config::Config;
 use crate::db::AppState;
 use crate::models::CurrentUser;
 use crate::services::{ImageError, ImageService};
-use crate::utils::{bad_request, created, forbidden, internal_error, no_content, not_found};
+use crate::utils::{bad_request, created, no_content};
 
 /// 上传图片
 #[post("/images/upload")]
@@ -15,7 +15,7 @@ pub async fn upload_image(
     state: web::Data<AppState>,
     user: web::ReqData<CurrentUser>,
     mut payload: Multipart,
-) -> impl Responder {
+) -> Result<HttpResponse, ImageError> {
     let mut file_data: Option<(String, Vec<u8>, Option<String>)> = None;
 
     // 解析multipart表单数据
@@ -24,7 +24,7 @@ pub async fn upload_image(
             Ok(field) => field,
             Err(e) => {
                 log::warn!("解析上传数据失败: {}", e);
-                return bad_request("解析上传数据失败");
+                return Ok(bad_request("解析上传数据失败"));
             }
         };
 
@@ -48,7 +48,7 @@ pub async fn upload_image(
                     Ok(bytes) => data.extend_from_slice(&bytes),
                     Err(e) => {
                         log::warn!("读取文件数据失败: {}", e);
-                        return bad_request("读取文件数据失败");
+                        return Ok(bad_request("读取文件数据失败"));
                     }
                 }
             }
@@ -58,17 +58,14 @@ pub async fn upload_image(
     }
 
     // 检查是否有文件数据
-    let (filename, data, mime_type) = match file_data {
-        Some(data) => data,
-        None => {
-            return bad_request("请选择要上传的图片");
-        }
+    let Some((filename, data, mime_type)) = file_data else {
+        return Ok(bad_request("请选择要上传的图片"));
     };
 
     // 加载配置用于生成图片 URL
     let config = Config::from_env();
     // 调用服务上传图片
-    match ImageService::upload_image(
+    let response = ImageService::upload_image(
         &state.pool,
         &user,
         &state.storage,
@@ -77,19 +74,8 @@ pub async fn upload_image(
         data,
         mime_type.as_deref(),
     )
-    .await
-    {
-        Ok(response) => created(response),
-        Err(e) => {
-            log::warn!("上传图片失败: {}", e);
-            match e {
-                ImageError::ValidationError(msg) => bad_request(&msg),
-                ImageError::FileError(msg) => internal_error(&msg),
-                ImageError::DatabaseError(msg) => internal_error(&msg),
-                _ => internal_error("上传失败"),
-            }
-        }
-    }
+    .await?;
+    Ok(created(response))
 }
 
 /// 获取当前用户的图片列表
@@ -98,34 +84,24 @@ pub async fn get_my_images(
     state: web::Data<AppState>,
     user: web::ReqData<CurrentUser>,
     query: web::Query<ImageListQuery>,
-) -> impl Responder {
+) -> Result<HttpResponse, ImageError> {
     let page = query.page.unwrap_or(1);
     let per_page = query.per_page.unwrap_or(20).min(100);
 
-    match ImageService::get_user_images(&state.pool, user.id, page, per_page).await {
-        Ok(response) => HttpResponse::Ok().json(response),
-        Err(e) => {
-            log::warn!("获取图片列表失败: {}", e);
-            internal_error("获取图片列表失败")
-        }
-    }
+    let response = ImageService::get_user_images(&state.pool, user.id, page, per_page).await?;
+    Ok(HttpResponse::Ok().json(response))
 }
 
 /// 获取单张图片信息
 #[get("/images/{image_id}")]
-pub async fn get_image_info(state: web::Data<AppState>, path: web::Path<Uuid>) -> impl Responder {
+pub async fn get_image_info(
+    state: web::Data<AppState>,
+    path: web::Path<Uuid>,
+) -> Result<HttpResponse, ImageError> {
     let image_id = path.into_inner();
 
-    match ImageService::get_image_by_id(&state.pool, image_id).await {
-        Ok(response) => HttpResponse::Ok().json(response),
-        Err(e) => {
-            log::warn!("获取图片信息失败: {}", e);
-            match e {
-                ImageError::NotFound(msg) => not_found(&msg),
-                _ => internal_error("获取图片信息失败"),
-            }
-        }
-    }
+    let response = ImageService::get_image_by_id(&state.pool, image_id).await?;
+    Ok(HttpResponse::Ok().json(response))
 }
 
 /// 删除图片
@@ -134,20 +110,11 @@ pub async fn delete_image(
     state: web::Data<AppState>,
     user: web::ReqData<CurrentUser>,
     path: web::Path<Uuid>,
-) -> impl Responder {
+) -> Result<HttpResponse, ImageError> {
     let image_id = path.into_inner();
 
-    match ImageService::delete_image(&state.pool, &user, &state.storage, image_id).await {
-        Ok(_) => no_content(),
-        Err(e) => {
-            log::warn!("删除图片失败: {}", e);
-            match e {
-                ImageError::NotFound(msg) => not_found(&msg),
-                ImageError::Unauthorized(msg) => forbidden(&msg),
-                _ => internal_error("删除失败"),
-            }
-        }
-    }
+    ImageService::delete_image(&state.pool, &user, &state.storage, image_id).await?;
+    Ok(no_content())
 }
 
 /// 图片列表查询参数

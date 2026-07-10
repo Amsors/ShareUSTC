@@ -8,31 +8,53 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 /// 认证错误类型
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum AuthError {
+    #[error("认证失败: {0}")]
     InvalidCredentials(String),
+    #[error("用户已存在: {0}")]
     UserExists(String),
     #[allow(dead_code)]
+    #[error("用户不存在: {0}")]
     UserNotFound(String),
+    #[error("Token无效: {0}")]
     TokenInvalid(String),
-    DatabaseError(String),
+    #[error("Token生成失败: {0}")]
+    TokenGeneration(String),
+    #[error("验证错误: {0}")]
     ValidationError(String),
+    #[error("数据库错误: {0}")]
+    Database(#[from] sqlx::Error),
 }
 
-impl std::fmt::Display for AuthError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl actix_web::ResponseError for AuthError {
+    fn error_response(&self) -> actix_web::HttpResponse {
+        use crate::utils::{
+            bad_request, conflict, error_response_with_code, internal_error, not_found,
+            unauthorized,
+        };
         match self {
-            AuthError::InvalidCredentials(msg) => write!(f, "认证失败: {}", msg),
-            AuthError::UserExists(msg) => write!(f, "用户已存在: {}", msg),
-            AuthError::UserNotFound(msg) => write!(f, "用户不存在: {}", msg),
-            AuthError::TokenInvalid(msg) => write!(f, "Token无效: {}", msg),
-            AuthError::DatabaseError(msg) => write!(f, "数据库错误: {}", msg),
-            AuthError::ValidationError(msg) => write!(f, "验证错误: {}", msg),
+            // 登录凭证错误：401 + InvalidCredentials（见 api_design.md 2.1）
+            AuthError::InvalidCredentials(msg) => {
+                error_response_with_code(401, "InvalidCredentials", msg)
+            }
+            AuthError::UserExists(msg) => conflict(msg),
+            AuthError::UserNotFound(msg) => not_found(msg),
+            // Token 校验失败（刷新路径）：401
+            AuthError::TokenInvalid(msg) => unauthorized(msg),
+            AuthError::ValidationError(msg) => bad_request(msg),
+            // Token 生成失败属服务端问题：500
+            AuthError::TokenGeneration(msg) => {
+                log::error!("[Auth] 生成令牌失败 | error={}", msg);
+                internal_error("服务器内部错误")
+            }
+            AuthError::Database(e) => {
+                log::error!("[Auth] 数据库错误 | error={}", e);
+                internal_error("服务器内部错误")
+            }
         }
     }
 }
-
-impl std::error::Error for AuthError {}
 
 /// 认证服务
 pub struct AuthService;
@@ -60,8 +82,7 @@ impl AuthService {
             sqlx::query_as("SELECT id FROM users WHERE username = $1 AND is_active = true")
                 .bind(&req.username)
                 .fetch_optional(pool)
-                .await
-                .map_err(|e| AuthError::DatabaseError(e.to_string()))?;
+                .await?;
 
         if existing_user.is_some() {
             return Err(AuthError::UserExists("用户名已被使用".to_string()));
@@ -90,7 +111,7 @@ impl AuthService {
         let sn: i64 = sqlx::query_scalar("SELECT nextval('user_sn_seq')")
             .fetch_one(pool)
             .await
-            .map_err(|e| AuthError::DatabaseError(format!("获取用户编号失败: {}", e)))?;
+            .map_err(|e| AuthError::Database(e))?;
 
         sqlx::query(
             r#"
@@ -106,7 +127,7 @@ impl AuthService {
         .bind(role)
         .execute(pool)
         .await
-        .map_err(|e| AuthError::DatabaseError(format!("创建用户失败: {}", e)))?;
+        .map_err(|e| AuthError::Database(e))?;
 
         log::info!("用户注册成功: {}, 角色: {}", req.username, role);
 
@@ -126,11 +147,11 @@ impl AuthService {
             false, // 新注册用户默认未实名认证
             jwt_secret,
         )
-        .map_err(|e| AuthError::TokenInvalid(e))?;
+        .map_err(AuthError::TokenGeneration)?;
 
         let refresh_token =
             generate_refresh_token(user_id, req.username.clone(), user_role, false, jwt_secret)
-                .map_err(|e| AuthError::TokenInvalid(e))?;
+                .map_err(AuthError::TokenGeneration)?;
 
         Ok(AuthResponse {
             user: UserInfo {
@@ -171,8 +192,7 @@ impl AuthService {
         )
         .bind(&req.username)
         .fetch_optional(pool)
-        .await
-        .map_err(|e| AuthError::DatabaseError(e.to_string()))?
+        .await?
         .ok_or_else(|| AuthError::InvalidCredentials("用户名或密码错误".to_string()))?;
 
         // 验证密码
@@ -207,7 +227,7 @@ impl AuthService {
             user.is_verified,
             jwt_secret,
         )
-        .map_err(|e| AuthError::TokenInvalid(e))?;
+        .map_err(AuthError::TokenGeneration)?;
 
         let refresh_token = generate_refresh_token(
             user.id,
@@ -216,7 +236,7 @@ impl AuthService {
             user.is_verified,
             jwt_secret,
         )
-        .map_err(|e| AuthError::TokenInvalid(e))?;
+        .map_err(AuthError::TokenGeneration)?;
 
         Ok(AuthResponse {
             user: UserInfo {
@@ -246,7 +266,7 @@ impl AuthService {
     ) -> Result<TokenResponse, AuthError> {
         // 验证 Refresh Token
         let claims = verify_token(&refresh_token, jwt_secret, Some("refresh"))
-            .map_err(|e| AuthError::TokenInvalid(e))?;
+            .map_err(AuthError::TokenInvalid)?;
 
         // 提取用户信息
         let user_id = Uuid::parse_str(&claims.sub)
@@ -269,7 +289,7 @@ impl AuthService {
             claims.is_verified,
             jwt_secret,
         )
-        .map_err(|e| AuthError::TokenInvalid(e))?;
+        .map_err(AuthError::TokenGeneration)?;
 
         let refresh_token = generate_refresh_token(
             user_id,
@@ -278,7 +298,7 @@ impl AuthService {
             claims.is_verified,
             jwt_secret,
         )
-        .map_err(|e| AuthError::TokenInvalid(e))?;
+        .map_err(AuthError::TokenGeneration)?;
 
         Ok(TokenResponse {
             access_token,

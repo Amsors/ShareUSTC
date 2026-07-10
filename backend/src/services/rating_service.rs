@@ -6,6 +6,27 @@ use crate::models::{
 };
 use crate::services::NotificationService;
 
+/// 评分服务错误类型
+#[derive(Debug, thiserror::Error)]
+pub enum RatingError {
+    #[error("验证错误: {0}")]
+    Validation(String),
+    #[error("数据库错误: {0}")]
+    Database(#[from] sqlx::Error),
+}
+
+impl actix_web::ResponseError for RatingError {
+    fn error_response(&self) -> actix_web::HttpResponse {
+        match self {
+            RatingError::Validation(msg) => crate::utils::bad_request(msg),
+            RatingError::Database(e) => {
+                log::error!("[Rating] 数据库错误 | error={}", e);
+                crate::utils::internal_error("服务器内部错误")
+            }
+        }
+    }
+}
+
 pub struct RatingService;
 
 impl RatingService {
@@ -15,10 +36,10 @@ impl RatingService {
         resource_id: Uuid,
         user_id: Uuid,
         request: CreateRatingRequest,
-    ) -> Result<RatingResponse, sqlx::Error> {
+    ) -> Result<RatingResponse, RatingError> {
         // 验证评分范围
         if let Err(msg) = request.validate() {
-            return Err(sqlx::Error::Protocol(msg.into()));
+            return Err(RatingError::Validation(msg));
         }
 
         // 开启事务
@@ -108,7 +129,7 @@ impl RatingService {
         pool: &PgPool,
         resource_id: Uuid,
         user_id: Uuid,
-    ) -> Result<Option<RatingResponse>, sqlx::Error> {
+    ) -> Result<Option<RatingResponse>, RatingError> {
         let rating = sqlx::query_as::<_, Rating>(
             r#"
             SELECT id, resource_id, user_id, difficulty, overall_quality,
@@ -129,7 +150,7 @@ impl RatingService {
         pool: &PgPool,
         resource_id: Uuid,
         user_id: Uuid,
-    ) -> Result<(), sqlx::Error> {
+    ) -> Result<(), RatingError> {
         // 开启事务
         let mut tx = pool.begin().await?;
 
@@ -153,7 +174,7 @@ impl RatingService {
     pub async fn get_rating_summary(
         pool: &PgPool,
         resource_id: Uuid,
-    ) -> Result<RatingSummary, sqlx::Error> {
+    ) -> Result<RatingSummary, RatingError> {
         let summary = sqlx::query_as::<_, RatingSummary>(
             r#"
             SELECT
@@ -183,7 +204,7 @@ impl RatingService {
         pool: &PgPool,
         resource_id: Uuid,
         user_id: Option<Uuid>,
-    ) -> Result<ResourceRatingInfo, sqlx::Error> {
+    ) -> Result<ResourceRatingInfo, RatingError> {
         // 获取评分汇总
         let summary = Self::get_rating_summary(pool, resource_id).await?;
 
@@ -240,7 +261,7 @@ impl RatingService {
     async fn update_resource_stats_in_tx(
         tx: &mut Transaction<'_, Postgres>,
         resource_id: Uuid,
-    ) -> Result<(), sqlx::Error> {
+    ) -> Result<(), RatingError> {
         sqlx::query(
             r#"
             INSERT INTO resource_stats (
@@ -288,9 +309,10 @@ impl RatingService {
 
     /// 更新资源统计表中的评分数据（独立操作，用于非事务场景）
     #[allow(dead_code)]
-    async fn update_resource_stats(pool: &PgPool, resource_id: Uuid) -> Result<(), sqlx::Error> {
+    async fn update_resource_stats(pool: &PgPool, resource_id: Uuid) -> Result<(), RatingError> {
         let mut tx = pool.begin().await?;
         Self::update_resource_stats_in_tx(&mut tx, resource_id).await?;
-        tx.commit().await
+        tx.commit().await?;
+        Ok(())
     }
 }

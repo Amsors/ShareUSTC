@@ -19,7 +19,41 @@ use crate::models::{
     CreateFavoriteResponse, Favorite, FavoriteDetailResponse, FavoriteListItem,
     FavoriteListResponse, FavoriteResourceItem, FavoriteResourceStats, UpdateFavoriteRequest,
 };
-use crate::services::ResourceError;
+
+/// 收藏夹服务错误类型
+#[derive(Debug, thiserror::Error)]
+pub enum FavoriteError {
+    #[error("验证错误: {0}")]
+    ValidationError(String),
+    #[error("未找到: {0}")]
+    NotFound(String),
+    #[error("资源冲突: {0}")]
+    Conflict(String),
+    #[error("文件错误: {0}")]
+    FileError(String),
+    #[error("数据库错误: {0}")]
+    Database(#[from] sqlx::Error),
+}
+
+impl actix_web::ResponseError for FavoriteError {
+    fn error_response(&self) -> actix_web::HttpResponse {
+        use crate::utils::{bad_request, conflict, internal_error, not_found};
+        match self {
+            FavoriteError::ValidationError(msg) => bad_request(msg),
+            FavoriteError::NotFound(msg) => not_found(msg),
+            FavoriteError::Conflict(msg) => conflict(msg),
+            // 文件错误按历史行为回传信息（非 SQL 细节）
+            FavoriteError::FileError(msg) => {
+                log::error!("[Favorite] 文件错误 | error={}", msg);
+                internal_error(msg)
+            }
+            FavoriteError::Database(e) => {
+                log::error!("[Favorite] 数据库错误 | error={}", e);
+                internal_error("服务器内部错误")
+            }
+        }
+    }
+}
 
 pub struct FavoriteService;
 
@@ -29,9 +63,9 @@ impl FavoriteService {
         pool: &PgPool,
         user_id: Uuid,
         request: CreateFavoriteRequest,
-    ) -> Result<CreateFavoriteResponse, ResourceError> {
+    ) -> Result<CreateFavoriteResponse, FavoriteError> {
         // 验证请求
-        request.validate().map_err(ResourceError::ValidationError)?;
+        request.validate().map_err(FavoriteError::ValidationError)?;
 
         let name = request.name.trim();
 
@@ -45,7 +79,7 @@ impl FavoriteService {
         .await?;
 
         if existing > 0 {
-            return Err(ResourceError::ValidationError(
+            return Err(FavoriteError::ValidationError(
                 "您已存在同名收藏夹".to_string(),
             ));
         }
@@ -61,8 +95,7 @@ impl FavoriteService {
         .bind(user_id)
         .bind(name)
         .fetch_one(pool)
-        .await
-        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+        .await?;
 
         Ok(CreateFavoriteResponse {
             id: favorite.id,
@@ -75,7 +108,7 @@ impl FavoriteService {
     pub async fn get_user_favorites(
         pool: &PgPool,
         user_id: Uuid,
-    ) -> Result<FavoriteListResponse, ResourceError> {
+    ) -> Result<FavoriteListResponse, FavoriteError> {
         // 获取收藏夹列表及资源数量
         let rows = sqlx::query!(
             r#"
@@ -122,7 +155,7 @@ impl FavoriteService {
         pool: &PgPool,
         favorite_id: Uuid,
         user_id: Uuid,
-    ) -> Result<FavoriteDetailResponse, ResourceError> {
+    ) -> Result<FavoriteDetailResponse, FavoriteError> {
         log::debug!(
             "[FavoriteService] 获取收藏夹详情 | favorite_id={}, user_id={}",
             favorite_id,
@@ -145,7 +178,7 @@ impl FavoriteService {
                     favorite_id,
                     user_id
                 );
-                return Err(ResourceError::NotFound("收藏夹不存在".to_string()));
+                return Err(FavoriteError::NotFound("收藏夹不存在".to_string()));
             }
         };
 
@@ -156,8 +189,7 @@ impl FavoriteService {
         );
 
         // 获取收藏夹中的资源列表
-        // 获取收藏夹中的资源列表
-        let rows = match sqlx::query!(
+        let rows = sqlx::query!(
             r#"
             SELECT
                 r.id,
@@ -192,21 +224,7 @@ impl FavoriteService {
             favorite_id
         )
         .fetch_all(pool)
-        .await
-        {
-            Ok(rows) => rows,
-            Err(e) => {
-                log::error!(
-                    "[FavoriteService] 查询收藏夹资源失败 | favorite_id={}, error={}",
-                    favorite_id,
-                    e
-                );
-                return Err(ResourceError::DatabaseError(format!(
-                    "查询收藏夹资源失败: {}",
-                    e
-                )));
-            }
-        };
+        .await?;
 
         log::debug!(
             "[FavoriteService] 获取到 {} 个资源 | favorite_id={}",
@@ -307,9 +325,9 @@ impl FavoriteService {
         favorite_id: Uuid,
         user_id: Uuid,
         request: UpdateFavoriteRequest,
-    ) -> Result<(), ResourceError> {
+    ) -> Result<(), FavoriteError> {
         // 验证请求
-        request.validate().map_err(ResourceError::ValidationError)?;
+        request.validate().map_err(FavoriteError::ValidationError)?;
 
         let name = request.name.trim();
 
@@ -322,7 +340,7 @@ impl FavoriteService {
                 .await?;
 
         if existing.is_none() {
-            return Err(ResourceError::NotFound("收藏夹不存在".to_string()));
+            return Err(FavoriteError::NotFound("收藏夹不存在".to_string()));
         }
 
         // 检查是否已存在其他同名收藏夹
@@ -336,7 +354,7 @@ impl FavoriteService {
         .await?;
 
         if duplicate > 0 {
-            return Err(ResourceError::ValidationError(
+            return Err(FavoriteError::ValidationError(
                 "您已存在同名收藏夹".to_string(),
             ));
         }
@@ -356,7 +374,7 @@ impl FavoriteService {
         pool: &PgPool,
         favorite_id: Uuid,
         user_id: Uuid,
-    ) -> Result<(), ResourceError> {
+    ) -> Result<(), FavoriteError> {
         // 检查收藏夹是否存在且属于当前用户
         let result = sqlx::query("DELETE FROM favorites WHERE id = $1 AND user_id = $2")
             .bind(favorite_id)
@@ -365,7 +383,7 @@ impl FavoriteService {
             .await?;
 
         if result.rows_affected() == 0 {
-            return Err(ResourceError::NotFound("收藏夹不存在".to_string()));
+            return Err(FavoriteError::NotFound("收藏夹不存在".to_string()));
         }
 
         Ok(())
@@ -377,7 +395,7 @@ impl FavoriteService {
         favorite_id: Uuid,
         user_id: Uuid,
         request: AddToFavoriteRequest,
-    ) -> Result<(), ResourceError> {
+    ) -> Result<(), FavoriteError> {
         // 检查收藏夹是否存在且属于当前用户
         let favorite =
             sqlx::query_as::<_, Favorite>("SELECT * FROM favorites WHERE id = $1 AND user_id = $2")
@@ -387,7 +405,7 @@ impl FavoriteService {
                 .await?;
 
         if favorite.is_none() {
-            return Err(ResourceError::NotFound("收藏夹不存在".to_string()));
+            return Err(FavoriteError::NotFound("收藏夹不存在".to_string()));
         }
 
         // 检查资源是否存在
@@ -398,7 +416,7 @@ impl FavoriteService {
                 .await?;
 
         if !resource_exists {
-            return Err(ResourceError::NotFound("资源不存在".to_string()));
+            return Err(FavoriteError::NotFound("资源不存在".to_string()));
         }
 
         // 检查资源是否已在收藏夹中
@@ -411,7 +429,7 @@ impl FavoriteService {
         .await?;
 
         if already_in {
-            return Err(ResourceError::Conflict("资源已在收藏夹中".to_string()));
+            return Err(FavoriteError::Conflict("资源已在收藏夹中".to_string()));
         }
 
         // 添加资源到收藏夹
@@ -430,7 +448,7 @@ impl FavoriteService {
         favorite_id: Uuid,
         resource_id: Uuid,
         user_id: Uuid,
-    ) -> Result<(), ResourceError> {
+    ) -> Result<(), FavoriteError> {
         // 检查收藏夹是否存在且属于当前用户
         let favorite =
             sqlx::query_as::<_, Favorite>("SELECT * FROM favorites WHERE id = $1 AND user_id = $2")
@@ -440,7 +458,7 @@ impl FavoriteService {
                 .await?;
 
         if favorite.is_none() {
-            return Err(ResourceError::NotFound("收藏夹不存在".to_string()));
+            return Err(FavoriteError::NotFound("收藏夹不存在".to_string()));
         }
 
         // 删除关联
@@ -453,7 +471,7 @@ impl FavoriteService {
         .await?;
 
         if result.rows_affected() == 0 {
-            return Err(ResourceError::NotFound("资源不在该收藏夹中".to_string()));
+            return Err(FavoriteError::NotFound("资源不在该收藏夹中".to_string()));
         }
 
         Ok(())
@@ -464,7 +482,7 @@ impl FavoriteService {
         pool: &PgPool,
         user_id: Uuid,
         resource_id: Uuid,
-    ) -> Result<CheckResourceInFavoriteResponse, ResourceError> {
+    ) -> Result<CheckResourceInFavoriteResponse, FavoriteError> {
         // 检查资源是否存在
         let resource_exists =
             sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM resources WHERE id = $1)")
@@ -473,7 +491,7 @@ impl FavoriteService {
                 .await?;
 
         if !resource_exists {
-            return Err(ResourceError::NotFound("资源不存在".to_string()));
+            return Err(FavoriteError::NotFound("资源不存在".to_string()));
         }
 
         // 获取包含该资源的所有收藏夹ID
@@ -504,7 +522,7 @@ impl FavoriteService {
         pool: &PgPool,
         favorite_id: Uuid,
         user_id: Uuid,
-    ) -> Result<Vec<(Uuid, String, String, String, i64, String)>, ResourceError> {
+    ) -> Result<Vec<(Uuid, String, String, String, i64, String)>, FavoriteError> {
         // 检查收藏夹是否存在且属于当前用户
         let favorite =
             sqlx::query_as::<_, Favorite>("SELECT * FROM favorites WHERE id = $1 AND user_id = $2")
@@ -514,7 +532,7 @@ impl FavoriteService {
                 .await?;
 
         if favorite.is_none() {
-            return Err(ResourceError::NotFound("收藏夹不存在".to_string()));
+            return Err(FavoriteError::NotFound("收藏夹不存在".to_string()));
         }
 
         // 获取资源文件路径、标题、资源类型、文件大小和存储类型
@@ -545,18 +563,18 @@ impl FavoriteService {
         favorite_id: Uuid,
         user_id: Uuid,
         favorite_name: &str,
-    ) -> Result<(Vec<u8>, String), ResourceError> {
+    ) -> Result<(Vec<u8>, String), FavoriteError> {
         // 获取资源文件信息（包含存储类型）
         let resources = Self::get_favorite_resource_paths(pool, favorite_id, user_id).await?;
 
         if resources.is_empty() {
-            return Err(ResourceError::ValidationError("收藏夹为空".to_string()));
+            return Err(FavoriteError::ValidationError("收藏夹为空".to_string()));
         }
 
         // 检查文件数量限制
         const MAX_FILES: usize = 100;
         if resources.len() > MAX_FILES {
-            return Err(ResourceError::ValidationError(format!(
+            return Err(FavoriteError::ValidationError(format!(
                 "收藏夹资源数量超过限制，最多支持 {} 个文件",
                 MAX_FILES
             )));
@@ -566,7 +584,7 @@ impl FavoriteService {
         const MAX_TOTAL_SIZE: i64 = 500 * 1024 * 1024; // 500MB
         let total_size: i64 = resources.iter().map(|(_, _, _, _, size, _)| *size).sum();
         if total_size > MAX_TOTAL_SIZE {
-            return Err(ResourceError::ValidationError(format!(
+            return Err(FavoriteError::ValidationError(format!(
                 "收藏夹资源总大小超过限制，最大支持 500MB，当前 {:.2}MB",
                 total_size as f64 / 1024.0 / 1024.0
             )));
@@ -721,7 +739,7 @@ impl FavoriteService {
 
             // 完成 ZIP 文件
             if let Err(e) = zip_writer.finish() {
-                return Err(ResourceError::FileError(format!("创建ZIP文件失败: {}", e)));
+                return Err(FavoriteError::FileError(format!("创建ZIP文件失败: {}", e)));
             }
         }
 

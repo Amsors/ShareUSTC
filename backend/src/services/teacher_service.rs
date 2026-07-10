@@ -7,24 +7,29 @@ use crate::models::{
 };
 
 /// 教师服务错误类型
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum TeacherError {
-    DatabaseError(String),
+    #[error("未找到: {0}")]
     NotFound(String),
+    #[error("验证错误: {0}")]
     ValidationError(String),
+    #[error("数据库错误: {0}")]
+    Database(#[from] sqlx::Error),
 }
 
-impl std::fmt::Display for TeacherError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl actix_web::ResponseError for TeacherError {
+    fn error_response(&self) -> actix_web::HttpResponse {
+        use crate::utils::{bad_request, internal_error, not_found};
         match self {
-            TeacherError::DatabaseError(msg) => write!(f, "数据库错误: {}", msg),
-            TeacherError::NotFound(msg) => write!(f, "未找到: {}", msg),
-            TeacherError::ValidationError(msg) => write!(f, "验证错误: {}", msg),
+            TeacherError::NotFound(msg) => not_found(msg),
+            TeacherError::ValidationError(msg) => bad_request(msg),
+            TeacherError::Database(e) => {
+                log::error!("[Teacher] 数据库错误 | error={}", e);
+                internal_error("服务器内部错误")
+            }
         }
     }
 }
-
-impl std::error::Error for TeacherError {}
 
 /// 教师服务
 pub struct TeacherService;
@@ -50,8 +55,7 @@ impl TeacherService {
         .bind(&req.name)
         .bind(&req.department)
         .fetch_one(pool)
-        .await
-        .map_err(|e| TeacherError::DatabaseError(e.to_string()))?;
+        .await?;
 
         Ok(teacher)
     }
@@ -77,10 +81,7 @@ impl TeacherService {
 
         // 查询总数
         let count_sql = format!("SELECT COUNT(*) FROM teachers WHERE {}", where_clause);
-        let total: i64 = sqlx::query_scalar(&count_sql)
-            .fetch_one(pool)
-            .await
-            .map_err(|e| TeacherError::DatabaseError(e.to_string()))?;
+        let total: i64 = sqlx::query_scalar(&count_sql).fetch_one(pool).await?;
 
         // 查询列表
         let list_sql = format!(
@@ -96,8 +97,7 @@ impl TeacherService {
 
         let teachers = sqlx::query_as::<_, Teacher>(&list_sql)
             .fetch_all(pool)
-            .await
-            .map_err(|e| TeacherError::DatabaseError(e.to_string()))?;
+            .await?;
 
         Ok(TeacherListResponse {
             teachers,
@@ -118,8 +118,7 @@ impl TeacherService {
         )
         .bind(sn)
         .fetch_optional(pool)
-        .await
-        .map_err(|e| TeacherError::DatabaseError(e.to_string()))?;
+        .await?;
 
         teacher.ok_or_else(|| TeacherError::NotFound(format!("教师编号 {} 不存在", sn)))
     }
@@ -147,10 +146,7 @@ impl TeacherService {
             "#
         };
 
-        let teachers = sqlx::query_as::<_, Teacher>(sql)
-            .fetch_all(pool)
-            .await
-            .map_err(|e| TeacherError::DatabaseError(e.to_string()))?;
+        let teachers = sqlx::query_as::<_, Teacher>(sql).fetch_all(pool).await?;
 
         Ok(teachers)
     }
@@ -190,8 +186,7 @@ impl TeacherService {
         let teacher = sqlx::query_as::<_, Teacher>(&update_sql)
             .bind(sn)
             .fetch_one(pool)
-            .await
-            .map_err(|e| TeacherError::DatabaseError(e.to_string()))?;
+            .await?;
 
         Ok(teacher)
     }
@@ -218,7 +213,7 @@ impl TeacherService {
             if e.to_string().contains("no rows") {
                 TeacherError::NotFound(format!("教师编号 {} 不存在", sn))
             } else {
-                TeacherError::DatabaseError(e.to_string())
+                TeacherError::Database(e)
             }
         })?;
 
@@ -230,8 +225,7 @@ impl TeacherService {
         let result = sqlx::query("DELETE FROM teachers WHERE sn = $1")
             .bind(sn)
             .execute(pool)
-            .await
-            .map_err(|e| TeacherError::DatabaseError(e.to_string()))?;
+            .await?;
 
         if result.rows_affected() == 0 {
             return Err(TeacherError::NotFound(format!("教师编号 {} 不存在", sn)));
@@ -288,16 +282,14 @@ impl TeacherService {
                 .bind(&item.name)
                 .bind(dept)
                 .fetch_optional(pool)
-                .await
-                .map_err(|e| TeacherError::DatabaseError(e.to_string()))?
+                .await?
             } else {
                 sqlx::query_as(
                     "SELECT sn FROM teachers WHERE name = $1 AND department IS NULL LIMIT 1",
                 )
                 .bind(&item.name)
                 .fetch_optional(pool)
-                .await
-                .map_err(|e| TeacherError::DatabaseError(e.to_string()))?
+                .await?
             };
 
             if existing.is_some() {
