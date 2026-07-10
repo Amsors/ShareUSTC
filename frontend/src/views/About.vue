@@ -692,19 +692,19 @@ const copyQQGroup = async () => {
   background: #fff;
   padding: 32px;
   border-radius: 12px;
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--el-border-color-lighter);
 }
 
 .section h2 {
   font-size: 24px;
-  color: #303133;
+  color: var(--el-text-color-primary);
   margin: 0 0 20px 0;
   padding-bottom: 12px;
-  border-bottom: 2px solid #ebeef5;
+  border-bottom: 2px solid var(--el-border-color-lighter);
 }
 
 .section p {
-  color: #606266;
+  color: var(--el-text-color-regular);
   line-height: 1.8;
   margin: 0 0 12px 0;
 }
@@ -726,7 +726,7 @@ const copyQQGroup = async () => {
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--el-border-color-lighter);
   border-radius: 8px;
   background-color: #fcfcfc;
   transition: all 0.3s ease;
@@ -744,13 +744,13 @@ const copyQQGroup = async () => {
 
 .features-section .feature-card h3 {
   margin: 0 0 4px;
-  color: #303133;
+  color: var(--el-text-color-primary);
   font-size: 15px;
   font-weight: 600;
 }
 
 .features-section .feature-card p {
-  color: #606266;
+  color: var(--el-text-color-regular);
   font-size: 13px;
   margin: 0;
   line-height: 1.5;
@@ -771,7 +771,7 @@ const copyQQGroup = async () => {
 
 .tech-group h3 {
   font-size: 14px;
-  color: #606266;
+  color: var(--el-text-color-regular);
   margin: 0;
   min-width: 50px;
 }
@@ -996,7 +996,7 @@ const copyQQGroup = async () => {
 
 .contributor-rank.top-three {
   color: #fff;
-  background: linear-gradient(135deg, #ffd700 0%, #ffb700 100%);
+  background: var(--su-medal-gold);
 }
 
 .contributor-avatar {
@@ -1068,12 +1068,12 @@ const copyQQGroup = async () => {
   padding: 12px 16px;
   background: #f6f8fa;
   border-radius: 8px;
-  border-left: 3px solid #409eff;
+  border-left: 3px solid var(--el-color-primary);
 }
 
 .changelog-date {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-weight: 800;
   min-width: 70px;
   flex-shrink: 0;
@@ -1095,23 +1095,23 @@ const copyQQGroup = async () => {
 }
 
 .tag-feature {
-  background: #ecf5ff;
-  color: #409eff;
+  background: var(--el-color-primary-light-9);
+  color: var(--el-color-primary);
 }
 
 .tag-improve {
-  background: #f0f9eb;
-  color: #67c23a;
+  background: var(--el-color-success-light-9);
+  color: var(--el-color-success);
 }
 
 .tag-fix {
-  background: #fef0f0;
-  color: #f56c6c;
+  background: var(--el-color-danger-light-9);
+  color: var(--el-color-danger);
 }
 
 .changelog-text {
   font-size: 14px;
-  color: #303133;
+  color: var(--el-text-color-primary);
   line-height: 1.6;
 }
 
@@ -1130,7 +1130,7 @@ const copyQQGroup = async () => {
   padding: 16px 20px;
   background: #f6f8fa;
   border-radius: 8px;
-  border-left: 3px solid #409eff;
+  border-left: 3px solid var(--el-color-primary);
 }
 
 .source-main {
@@ -1151,7 +1151,7 @@ const copyQQGroup = async () => {
 .source-label,
 .uploader-label {
   font-size: 14px;
-  color: #606266;
+  color: var(--el-text-color-regular);
   white-space: nowrap;
 }
 
@@ -1171,12 +1171,12 @@ const copyQQGroup = async () => {
 }
 
 .source-link:hover {
-  color: #409eff;
+  color: var(--el-color-primary);
   text-decoration: underline;
 }
 
 .uploader-link {
-  color: #67c23a;
+  color: var(--el-color-success);
 }
 
 .uploader-link:hover {
@@ -1196,10 +1196,10 @@ const copyQQGroup = async () => {
 
 .detail-title {
   font-size: 20px;
-  color: #303133;
+  color: var(--el-text-color-primary);
   margin: 0 0 20px 0;
   padding-bottom: 12px;
-  border-bottom: 2px solid #ebeef5;
+  border-bottom: 2px solid var(--el-border-color-lighter);
 }
 
 .detail-section {
@@ -1212,13 +1212,13 @@ const copyQQGroup = async () => {
 
 .detail-section h4 {
   font-size: 15px;
-  color: #606266;
+  color: var(--el-text-color-regular);
   margin: 0 0 8px 0;
   font-weight: 600;
 }
 
 .detail-section p {
-  color: #606266;
+  color: var(--el-text-color-regular);
   line-height: 1.8;
   margin: 0;
 }
@@ -1226,7 +1226,7 @@ const copyQQGroup = async () => {
 .content-list {
   margin: 0;
   padding-left: 20px;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .content-list li {
@@ -1240,7 +1240,7 @@ const copyQQGroup = async () => {
 
 /* QQ 群号 */
 .qq-group {
-  color: #409eff;
+  color: var(--el-color-primary);
   cursor: pointer;
   font-weight: 500;
   padding: 2px 6px;
@@ -1250,7 +1250,7 @@ const copyQQGroup = async () => {
 }
 
 .qq-group:hover {
-  background-color: #ecf5ff;
+  background-color: var(--el-color-primary-light-9);
   color: #66b1ff;
 }
 

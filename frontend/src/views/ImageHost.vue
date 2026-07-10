@@ -387,7 +387,7 @@ onMounted(() => {
 <style scoped>
 .image-host-page {
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
 }
 
 .image-host-container {
@@ -402,13 +402,13 @@ onMounted(() => {
   justify-content: center;
   gap: 12px;
   margin: 0 0 8px;
-  color: #303133;
+  color: var(--el-text-color-primary);
   font-size: 28px;
 }
 
 .page-subtitle {
   text-align: center;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin: 0 0 24px;
 }
 
@@ -417,7 +417,7 @@ onMounted(() => {
 }
 
 .upload-area {
-  border: 2px dashed #dcdfe6;
+  border: 2px dashed var(--el-border-color);
   border-radius: 8px;
   padding: 40px 20px;
   text-align: center;
@@ -427,17 +427,17 @@ onMounted(() => {
 
 .upload-area:hover,
 .upload-area.is-dragover {
-  border-color: #409eff;
-  background-color: #f5f7fa;
+  border-color: var(--el-color-primary);
+  background-color: var(--el-fill-color-light);
 }
 
 .upload-area h3 {
   margin: 16px 0 8px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .upload-hint {
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 14px;
   margin: 0;
 }
@@ -471,7 +471,7 @@ onMounted(() => {
   max-height: 200px;
   object-fit: contain;
   border-radius: 4px;
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--el-border-color-lighter);
 }
 
 .link-section {
@@ -490,7 +490,7 @@ onMounted(() => {
 .link-label {
   display: block;
   margin-bottom: 8px;
-  color: #606266;
+  color: var(--el-text-color-regular);
   font-size: 14px;
 }
 
@@ -511,7 +511,7 @@ onMounted(() => {
 }
 
 .loading-text {
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 14px;
 }
 
@@ -526,7 +526,7 @@ onMounted(() => {
   border-radius: 8px;
   overflow: hidden;
   background-color: #fff;
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--el-border-color-lighter);
   transition: box-shadow 0.3s;
 }
 
@@ -538,7 +538,7 @@ onMounted(() => {
   position: relative;
   width: 100%;
   height: 150px;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   overflow: hidden;
 }
 
@@ -574,7 +574,7 @@ onMounted(() => {
 .image-name {
   margin: 0 0 4px;
   font-size: 14px;
-  color: #303133;
+  color: var(--el-text-color-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -583,7 +583,7 @@ onMounted(() => {
 .image-meta {
   margin: 0;
   font-size: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 .image-storage {
@@ -610,7 +610,7 @@ onMounted(() => {
 
 .detail-info {
   text-align: left;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   padding: 16px;
   border-radius: 4px;
   margin-bottom: 16px;
@@ -618,7 +618,7 @@ onMounted(() => {
 
 .detail-info p {
   margin: 8px 0;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .detail-links {

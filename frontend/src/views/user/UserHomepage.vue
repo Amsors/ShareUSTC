@@ -247,7 +247,7 @@ onMounted(() => {
 <style scoped>
 .user-homepage {
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   padding: 24px;
 }
 
@@ -263,7 +263,7 @@ onMounted(() => {
 }
 
 .loading-icon {
-  color: #409eff;
+  color: var(--el-color-primary);
   animation: rotating 2s linear infinite;
 }
 
@@ -278,7 +278,7 @@ onMounted(() => {
 
 .loading-state p {
   margin-top: 16px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 /* 用户信息卡片 */
@@ -304,12 +304,12 @@ onMounted(() => {
 .username {
   margin: 0 0 8px;
   font-size: 28px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .user-id {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-bottom: 8px;
 }
 
@@ -322,7 +322,7 @@ onMounted(() => {
 .join-date {
   margin: 0;
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 /* 统计数据 */
@@ -330,7 +330,7 @@ onMounted(() => {
   display: flex;
   justify-content: space-around;
   padding-top: 24px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--el-border-color-lighter);
 }
 
 .stat-item {
@@ -341,13 +341,13 @@ onMounted(() => {
   display: block;
   font-size: 28px;
   font-weight: bold;
-  color: #409eff;
+  color: var(--el-color-primary);
   margin-bottom: 4px;
 }
 
 .stat-label {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 /* 个人简介 */
@@ -367,12 +367,12 @@ onMounted(() => {
 .markdown-body :deep(h5),
 .markdown-body :deep(h6) {
   margin: 16px 0 12px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .markdown-body :deep(h1) {
   font-size: 1.5em;
-  border-bottom: 1px solid #e4e7ed;
+  border-bottom: 1px solid var(--el-border-color-light);
   padding-bottom: 8px;
 }
 
@@ -383,7 +383,7 @@ onMounted(() => {
 .markdown-body :deep(p) {
   margin: 12px 0;
   line-height: 1.8;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .markdown-body :deep(img) {
@@ -394,7 +394,7 @@ onMounted(() => {
 }
 
 .markdown-body :deep(a) {
-  color: #409eff;
+  color: var(--el-color-primary);
   text-decoration: none;
 }
 
@@ -403,7 +403,7 @@ onMounted(() => {
 }
 
 .markdown-body :deep(code) {
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   padding: 2px 6px;
   border-radius: 3px;
   font-family: 'Consolas', 'Monaco', monospace;
@@ -426,10 +426,10 @@ onMounted(() => {
 }
 
 .markdown-body :deep(blockquote) {
-  border-left: 4px solid #409eff;
+  border-left: 4px solid var(--el-color-primary);
   padding-left: 16px;
   margin: 12px 0;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .markdown-body :deep(ul),
@@ -455,7 +455,7 @@ onMounted(() => {
 
 .resources-count {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-weight: normal;
 }
 
@@ -489,7 +489,7 @@ onMounted(() => {
 .resource-title {
   margin: 0 0 8px;
   font-size: 16px;
-  color: #303133;
+  color: var(--el-text-color-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -504,7 +504,7 @@ onMounted(() => {
 
 .course-name {
   font-size: 13px;
-  color: #409eff;
+  color: var(--el-color-primary);
 }
 
 .resource-tags {
@@ -516,7 +516,7 @@ onMounted(() => {
   display: flex;
   gap: 16px;
   font-size: 13px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   flex-shrink: 0;
 }
 

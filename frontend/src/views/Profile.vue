@@ -900,7 +900,7 @@ const refreshUserInfo = async () => {
 <style scoped>
 .profile-page {
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
 }
 
 .profile-container {
@@ -931,7 +931,7 @@ const refreshUserInfo = async () => {
 .username {
   margin: 0 0 8px;
   font-size: 18px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .profile-menu {
@@ -945,7 +945,7 @@ const refreshUserInfo = async () => {
 
 .content-section h2 {
   margin: 0 0 24px;
-  color: #303133;
+  color: var(--el-text-color-primary);
   font-size: 20px;
 }
 
@@ -963,12 +963,12 @@ const refreshUserInfo = async () => {
 .stat-value {
   font-size: 32px;
   font-weight: bold;
-  color: #409eff;
+  color: var(--el-color-primary);
   margin-bottom: 8px;
 }
 
 .stat-label {
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 14px;
 }
 
@@ -1015,12 +1015,12 @@ const refreshUserInfo = async () => {
 }
 
 .verification-desc {
-  color: #606266;
+  color: var(--el-text-color-regular);
   margin-bottom: 12px;
 }
 
 .verification-benefits {
-  color: #67c23a;
+  color: var(--el-color-success);
   padding-left: 20px;
   margin-bottom: 24px;
 }
@@ -1051,7 +1051,7 @@ const refreshUserInfo = async () => {
 }
 
 .loading-icon {
-  color: #409eff;
+  color: var(--el-color-primary);
   animation: rotating 2s linear infinite;
 }
 
@@ -1075,7 +1075,7 @@ const refreshUserInfo = async () => {
   border-radius: 8px;
   overflow: hidden;
   background-color: #fff;
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--el-border-color-lighter);
   transition: box-shadow 0.3s;
 }
 
@@ -1087,7 +1087,7 @@ const refreshUserInfo = async () => {
   position: relative;
   width: 100%;
   height: 140px;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   overflow: hidden;
 }
 
@@ -1123,7 +1123,7 @@ const refreshUserInfo = async () => {
 .user-image-name {
   margin: 0 0 4px;
   font-size: 13px;
-  color: #303133;
+  color: var(--el-text-color-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1132,7 +1132,7 @@ const refreshUserInfo = async () => {
 .user-image-meta {
   margin: 0;
   font-size: 11px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 .pagination-wrapper {
@@ -1166,12 +1166,12 @@ const refreshUserInfo = async () => {
 .resource-title {
   margin: 0;
   font-size: 16px;
-  color: #303133;
+  color: var(--el-text-color-primary);
   cursor: pointer;
 }
 
 .resource-title:hover {
-  color: #409eff;
+  color: var(--el-color-primary);
 }
 
 .resource-meta {
@@ -1179,11 +1179,11 @@ const refreshUserInfo = async () => {
   gap: 12px;
   margin-bottom: 12px;
   font-size: 13px;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .course-name {
-  color: #409eff;
+  color: var(--el-color-primary);
   font-weight: 500;
 }
 
@@ -1198,14 +1198,14 @@ const refreshUserInfo = async () => {
   justify-content: space-between;
   align-items: center;
   padding-top: 12px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--el-border-color-lighter);
 }
 
 .resource-stats {
   display: flex;
   gap: 16px;
   font-size: 13px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 .resource-stats span {
@@ -1225,7 +1225,7 @@ const refreshUserInfo = async () => {
 
 .form-hint {
   font-size: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin: 0;
 }
 
@@ -1233,17 +1233,17 @@ const refreshUserInfo = async () => {
 .bio-section {
   margin-top: 24px;
   padding-top: 24px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--el-border-color-lighter);
 }
 
 .bio-section h4 {
   margin: 0 0 16px;
-  color: #303133;
+  color: var(--el-text-color-primary);
   font-size: 16px;
 }
 
 .bio-content {
-  background: #f5f7fa;
+  background: var(--el-fill-color-light);
   border-radius: 8px;
   padding: 20px;
 }
@@ -1260,12 +1260,12 @@ const refreshUserInfo = async () => {
 .markdown-body :deep(h5),
 .markdown-body :deep(h6) {
   margin: 16px 0 12px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .markdown-body :deep(h1) {
   font-size: 1.5em;
-  border-bottom: 1px solid #e4e7ed;
+  border-bottom: 1px solid var(--el-border-color-light);
   padding-bottom: 8px;
 }
 
@@ -1276,7 +1276,7 @@ const refreshUserInfo = async () => {
 .markdown-body :deep(p) {
   margin: 12px 0;
   line-height: 1.8;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .markdown-body :deep(img) {
@@ -1287,7 +1287,7 @@ const refreshUserInfo = async () => {
 }
 
 .markdown-body :deep(a) {
-  color: #409eff;
+  color: var(--el-color-primary);
   text-decoration: none;
 }
 
@@ -1296,7 +1296,7 @@ const refreshUserInfo = async () => {
 }
 
 .markdown-body :deep(code) {
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   padding: 2px 6px;
   border-radius: 3px;
   font-family: 'Consolas', 'Monaco', monospace;
@@ -1319,10 +1319,10 @@ const refreshUserInfo = async () => {
 }
 
 .markdown-body :deep(blockquote) {
-  border-left: 4px solid #409eff;
+  border-left: 4px solid var(--el-color-primary);
   padding-left: 16px;
   margin: 12px 0;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .markdown-body :deep(ul),
@@ -1343,19 +1343,19 @@ const refreshUserInfo = async () => {
 
 .markdown-body :deep(th),
 .markdown-body :deep(td) {
-  border: 1px solid #dcdfe6;
+  border: 1px solid var(--el-border-color);
   padding: 8px 12px;
   text-align: left;
 }
 
 .markdown-body :deep(th) {
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   font-weight: 600;
 }
 
 .markdown-body :deep(hr) {
   border: none;
-  border-top: 1px solid #e4e7ed;
+  border-top: 1px solid var(--el-border-color-light);
   margin: 16px 0;
 }
 </style>

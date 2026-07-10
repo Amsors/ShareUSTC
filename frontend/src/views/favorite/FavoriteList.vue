@@ -242,7 +242,7 @@ onMounted(() => {
   h1 {
     margin: 0;
     font-size: 24px;
-    color: #303133;
+    color: var(--el-text-color-primary);
   }
 }
 
@@ -252,7 +252,7 @@ onMounted(() => {
 }
 
 .loading-icon {
-  color: #409eff;
+  color: var(--el-color-primary);
   animation: rotating 2s linear infinite;
 }
 
@@ -303,7 +303,7 @@ onMounted(() => {
     margin: 0 0 8px;
     font-size: 16px;
     font-weight: 600;
-    color: #303133;
+    color: var(--el-text-color-primary);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -312,7 +312,7 @@ onMounted(() => {
   .favorite-meta {
     margin: 0 0 4px;
     font-size: 14px;
-    color: #606266;
+    color: var(--el-text-color-regular);
     display: flex;
     align-items: center;
     gap: 4px;
@@ -321,7 +321,7 @@ onMounted(() => {
   .favorite-date {
     margin: 0;
     font-size: 12px;
-    color: #909399;
+    color: var(--el-text-color-secondary);
   }
 }
 

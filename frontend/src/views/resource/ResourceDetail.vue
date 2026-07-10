@@ -789,7 +789,7 @@ onMounted(() => {
 }
 
 .loading-icon {
-  color: #409eff;
+  color: var(--el-color-primary);
   animation: rotating 2s linear infinite;
 }
 

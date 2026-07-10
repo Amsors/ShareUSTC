@@ -255,13 +255,13 @@ const handleClose = () => {
   .main-text {
     font-size: 18px;
     font-weight: 600;
-    color: #303133;
+    color: var(--el-text-color-primary);
     margin: 0 0 8px;
   }
 
   .sub-text {
     font-size: 14px;
-    color: #606266;
+    color: var(--el-text-color-regular);
     margin: 0;
     display: flex;
     align-items: center;
@@ -269,7 +269,7 @@ const handleClose = () => {
     gap: 8px;
 
     &.error-text {
-      color: #f56c6c;
+      color: var(--el-color-danger);
     }
 
     .source-tag {

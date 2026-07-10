@@ -690,7 +690,7 @@ onMounted(fetchCourses);
 .page-header h1 {
   margin: 0;
   font-size: 24px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .filter-bar {
@@ -712,7 +712,7 @@ onMounted(fetchCourses);
 
 .batch-import-content {
   .json-example {
-    background: #f5f7fa;
+    background: var(--el-fill-color-light);
     padding: 12px;
     border-radius: 4px;
     font-family: monospace;

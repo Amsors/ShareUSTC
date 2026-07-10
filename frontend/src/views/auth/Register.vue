@@ -234,7 +234,7 @@ const handleSubmit = async () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--su-brand-gradient);
   padding: 20px;
 }
 
@@ -247,14 +247,14 @@ const handleSubmit = async () => {
 .register-title {
   text-align: center;
   margin: 0;
-  color: #303133;
+  color: var(--el-text-color-primary);
   font-size: 24px;
 }
 
 .register-subtitle {
   text-align: center;
   margin: 8px 0 0;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 14px;
 }
 
@@ -268,7 +268,7 @@ const handleSubmit = async () => {
 .strength-bar {
   flex: 1;
   height: 4px;
-  background-color: #e4e7ed;
+  background-color: var(--el-border-color-light);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -286,12 +286,12 @@ const handleSubmit = async () => {
 .register-links {
   text-align: center;
   margin-top: 16px;
-  color: #606266;
+  color: var(--el-text-color-regular);
   font-size: 14px;
 }
 
 .register-links a {
-  color: #409eff;
+  color: var(--el-color-primary);
   text-decoration: none;
   margin-left: 4px;
 }

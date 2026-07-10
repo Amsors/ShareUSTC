@@ -509,12 +509,12 @@ onMounted(() => {
   h1 {
     margin: 0 0 8px;
     font-size: 24px;
-    color: #303133;
+    color: var(--el-text-color-primary);
   }
 
   .subtitle {
     margin: 0;
-    color: #909399;
+    color: var(--el-text-color-secondary);
     font-size: 14px;
   }
 }
@@ -544,7 +544,7 @@ onMounted(() => {
   gap: 8px;
 
   .el-icon {
-    color: #409eff;
+    color: var(--el-color-primary);
   }
 }
 
@@ -588,7 +588,7 @@ onMounted(() => {
     display: flex;
     align-items: center;
     gap: 4px;
-    color: #606266;
+    color: var(--el-text-color-regular);
     font-size: 13px;
 
     .el-icon {

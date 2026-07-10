@@ -246,7 +246,7 @@ const handleReset = () => {
   font-size: 24px;
   font-weight: 600;
   margin-bottom: 24px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .notification-form-card {
@@ -263,7 +263,7 @@ const handleReset = () => {
 
 .form-tip {
   font-size: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-top: 4px;
 }
 
@@ -276,19 +276,19 @@ const handleReset = () => {
   font-size: 16px;
   font-weight: 500;
   margin-bottom: 16px;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .preview-card {
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   border-radius: 8px;
   padding: 16px;
-  border-left: 4px solid #409eff;
+  border-left: 4px solid var(--el-color-primary);
 }
 
 .preview-card.high-priority {
-  border-left-color: #f56c6c;
-  background-color: #fef0f0;
+  border-left-color: var(--el-color-danger);
+  background-color: var(--el-color-danger-light-9);
 }
 
 .preview-header {
@@ -301,12 +301,12 @@ const handleReset = () => {
 .preview-title {
   font-weight: 600;
   font-size: 15px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .preview-content {
   font-size: 14px;
-  color: #606266;
+  color: var(--el-text-color-regular);
   line-height: 1.6;
   white-space: pre-wrap;
 }
@@ -319,7 +319,7 @@ const handleReset = () => {
 .form-actions {
   margin-top: 32px;
   padding-top: 24px;
-  border-top: 1px solid #e4e7ed;
+  border-top: 1px solid var(--el-border-color-light);
 }
 
 .form-actions :deep(.el-button) {

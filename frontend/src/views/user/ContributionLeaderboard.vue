@@ -176,7 +176,7 @@ onMounted(() => {
 <style scoped>
 .leaderboard-page {
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   padding: 24px;
 }
 
@@ -198,18 +198,18 @@ onMounted(() => {
   gap: 12px;
   font-size: 28px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
   margin: 0 0 8px;
 }
 
 .page-title .el-icon {
-  color: #e6a23c;
+  color: var(--el-color-warning);
   font-size: 32px;
 }
 
 .page-subtitle {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin: 0;
 }
 
@@ -220,7 +220,7 @@ onMounted(() => {
 }
 
 .loading-icon {
-  color: #409eff;
+  color: var(--el-color-primary);
   animation: rotating 2s linear infinite;
 }
 
@@ -235,7 +235,7 @@ onMounted(() => {
 
 .loading-state p {
   margin-top: 16px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 /* 榜单卡片 */
@@ -293,26 +293,26 @@ onMounted(() => {
 }
 
 .rank-badge.rank-1 {
-  background: linear-gradient(135deg, #ffd700 0%, #ffb800 100%);
+  background: var(--su-medal-gold);
   color: #fff;
   font-size: 20px;
 }
 
 .rank-badge.rank-2 {
-  background: linear-gradient(135deg, #c0c0c0 0%, #a0a0a0 100%);
+  background: var(--su-medal-silver);
   color: #fff;
   font-size: 20px;
 }
 
 .rank-badge.rank-3 {
-  background: linear-gradient(135deg, #cd7f32 0%, #b87333 100%);
+  background: var(--su-medal-bronze);
   color: #fff;
   font-size: 20px;
 }
 
 .rank-badge.rank-other {
   background-color: #f0f2f5;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 /* 用户信息 */
@@ -325,7 +325,7 @@ onMounted(() => {
 }
 
 .user-avatar {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--su-brand-gradient);
   color: #fff;
   flex-shrink: 0;
 }
@@ -345,7 +345,7 @@ onMounted(() => {
 .username {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -353,7 +353,7 @@ onMounted(() => {
 
 .user-bio {
   font-size: 13px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -375,13 +375,13 @@ onMounted(() => {
   display: block;
   font-size: 18px;
   font-weight: 600;
-  color: #409eff;
+  color: var(--el-color-primary);
   margin-bottom: 2px;
 }
 
 .stat-label {
   font-size: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 /* 操作按钮 */
@@ -457,7 +457,7 @@ onMounted(() => {
   .stats-cell {
     padding-left: 0;
     width: 100%;
-    border-top: 1px solid #ebeef5;
+    border-top: 1px solid var(--el-border-color-lighter);
     padding-top: 12px;
     margin-top: 4px;
   }

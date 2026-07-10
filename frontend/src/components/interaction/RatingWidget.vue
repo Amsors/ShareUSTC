@@ -282,7 +282,7 @@ onMounted(() => {
 
 <style scoped>
 .rating-widget {
-  background: #f5f7fa;
+  background: var(--el-fill-color-light);
   border-radius: 8px;
   padding: 20px;
 }
@@ -297,12 +297,12 @@ onMounted(() => {
 .rating-header h4 {
   margin: 0;
   font-size: 16px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .rating-count {
   font-size: 15 px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 .loading-state {
@@ -311,7 +311,7 @@ onMounted(() => {
   justify-content: center;
   gap: 8px;
   padding: 40px 0;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 .loading-icon {
@@ -353,12 +353,12 @@ onMounted(() => {
 
 .dimension-name {
   font-size: 14px;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .dimension-info .el-icon {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   cursor: help;
 }
 
@@ -396,7 +396,7 @@ onMounted(() => {
 }
 
 .score-number.no-score {
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-weight: normal;
   font-size: 13px;
 }
@@ -407,19 +407,19 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 40px 0;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 .no-ratings .el-icon {
   font-size: 32px;
-  color: #dcdfe6;
+  color: var(--el-border-color);
 }
 
 .rating-actions {
   display: flex;
   justify-content: center;
   padding-top: 16px;
-  border-top: 1px solid #e4e7ed;
+  border-top: 1px solid var(--el-border-color-light);
 }
 
 /* 弹窗样式 */
@@ -429,7 +429,7 @@ onMounted(() => {
 
 .rating-hint {
   margin: 0 0 20px 0;
-  color: #606266;
+  color: var(--el-text-color-regular);
   font-size: 14px;
 }
 
@@ -447,12 +447,12 @@ onMounted(() => {
 .rating-item-name {
   font-size: 14px;
   font-weight: 500;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .rating-item-header .el-icon {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   cursor: help;
 }
 

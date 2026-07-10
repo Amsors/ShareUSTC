@@ -114,7 +114,7 @@ const handleSubmit = async () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--su-brand-gradient);
   padding: 20px;
 }
 
@@ -127,26 +127,26 @@ const handleSubmit = async () => {
 .login-title {
   text-align: center;
   margin: 0;
-  color: #303133;
+  color: var(--el-text-color-primary);
   font-size: 24px;
 }
 
 .login-subtitle {
   text-align: center;
   margin: 8px 0 0;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 14px;
 }
 
 .login-links {
   text-align: center;
   margin-top: 16px;
-  color: #606266;
+  color: var(--el-text-color-regular);
   font-size: 14px;
 }
 
 .login-links a {
-  color: #409eff;
+  color: var(--el-color-primary);
   text-decoration: none;
   margin-left: 4px;
 }

@@ -718,19 +718,19 @@ onMounted(() => {
       h1 {
         margin: 0;
         font-size: 24px;
-        color: #303133;
+        color: var(--el-text-color-primary);
       }
     }
 
     .favorite-meta {
       margin: 0;
-      color: #909399;
+      color: var(--el-text-color-secondary);
       font-size: 14px;
     }
 
     .favorite-uuid {
       margin: 4px 0 0;
-      color: #c0c4cc;
+      color: var(--el-text-color-disabled);
       font-size: 12px;
       font-family: monospace;
     }
@@ -839,11 +839,11 @@ onMounted(() => {
   z-index: 1;
 
   &.oss {
-    background-color: #67c23a;
+    background-color: var(--el-color-success);
   }
 
   &.local {
-    background-color: #909399;
+    background-color: var(--el-text-color-secondary);
   }
 }
 
@@ -857,7 +857,7 @@ onMounted(() => {
     margin: 0 0 4px;
     font-size: 14px;
     font-weight: 600;
-    color: #303133;
+    color: var(--el-text-color-primary);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -866,7 +866,7 @@ onMounted(() => {
   .resource-course {
     margin: 0 0 4px;
     font-size: 12px;
-    color: #606266;
+    color: var(--el-text-color-regular);
     min-height: 18px; // 固定高度，无内容时占位
   }
 
@@ -882,7 +882,7 @@ onMounted(() => {
     display: flex;
     gap: 12px;
     font-size: 12px;
-    color: #909399;
+    color: var(--el-text-color-secondary);
     margin-top: auto; // 将统计信息推到底部
 
     span {
@@ -892,7 +892,7 @@ onMounted(() => {
     }
 
     .file-size {
-      color: #409eff;
+      color: var(--el-color-primary);
     }
   }
 }
@@ -900,7 +900,7 @@ onMounted(() => {
 .resource-actions {
   margin-top: auto;
   padding-top: 8px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--el-border-color-lighter);
   text-align: right;
   flex-shrink: 0;
 }

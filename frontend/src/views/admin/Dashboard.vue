@@ -175,7 +175,7 @@ onMounted(() => {
   font-size: 24px;
   font-weight: 600;
   margin-bottom: 24px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 /* 统计卡片 */
@@ -216,13 +216,13 @@ onMounted(() => {
 .stat-value {
   font-size: 28px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
   line-height: 1.2;
 }
 
 .stat-title {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-top: 4px;
 }
 
@@ -244,7 +244,7 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   gap: 16px;
 }
 
@@ -263,7 +263,7 @@ onMounted(() => {
 }
 
 .pending-item:hover {
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
 }
 
 .pending-icon {
@@ -282,13 +282,13 @@ onMounted(() => {
 
 .pending-title {
   font-size: 14px;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .pending-count {
   font-size: 18px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
   margin-top: 4px;
 }
 

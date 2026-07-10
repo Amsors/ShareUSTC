@@ -549,7 +549,7 @@ const handleFilterEmptyResourcesChange = (value: boolean) => {
 <style scoped>
 .settings-page {
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   padding: 40px 20px;
 }
 
@@ -561,7 +561,7 @@ const handleFilterEmptyResourcesChange = (value: boolean) => {
 .page-title {
   margin: 0 0 32px;
   font-size: 28px;
-  color: #303133;
+  color: var(--el-text-color-primary);
   font-weight: 600;
 }
 
@@ -581,16 +581,16 @@ const handleFilterEmptyResourcesChange = (value: boolean) => {
 .section-title {
   margin: 0 0 24px;
   font-size: 18px;
-  color: #303133;
+  color: var(--el-text-color-primary);
   display: flex;
   align-items: center;
   gap: 8px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #ebeef5;
+  border-bottom: 1px solid var(--el-border-color-lighter);
 }
 
 .section-title .el-icon {
-  color: #409eff;
+  color: var(--el-color-primary);
 }
 
 .section-title .el-tag {
@@ -604,7 +604,7 @@ const handleFilterEmptyResourcesChange = (value: boolean) => {
   justify-content: space-between;
   align-items: center;
   padding: 16px 0;
-  border-bottom: 1px solid #ebeef5;
+  border-bottom: 1px solid var(--el-border-color-lighter);
 }
 
 .setting-item:last-child {
@@ -619,13 +619,13 @@ const handleFilterEmptyResourcesChange = (value: boolean) => {
 .setting-label {
   font-size: 15px;
   font-weight: 500;
-  color: #303133;
+  color: var(--el-text-color-primary);
   margin-bottom: 6px;
 }
 
 .setting-desc {
   font-size: 13px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   line-height: 1.5;
 }
 
@@ -639,13 +639,13 @@ const handleFilterEmptyResourcesChange = (value: boolean) => {
 
 .setting-hint {
   font-size: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-top: 4px;
 }
 
 /* 阈值设置样式 */
 .threshold-setting {
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   border-radius: 8px;
   margin-top: 8px;
   padding: 16px 20px;
@@ -666,7 +666,7 @@ const handleFilterEmptyResourcesChange = (value: boolean) => {
   gap: 24px;
   margin-bottom: 24px;
   padding: 20px;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   border-radius: 8px;
 }
 
@@ -678,13 +678,13 @@ const handleFilterEmptyResourcesChange = (value: boolean) => {
 .stat-value {
   font-size: 28px;
   font-weight: 600;
-  color: #409eff;
+  color: var(--el-color-primary);
   margin-bottom: 4px;
 }
 
 .stat-label {
   font-size: 13px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 /* 操作按钮 */
@@ -708,7 +708,7 @@ const handleFilterEmptyResourcesChange = (value: boolean) => {
 .cache-info li {
   margin: 4px 0;
   line-height: 1.6;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 /* 响应式 */

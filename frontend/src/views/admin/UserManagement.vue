@@ -329,7 +329,7 @@ onMounted(() => {
 .page-title {
   font-size: 24px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .mb-4 {
@@ -342,22 +342,22 @@ onMounted(() => {
 
 .stat-label {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-bottom: 8px;
 }
 
 .stat-value {
   font-size: 28px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .text-success {
-  color: #67c23a;
+  color: var(--el-color-success);
 }
 
 .text-danger {
-  color: #f56c6c;
+  color: var(--el-color-danger);
 }
 
 .card-header {
@@ -374,7 +374,7 @@ onMounted(() => {
 }
 
 .user-sn {
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-family: 'Consolas', 'Monaco', monospace;
 }
 
@@ -383,7 +383,7 @@ onMounted(() => {
   justify-content: flex-end;
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--el-border-color-lighter);
 }
 
 .real-info-content {

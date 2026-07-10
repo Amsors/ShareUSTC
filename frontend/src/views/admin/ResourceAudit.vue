@@ -263,7 +263,7 @@ onMounted(() => {
 .page-title {
   font-size: 24px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .mb-4 {
@@ -276,18 +276,18 @@ onMounted(() => {
 
 .stat-label {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-bottom: 8px;
 }
 
 .stat-value {
   font-size: 28px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .text-warning {
-  color: #e6a23c;
+  color: var(--el-color-warning);
 }
 
 .card-header {
@@ -322,7 +322,7 @@ onMounted(() => {
 .resource-title {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
   margin: 0;
 }
 
@@ -335,11 +335,11 @@ onMounted(() => {
 
 .meta-item {
   font-size: 14px;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .meta-label {
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 .ai-reason {
@@ -351,7 +351,7 @@ onMounted(() => {
   gap: 12px;
   justify-content: flex-end;
   padding-top: 16px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--el-border-color-lighter);
 }
 
 .pagination-container {
@@ -359,7 +359,7 @@ onMounted(() => {
   justify-content: flex-end;
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--el-border-color-lighter);
 }
 
 @media (max-width: 768px) {

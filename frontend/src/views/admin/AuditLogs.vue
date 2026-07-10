@@ -328,7 +328,7 @@ onMounted(() => {
   font-size: 24px;
   font-weight: 600;
   margin-bottom: 24px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 /* 筛选栏 */
@@ -356,7 +356,7 @@ onMounted(() => {
 
 .total-count {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 /* 加载状态 */
@@ -366,7 +366,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 60px 0;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 .loading-icon {
@@ -388,32 +388,32 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .ip-address {
   font-family: monospace;
   font-size: 13px;
-  color: #606266;
-  background-color: #f5f7fa;
+  color: var(--el-text-color-regular);
+  background-color: var(--el-fill-color-light);
   padding: 2px 6px;
   border-radius: 4px;
 }
 
 .target-type {
   font-size: 13px;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .target-id {
   font-family: monospace;
   font-size: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   word-break: break-all;
 }
 
 .no-data {
-  color: #c0c4cc;
+  color: var(--el-text-color-disabled);
 }
 
 .details-preview {
@@ -422,7 +422,7 @@ onMounted(() => {
 }
 
 .details-json {
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   padding: 12px;
   border-radius: 4px;
   font-size: 12px;
@@ -438,7 +438,7 @@ onMounted(() => {
   justify-content: flex-end;
   margin-top: 24px;
   padding-top: 16px;
-  border-top: 1px solid #e4e7ed;
+  border-top: 1px solid var(--el-border-color-light);
 }
 
 /* 响应式 */

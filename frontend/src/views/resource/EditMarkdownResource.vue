@@ -267,7 +267,7 @@ onMounted(() => {
 <style scoped>
 .edit-markdown-page {
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   display: flex;
   flex-direction: column;
 }
@@ -294,7 +294,7 @@ onMounted(() => {
   margin: 0;
   font-size: 20px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .header-actions {
@@ -315,7 +315,7 @@ onMounted(() => {
 
 .loading-icon {
   animation: rotating 2s linear infinite;
-  color: #409eff;
+  color: var(--el-color-primary);
 }
 
 @keyframes rotating {
@@ -330,7 +330,7 @@ onMounted(() => {
 .resource-info {
   padding: 16px 24px;
   background: #fff;
-  border-bottom: 1px solid #e4e7ed;
+  border-bottom: 1px solid var(--el-border-color-light);
 }
 
 .editor-wrapper {
@@ -355,14 +355,14 @@ onMounted(() => {
 
 .markdown-body :deep(h1) {
   font-size: 2em;
-  border-bottom: 1px solid #e4e7ed;
+  border-bottom: 1px solid var(--el-border-color-light);
   padding-bottom: 0.3em;
   margin-bottom: 1em;
 }
 
 .markdown-body :deep(h2) {
   font-size: 1.5em;
-  border-bottom: 1px solid #e4e7ed;
+  border-bottom: 1px solid var(--el-border-color-light);
   padding-bottom: 0.3em;
   margin: 1.5em 0 1em;
 }
@@ -384,14 +384,14 @@ onMounted(() => {
 }
 
 .markdown-body :deep(code) {
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   padding: 0.2em 0.4em;
   border-radius: 3px;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
 }
 
 .markdown-body :deep(pre) {
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   padding: 16px;
   border-radius: 8px;
   overflow-x: auto;
@@ -403,10 +403,10 @@ onMounted(() => {
 }
 
 .markdown-body :deep(blockquote) {
-  border-left: 4px solid #409eff;
+  border-left: 4px solid var(--el-color-primary);
   padding-left: 1em;
   margin: 1em 0;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .markdown-body :deep(table) {
@@ -417,12 +417,12 @@ onMounted(() => {
 
 .markdown-body :deep(th),
 .markdown-body :deep(td) {
-  border: 1px solid #dcdfe6;
+  border: 1px solid var(--el-border-color);
   padding: 8px 12px;
   text-align: left;
 }
 
 .markdown-body :deep(th) {
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
 }
 </style>

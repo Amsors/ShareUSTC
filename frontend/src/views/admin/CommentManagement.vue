@@ -283,7 +283,7 @@ onMounted(() => {
 .page-title {
   font-size: 24px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .mb-4 {
@@ -296,18 +296,18 @@ onMounted(() => {
 
 .stat-label {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-bottom: 8px;
 }
 
 .stat-value {
   font-size: 28px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .text-warning {
-  color: #e6a23c;
+  color: var(--el-color-warning);
 }
 
 .filter-bar {
@@ -346,19 +346,19 @@ onMounted(() => {
 
 .username {
   font-weight: 500;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .comment-content {
   padding: 12px;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   border-radius: 8px;
   margin-bottom: 12px;
 }
 
 .comment-content p {
   margin: 0;
-  color: #606266;
+  color: var(--el-text-color-regular);
   line-height: 1.6;
   white-space: pre-wrap;
 }
@@ -367,7 +367,7 @@ onMounted(() => {
   display: flex;
   gap: 24px;
   margin-bottom: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 13px;
 }
 
@@ -382,7 +382,7 @@ onMounted(() => {
   gap: 12px;
   justify-content: flex-end;
   padding-top: 12px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--el-border-color-lighter);
 }
 
 .pagination-container {
@@ -390,7 +390,7 @@ onMounted(() => {
   justify-content: flex-end;
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--el-border-color-lighter);
 }
 
 @media (max-width: 768px) {

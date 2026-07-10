@@ -222,13 +222,13 @@ defineExpose({
   align-items: flex-start;
   gap: 12px;
   padding: 8px;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   border-radius: 10px;
   transition: all 0.3s ease;
 }
 
 .guide-item:hover {
-  background-color: #ecf5ff;
+  background-color: var(--el-color-primary-light-9);
   transform: translateX(4px);
 }
 
@@ -238,7 +238,7 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #409eff 0%, #66b1ff 100%);
+  background: linear-gradient(135deg, var(--el-color-primary) 0%, #66b1ff 100%);
   color: #fff;
   font-size: 14px;
   font-weight: 600;
@@ -254,12 +254,12 @@ defineExpose({
 }
 
 .highlight-text {
-  color: #409eff;
+  color: var(--el-color-primary);
   font-weight: 600;
 }
 
 .red-text {
-  color: #f56c6c;
+  color: var(--el-color-danger);
 }
 
 .guide-footer-hint {
@@ -268,9 +268,9 @@ defineExpose({
   align-items: center;
   gap: 6px;
   padding: 5px 15px;
-  background-color: #f0f9eb;
+  background-color: var(--el-color-success-light-9);
   border-radius: 20px;
-  color: #67c23a;
+  color: var(--el-color-success);
   font-size: 13px;
 }
 

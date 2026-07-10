@@ -242,7 +242,7 @@ onMounted(() => {
   h4 {
     margin: 0 0 12px;
     font-size: 14px;
-    color: #606266;
+    color: var(--el-text-color-regular);
   }
 }
 
@@ -253,12 +253,12 @@ onMounted(() => {
 }
 
 .empty-text {
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 14px;
 }
 
 .loading-text {
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 14px;
 }
 
@@ -276,15 +276,15 @@ onMounted(() => {
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--el-border-color-lighter);
 
   &:hover {
-    background-color: #f5f7fa;
+    background-color: var(--el-fill-color-light);
   }
 
   &.is-selected {
     background-color: #f0f9ff;
-    border-color: #409eff;
+    border-color: var(--el-color-primary);
   }
 
   .favorite-item-content {
@@ -296,7 +296,7 @@ onMounted(() => {
 
     .favorite-name {
       font-size: 14px;
-      color: #303133;
+      color: var(--el-text-color-primary);
       flex: 1;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -305,7 +305,7 @@ onMounted(() => {
 
     .favorite-count {
       font-size: 12px;
-      color: #909399;
+      color: var(--el-text-color-secondary);
       flex-shrink: 0;
     }
   }

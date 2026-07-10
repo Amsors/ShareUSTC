@@ -88,7 +88,7 @@ const handleCommand = async (command: string) => {
 
 .nav-brand h1 {
   margin: 0;
-  color: #409eff;
+  color: var(--el-color-primary);
   font-size: 24px;
 }
 
@@ -100,22 +100,22 @@ const handleCommand = async (command: string) => {
 
 .nav-links a {
   text-decoration: none;
-  color: #606266;
+  color: var(--el-text-color-regular);
   font-size: 14px;
   transition: color 0.3s;
 }
 
 .nav-links a:hover {
-  color: #409eff;
+  color: var(--el-color-primary);
 }
 
 .nav-links a.router-link-active {
-  color: #409eff;
+  color: var(--el-color-primary);
   font-weight: 500;
 }
 
 .register-btn {
-  background-color: #409eff;
+  background-color: var(--el-color-primary);
   color: #fff !important;
   padding: 8px 16px;
   border-radius: 4px;
@@ -126,7 +126,7 @@ const handleCommand = async (command: string) => {
 }
 
 .admin-link {
-  background-color: #f56c6c;
+  background-color: var(--el-color-danger);
   color: #fff !important;
   padding: 8px 16px;
   border-radius: 4px;
@@ -138,7 +138,7 @@ const handleCommand = async (command: string) => {
 
 .user-info {
   cursor: pointer;
-  color: #606266;
+  color: var(--el-text-color-regular);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -151,7 +151,7 @@ const handleCommand = async (command: string) => {
   font-size: 12px;
   font-weight: normal;
   color: #fff;
-  background-color: #e6a23c;
+  background-color: var(--el-color-warning);
   border-radius: 4px;
   vertical-align: middle;
 }

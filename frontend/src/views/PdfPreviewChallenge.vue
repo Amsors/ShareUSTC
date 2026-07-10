@@ -218,7 +218,7 @@ onMounted(() => {
 <style scoped>
 .challenge-page {
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   padding: 40px 20px;
 }
 
@@ -230,7 +230,7 @@ onMounted(() => {
 .page-title {
   margin: 0 0 32px;
   font-size: 28px;
-  color: #303133;
+  color: var(--el-text-color-primary);
   font-weight: 600;
   text-align: center;
 }
@@ -268,19 +268,19 @@ onMounted(() => {
 .success-state p {
   margin: 8px 0;
   font-size: 16px;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .error-state .sub-text,
 .success-state .sub-text {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-bottom: 24px;
 }
 
 .success-state h2 {
   margin: 16px 0 8px;
-  color: #67c23a;
+  color: var(--el-color-success);
   font-size: 24px;
 }
 
@@ -303,7 +303,7 @@ onMounted(() => {
 .challenge-info li {
   margin: 4px 0;
   line-height: 1.6;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .preview-section {
@@ -316,22 +316,22 @@ onMounted(() => {
   align-items: center;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #ebeef5;
+  border-bottom: 1px solid var(--el-border-color-lighter);
 }
 
 .preview-title {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .preview-hint {
   font-size: 13px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 .preview-container {
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--el-border-color-lighter);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -340,7 +340,7 @@ onMounted(() => {
   max-width: 500px;
   margin: 0 auto;
   padding-top: 24px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--el-border-color-lighter);
 }
 
 .code-input {

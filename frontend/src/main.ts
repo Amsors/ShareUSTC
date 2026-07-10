@@ -12,6 +12,9 @@ import ElementPlus from 'element-plus';
 import 'element-plus/dist/index.css';
 import * as ElementPlusIconsVue from '@element-plus/icons-vue';
 
+// 项目自有设计 token（品牌色 / 渐变），置于 Element Plus 之后以便按需覆盖
+import './styles/tokens.css';
+
 const app = createApp(App);
 
 // 注册所有图标

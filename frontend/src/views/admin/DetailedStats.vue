@@ -311,7 +311,7 @@ onMounted(() => {
   font-size: 24px;
   font-weight: 600;
   margin-bottom: 24px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 /* 加载状态 */
@@ -321,7 +321,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 60px 0;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 .loading-icon {
@@ -355,16 +355,16 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .subsection-title {
   font-size: 14px;
   font-weight: 600;
-  color: #606266;
+  color: var(--el-text-color-regular);
   margin: 24px 0 16px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #e4e7ed;
+  border-bottom: 1px solid var(--el-border-color-light);
 }
 
 /* 用户统计网格 */
@@ -377,28 +377,28 @@ onMounted(() => {
 .stat-item {
   text-align: center;
   padding: 20px;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   border-radius: 8px;
 }
 
 .stat-item.highlight {
-  background-color: #ecf5ff;
+  background-color: var(--el-color-primary-light-9);
 }
 
 .stat-value {
   font-size: 32px;
   font-weight: 700;
-  color: #303133;
+  color: var(--el-text-color-primary);
   line-height: 1.2;
 }
 
 .stat-item.highlight .stat-value {
-  color: #409eff;
+  color: var(--el-color-primary);
 }
 
 .stat-label {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-top: 8px;
 }
 
@@ -406,44 +406,44 @@ onMounted(() => {
 .resource-stat-card {
   text-align: center;
   padding: 20px;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   border-radius: 8px;
   margin-bottom: 16px;
 }
 
 .resource-stat-card.pending {
-  background-color: #fdf6ec;
+  background-color: var(--el-color-warning-light-9);
 }
 
 .resource-stat-card.approved {
-  background-color: #f0f9eb;
+  background-color: var(--el-color-success-light-9);
 }
 
 .resource-stat-card.rejected {
-  background-color: #fef0f0;
+  background-color: var(--el-color-danger-light-9);
 }
 
 .resource-stat-value {
   font-size: 28px;
   font-weight: 700;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .resource-stat-card.pending .resource-stat-value {
-  color: #e6a23c;
+  color: var(--el-color-warning);
 }
 
 .resource-stat-card.approved .resource-stat-value {
-  color: #67c23a;
+  color: var(--el-color-success);
 }
 
 .resource-stat-card.rejected .resource-stat-value {
-  color: #f56c6c;
+  color: var(--el-color-danger);
 }
 
 .resource-stat-label {
   font-size: 13px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-top: 4px;
 }
 
@@ -468,7 +468,7 @@ onMounted(() => {
   width: 100px;
   flex-shrink: 0;
   font-size: 14px;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .type-item :deep(.el-progress) {
@@ -479,23 +479,23 @@ onMounted(() => {
 .download-stat {
   text-align: center;
   padding: 24px;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   border-radius: 8px;
 }
 
 .download-value {
   font-size: 36px;
   font-weight: 700;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .download-value.highlight {
-  color: #67c23a;
+  color: var(--el-color-success);
 }
 
 .download-label {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-top: 8px;
 }
 
@@ -509,20 +509,20 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   padding: 24px;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   border-radius: 8px;
 }
 
 .interaction-value {
   font-size: 28px;
   font-weight: 700;
-  color: #303133;
+  color: var(--el-text-color-primary);
   margin-top: 12px;
 }
 
 .interaction-label {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-top: 4px;
 }
 
@@ -547,7 +547,7 @@ onMounted(() => {
   width: 120px;
   flex-shrink: 0;
   font-size: 13px;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .rating-bar-item :deep(.el-progress) {
