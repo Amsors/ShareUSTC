@@ -5,7 +5,7 @@ use sqlx::FromRow;
 use uuid::Uuid;
 
 /// 资源类型枚举
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq, Default)]
 #[sqlx(type_name = "VARCHAR", rename_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
 pub enum ResourceType {
@@ -32,31 +32,27 @@ pub enum ResourceType {
     /// ZIP 压缩包（源文件）
     Zip,
     /// 其他类型
+    #[default]
     Other,
 }
 
-impl Default for ResourceType {
-    fn default() -> Self {
-        ResourceType::Other
-    }
-}
-
-impl ToString for ResourceType {
-    fn to_string(&self) -> String {
-        match self {
-            ResourceType::WebMarkdown => "web_markdown".to_string(),
-            ResourceType::Ppt => "ppt".to_string(),
-            ResourceType::Pptx => "pptx".to_string(),
-            ResourceType::Doc => "doc".to_string(),
-            ResourceType::Docx => "docx".to_string(),
-            ResourceType::Pdf => "pdf".to_string(),
-            ResourceType::Txt => "txt".to_string(),
-            ResourceType::Jpeg => "jpeg".to_string(),
-            ResourceType::Jpg => "jpg".to_string(),
-            ResourceType::Png => "png".to_string(),
-            ResourceType::Zip => "zip".to_string(),
-            ResourceType::Other => "other".to_string(),
-        }
+impl std::fmt::Display for ResourceType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            ResourceType::WebMarkdown => "web_markdown",
+            ResourceType::Ppt => "ppt",
+            ResourceType::Pptx => "pptx",
+            ResourceType::Doc => "doc",
+            ResourceType::Docx => "docx",
+            ResourceType::Pdf => "pdf",
+            ResourceType::Txt => "txt",
+            ResourceType::Jpeg => "jpeg",
+            ResourceType::Jpg => "jpg",
+            ResourceType::Png => "png",
+            ResourceType::Zip => "zip",
+            ResourceType::Other => "other",
+        };
+        f.write_str(s)
     }
 }
 
@@ -126,7 +122,7 @@ impl ResourceType {
 }
 
 /// 资源分类枚举
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq, Default)]
 #[sqlx(type_name = "VARCHAR", rename_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
 pub enum ResourceCategory {
@@ -143,35 +139,32 @@ pub enum ResourceCategory {
     /// 讲义
     Lecture,
     /// 其他
+    #[default]
     Other,
 }
 
-impl Default for ResourceCategory {
-    fn default() -> Self {
-        ResourceCategory::Other
-    }
-}
-
-impl ToString for ResourceCategory {
-    fn to_string(&self) -> String {
-        match self {
-            ResourceCategory::ExamResult => "exam_result".to_string(),
-            ResourceCategory::LearningNote => "learning_note".to_string(),
-            ResourceCategory::PastPaper => "past_paper".to_string(),
-            ResourceCategory::Note => "note".to_string(),
-            ResourceCategory::ReviewOutline => "review_outline".to_string(),
-            ResourceCategory::Lecture => "lecture".to_string(),
-            ResourceCategory::Other => "other".to_string(),
-        }
+impl std::fmt::Display for ResourceCategory {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            ResourceCategory::ExamResult => "exam_result",
+            ResourceCategory::LearningNote => "learning_note",
+            ResourceCategory::PastPaper => "past_paper",
+            ResourceCategory::Note => "note",
+            ResourceCategory::ReviewOutline => "review_outline",
+            ResourceCategory::Lecture => "lecture",
+            ResourceCategory::Other => "other",
+        };
+        f.write_str(s)
     }
 }
 
 /// 审核状态枚举
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq, Default)]
 #[sqlx(type_name = "VARCHAR", rename_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
 pub enum AuditStatus {
     /// 待审核
+    #[default]
     Pending,
     /// 已通过
     Approved,
@@ -179,19 +172,14 @@ pub enum AuditStatus {
     Rejected,
 }
 
-impl Default for AuditStatus {
-    fn default() -> Self {
-        AuditStatus::Pending
-    }
-}
-
-impl ToString for AuditStatus {
-    fn to_string(&self) -> String {
-        match self {
-            AuditStatus::Pending => "pending".to_string(),
-            AuditStatus::Approved => "approved".to_string(),
-            AuditStatus::Rejected => "rejected".to_string(),
-        }
+impl std::fmt::Display for AuditStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            AuditStatus::Pending => "pending",
+            AuditStatus::Approved => "approved",
+            AuditStatus::Rejected => "rejected",
+        };
+        f.write_str(s)
     }
 }
 
@@ -510,7 +498,7 @@ impl ResourceListQuery {
     }
 
     pub fn get_per_page(&self) -> i32 {
-        self.per_page.unwrap_or(20).min(100).max(1)
+        self.per_page.unwrap_or(20).clamp(1, 100)
     }
 }
 
@@ -520,7 +508,7 @@ impl ResourceSearchQuery {
     }
 
     pub fn get_per_page(&self) -> i32 {
-        self.per_page.unwrap_or(20).min(100).max(1)
+        self.per_page.unwrap_or(20).clamp(1, 100)
     }
 }
 

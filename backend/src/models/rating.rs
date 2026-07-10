@@ -51,7 +51,7 @@ impl CreateRatingRequest {
         ];
 
         for (name, value) in dimensions {
-            if value < 1 || value > 10 {
+            if !(1..=10).contains(&value) {
                 return Err(format!("{} must be between 1 and 10, got {}", name, value));
             }
         }

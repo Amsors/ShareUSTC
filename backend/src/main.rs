@@ -109,8 +109,7 @@ async fn serve_image(data: web::Data<AppState>, path: web::Path<Uuid>) -> impl R
                 Ok(file_content) => {
                     // 根据MIME类型设置Content-Type
                     let content_type = mime_type
-                        .map(|m| m.parse::<mime::Mime>().ok())
-                        .flatten()
+                        .and_then(|m| m.parse::<mime::Mime>().ok())
                         .unwrap_or(mime::APPLICATION_OCTET_STREAM);
 
                     HttpResponse::Ok()

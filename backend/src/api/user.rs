@@ -55,7 +55,7 @@ pub async fn update_profile(
 
     // 未实名用户尝试修改个人简介时，返回错误
     // 检查 bio 是否为有效值（非空字符串且非空白）
-    let bio_has_value = req.bio.as_ref().map_or(false, |b| !b.trim().is_empty());
+    let bio_has_value = req.bio.as_ref().is_some_and(|b| !b.trim().is_empty());
     if !is_verified && bio_has_value {
         return Ok(forbidden("实名认证后才可修改个人简介"));
     }

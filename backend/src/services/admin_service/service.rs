@@ -24,7 +24,7 @@ impl AdminService {
             admin_usernames.iter().map(|s| s.as_str()).collect();
 
         // 角色同步是一个逻辑整体（赋予 + 取消），使用事务保证要么全部生效要么全部回滚
-        let mut tx = pool.begin().await.map_err(|e| AdminError::Database(e))?;
+        let mut tx = pool.begin().await.map_err(AdminError::Database)?;
 
         // 1. 将配置中的管理员用户设置为 admin
         let mut granted_count = 0usize;
@@ -38,7 +38,7 @@ impl AdminService {
             .bind(username)
             .execute(&mut *tx)
             .await
-            .map_err(|e| AdminError::Database(e))?;
+            .map_err(AdminError::Database)?;
 
             if result.rows_affected() > 0 {
                 log::info!("已为用户 '{}' 赋予管理员权限", username);
@@ -51,7 +51,7 @@ impl AdminService {
             sqlx::query_as("SELECT username FROM users WHERE role = 'admin'")
                 .fetch_all(&mut *tx)
                 .await
-                .map_err(|e| AdminError::Database(e))?;
+                .map_err(AdminError::Database)?;
 
         // 3. 取消不在配置中的管理员权限
         let mut revoked_count = 0usize;
@@ -63,7 +63,7 @@ impl AdminService {
                 .bind(&username)
                 .execute(&mut *tx)
                 .await
-                .map_err(|e| AdminError::Database(e))?;
+                .map_err(AdminError::Database)?;
 
                 if result.rows_affected() > 0 {
                     log::info!("已取消用户 '{}' 的管理员权限", username);
@@ -72,7 +72,7 @@ impl AdminService {
             }
         }
 
-        tx.commit().await.map_err(|e| AdminError::Database(e))?;
+        tx.commit().await.map_err(AdminError::Database)?;
 
         log::info!(
             "管理员权限同步完成: 赋予 {} 个, 取消 {} 个",
@@ -798,7 +798,7 @@ impl AdminService {
                 .fetch_one(pool)
                 .await
         }
-        .map_err(|e| AdminError::Database(e))?;
+        .map_err(AdminError::Database)?;
 
         // 获取日志列表（使用参数化查询）
         let logs: Vec<AuditLogItem> = if let Some(ref action) = query.action {
@@ -1152,7 +1152,7 @@ impl AdminService {
             .fetch_all(pool)
             .await
         }
-        .map_err(|e| AdminError::Database(e))?;
+        .map_err(AdminError::Database)?;
 
         // 转换为响应格式（处理日期序列化）
         let logs: Vec<AuditLogItemResponse> =
@@ -1359,20 +1359,18 @@ impl AdminService {
                     _ => return Err(AdminError::ValidationError("无法访问 OSS 存储".to_string())),
                 }
             }
+        } else if storage.backend_type() == StorageBackendType::Local {
+            storage.clone()
         } else {
-            if storage.backend_type() == StorageBackendType::Local {
-                storage.clone()
-            } else {
-                // 当前是 OSS 模式，但需要读取本地文件
-                let config = Config::from_env();
-                match crate::services::create_local_storage(&config) {
-                    Ok(local_storage) => local_storage,
-                    Err(e) => {
-                        return Err(AdminError::ValidationError(format!(
-                            "无法访问本地存储: {}",
-                            e
-                        )))
-                    }
+            // 当前是 OSS 模式，但需要读取本地文件
+            let config = Config::from_env();
+            match crate::services::create_local_storage(&config) {
+                Ok(local_storage) => local_storage,
+                Err(e) => {
+                    return Err(AdminError::ValidationError(format!(
+                        "无法访问本地存储: {}",
+                        e
+                    )))
                 }
             }
         };
@@ -1438,7 +1436,7 @@ impl AdminService {
                 .bind(user_id)
                 .fetch_optional(pool)
                 .await
-                .map_err(|e| AdminError::Database(e))?
+                .map_err(AdminError::Database)?
                 .ok_or_else(|| AdminError::NotFound("用户不存在".to_string()))?;
 
         let (username, is_verified, real_info_json) = row;

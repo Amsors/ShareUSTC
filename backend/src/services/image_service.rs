@@ -142,8 +142,8 @@ impl ImageService {
         let fallback_name = original_name.unwrap_or("image");
         Ok(UploadImageResponse {
             id: image.id,
-            url: image.get_public_url(&base_url),
-            markdown_link: image.get_markdown_link(&base_url, fallback_name),
+            url: image.get_public_url(base_url),
+            markdown_link: image.get_markdown_link(base_url, fallback_name),
             original_name: image.original_name,
             file_size: image.file_size,
             created_at: image.created_at,

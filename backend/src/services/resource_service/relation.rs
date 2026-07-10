@@ -15,7 +15,7 @@ pub async fn search_resources_for_relation(
     exclude_id: Option<Uuid>,
     limit: i32,
 ) -> Result<Vec<RelatedResourceInfo>, ResourceError> {
-    let limit = limit.max(1).min(20);
+    let limit = limit.clamp(1, 20);
     let search_pattern = format!("%{}%", query);
 
     let mut builder = sqlx::QueryBuilder::new(

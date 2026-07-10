@@ -279,7 +279,7 @@ impl CourseService {
             }
 
             if let Some(credits) = item.credits {
-                if credits < 0.0 || credits > 100.0 {
+                if !(0.0..=100.0).contains(&credits) {
                     fail_count += 1;
                     failed_items.push(FailedCourseImportItem {
                         name: item.name.clone(),

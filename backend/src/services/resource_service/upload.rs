@@ -69,7 +69,7 @@ pub async fn create_resource_from_oss_callback(
         .map(|tags| serde_json::to_value(tags).unwrap_or(serde_json::Value::Array(vec![])));
     let storage_type = storage.backend_type().as_str().to_string();
 
-    let mut tx = pool.begin().await.map_err(|e| ResourceError::Database(e))?;
+    let mut tx = pool.begin().await.map_err(ResourceError::Database)?;
 
     let resource: Resource = match sqlx::query_as::<_, Resource>(
         r#"
@@ -340,7 +340,7 @@ pub async fn upload_resource(
     log::debug!(
         "[Resource] 准备插入资源记录 | title={}, resource_type={}",
         request.title,
-        resource_type.to_string()
+        resource_type
     );
 
     let resource: Resource = match sqlx::query_as::<_, Resource>(

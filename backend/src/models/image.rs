@@ -72,7 +72,7 @@ impl ImageInfoResponse {
             id: image.id,
             url: image.get_public_url(base_url),
             markdown_link: image
-                .get_markdown_link(base_url, &image.original_name.as_deref().unwrap_or("image")),
+                .get_markdown_link(base_url, image.original_name.as_deref().unwrap_or("image")),
             original_name: image.original_name.clone(),
             file_size: image.file_size,
             mime_type: image.mime_type.clone(),

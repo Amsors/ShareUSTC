@@ -75,7 +75,7 @@ impl AuthService {
         }
 
         // 验证请求
-        req.validate().map_err(|e| AuthError::ValidationError(e))?;
+        req.validate().map_err(AuthError::ValidationError)?;
 
         // 检查用户名是否已存在
         let existing_user: Option<(Uuid,)> =
@@ -89,8 +89,7 @@ impl AuthService {
         }
 
         // 哈希密码
-        let password_hash =
-            hash_password(&req.password).map_err(|e| AuthError::ValidationError(e))?;
+        let password_hash = hash_password(&req.password).map_err(AuthError::ValidationError)?;
 
         // 创建用户
         let user_id = Uuid::new_v4();
@@ -111,7 +110,7 @@ impl AuthService {
         let sn: i64 = sqlx::query_scalar("SELECT nextval('user_sn_seq')")
             .fetch_one(pool)
             .await
-            .map_err(|e| AuthError::Database(e))?;
+            .map_err(AuthError::Database)?;
 
         sqlx::query(
             r#"
@@ -127,7 +126,7 @@ impl AuthService {
         .bind(role)
         .execute(pool)
         .await
-        .map_err(|e| AuthError::Database(e))?;
+        .map_err(AuthError::Database)?;
 
         log::info!("用户注册成功: {}, 角色: {}", req.username, role);
 
@@ -180,7 +179,7 @@ impl AuthService {
         req: LoginRequest,
     ) -> Result<AuthResponse, AuthError> {
         // 验证请求
-        req.validate().map_err(|e| AuthError::ValidationError(e))?;
+        req.validate().map_err(AuthError::ValidationError)?;
 
         // 查询用户
         let user: User = sqlx::query_as::<_, User>(

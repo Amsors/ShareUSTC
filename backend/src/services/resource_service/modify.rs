@@ -338,7 +338,7 @@ pub async fn update_resource_relations(
     }
 
     // 开启事务
-    let mut tx = pool.begin().await.map_err(|e| ResourceError::Database(e))?;
+    let mut tx = pool.begin().await.map_err(ResourceError::Database)?;
 
     // 1. 更新教师关联 - 先删除旧的，再插入新的
     if let Err(e) = sqlx::query("DELETE FROM resource_teachers WHERE resource_id = $1")

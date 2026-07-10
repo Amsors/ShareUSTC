@@ -261,7 +261,7 @@ impl FavoriteService {
                 .iter()
                 .max()
                 .copied()
-                .unwrap_or(0) as i32;
+                .unwrap_or(0);
 
                 FavoriteResourceItem {
                     id: row.id,

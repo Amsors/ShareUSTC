@@ -425,7 +425,7 @@ pub async fn get_hot_resources(
     pool: &PgPool,
     limit: i32,
 ) -> Result<Vec<HotResourceItem>, ResourceError> {
-    let limit = limit.max(1).min(20);
+    let limit = limit.clamp(1, 20);
 
     log::info!("获取热门资源，限制数量: {}", limit);
 
@@ -557,13 +557,7 @@ pub async fn find_by_file_hash(
                 uploader_name,
             )| {
                 // 解析标签
-                let tags_vec = tags.and_then(|v| {
-                    if let Ok(arr) = serde_json::from_value::<Vec<String>>(v) {
-                        Some(arr)
-                    } else {
-                        None
-                    }
-                });
+                let tags_vec = tags.and_then(|v| serde_json::from_value::<Vec<String>>(v).ok());
 
                 ResourceListItem {
                     id,

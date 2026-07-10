@@ -309,7 +309,7 @@ fn parse_courses_from_bytes(
             for (idx, row) in range.rows().enumerate().skip(1) {
                 // 跳过标题行
                 let name_cell = row
-                    .get(0)
+                    .first()
                     .ok_or_else(|| format!("Excel第{}行: 缺少课程名称", idx + 1))?;
                 let name = name_cell.to_string().trim().to_string();
                 let semester: Option<String> = row.get(1).map(|c| c.to_string().trim().to_string());

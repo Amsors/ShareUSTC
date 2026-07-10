@@ -144,7 +144,7 @@ impl UserService {
         allow_email_change: bool,
     ) -> Result<UserInfo, UserError> {
         // 验证请求
-        req.validate().map_err(|e| UserError::ValidationError(e))?;
+        req.validate().map_err(UserError::ValidationError)?;
 
         // 检查是否允许修改用户名
         if !allow_username_change && req.username.is_some() {
@@ -233,7 +233,7 @@ impl UserService {
         .bind(user_id)
         .fetch_optional(pool)
         .await
-        .map_err(|e| UserError::Database(e))?
+        .map_err(UserError::Database)?
         .ok_or_else(|| UserError::UserNotFound("用户不存在".to_string()))?;
 
         log::info!("用户资料已更新: {}", updated_user.username);
@@ -288,7 +288,7 @@ impl UserService {
         .bind(user_id)
         .fetch_one(pool)
         .await
-        .map_err(|e| UserError::Database(e))?;
+        .map_err(UserError::Database)?;
 
         log::info!("用户完成实名认证: {}", updated_user.username);
 

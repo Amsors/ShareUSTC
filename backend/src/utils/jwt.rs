@@ -174,7 +174,7 @@ mod tests {
         assert_eq!(claims.sub, user_id.to_string());
         assert_eq!(claims.username, username);
         assert_eq!(claims.role, "user");
-        assert_eq!(claims.is_verified, false);
+        assert!(!claims.is_verified);
         assert_eq!(claims.token_type, "access");
     }
 
@@ -236,6 +236,6 @@ mod tests {
         assert_eq!(current_user.id, user_id);
         assert_eq!(current_user.username, "testuser");
         assert_eq!(current_user.role, UserRole::Admin);
-        assert_eq!(current_user.is_verified, true);
+        assert!(current_user.is_verified);
     }
 }

@@ -308,11 +308,9 @@ fn key_in_scope(key: &str, scope: &str) -> bool {
     let path = std::path::Path::new(normalized);
 
     // 获取路径的第一个组件
-    if let Some(first_component) = path.components().next() {
-        if let std::path::Component::Normal(first) = first_component {
-            if let Some(first_str) = first.to_str() {
-                return first_str == scope;
-            }
+    if let Some(std::path::Component::Normal(first)) = path.components().next() {
+        if let Some(first_str) = first.to_str() {
+            return first_str == scope;
         }
     }
 

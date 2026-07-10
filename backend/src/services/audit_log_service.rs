@@ -42,25 +42,26 @@ pub enum AuditAction {
     PackDownload, // 打包下载收藏夹
 }
 
-impl ToString for AuditAction {
-    fn to_string(&self) -> String {
-        match self {
-            AuditAction::Login => "login".to_string(),
-            AuditAction::Register => "register".to_string(),
-            AuditAction::UploadResource => "upload_resource".to_string(),
-            AuditAction::DownloadResource => "download_resource".to_string(),
-            AuditAction::DeleteResource => "delete_resource".to_string(),
-            AuditAction::UpdateResource => "update_resource".to_string(),
-            AuditAction::CreateComment => "create_comment".to_string(),
-            AuditAction::DeleteComment => "delete_comment".to_string(),
-            AuditAction::RateResource => "rate_resource".to_string(),
-            AuditAction::LikeResource => "like_resource".to_string(),
-            AuditAction::UnlikeResource => "unlike_resource".to_string(),
-            AuditAction::CreateFavorite => "create_favorite".to_string(),
-            AuditAction::UpdateProfile => "update_profile".to_string(),
-            AuditAction::AdminAction => "admin_action".to_string(),
-            AuditAction::PackDownload => "pack_download".to_string(),
-        }
+impl std::fmt::Display for AuditAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            AuditAction::Login => "login",
+            AuditAction::Register => "register",
+            AuditAction::UploadResource => "upload_resource",
+            AuditAction::DownloadResource => "download_resource",
+            AuditAction::DeleteResource => "delete_resource",
+            AuditAction::UpdateResource => "update_resource",
+            AuditAction::CreateComment => "create_comment",
+            AuditAction::DeleteComment => "delete_comment",
+            AuditAction::RateResource => "rate_resource",
+            AuditAction::LikeResource => "like_resource",
+            AuditAction::UnlikeResource => "unlike_resource",
+            AuditAction::CreateFavorite => "create_favorite",
+            AuditAction::UpdateProfile => "update_profile",
+            AuditAction::AdminAction => "admin_action",
+            AuditAction::PackDownload => "pack_download",
+        };
+        f.write_str(s)
     }
 }
 

@@ -302,7 +302,7 @@ fn parse_teachers_from_bytes(
             for (idx, row) in range.rows().enumerate().skip(1) {
                 // 跳过标题行
                 let name_cell = row
-                    .get(0)
+                    .first()
                     .ok_or_else(|| format!("Excel第{}行: 缺少姓名", idx + 1))?;
                 let name = name_cell.to_string().trim().to_string();
                 let department: Option<String> =
