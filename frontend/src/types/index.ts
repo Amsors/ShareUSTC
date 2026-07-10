@@ -7,8 +7,3 @@ export * from '@/types/preview';
 export * from '@/types/rating';
 export * from '@/types/like';
 export * from '@/types/comment';
-
-export interface HelloResponse {
-  message: string;
-  status: string;
-}
