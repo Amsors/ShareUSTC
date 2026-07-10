@@ -5,19 +5,13 @@ use actix_web::{
 use serde::Serialize;
 use uuid::Uuid;
 
-mod api;
-mod config;
-mod db;
-mod middleware;
-mod models;
-mod services;
-mod tasks;
-mod utils;
-
-use crate::utils::{internal_error, not_found};
-use config::Config;
-use db::AppState;
-use middleware::{JwtAuth, PublicPathRule};
+use backend::api;
+use backend::config::{self, Config};
+use backend::db::{self, AppState};
+use backend::middleware::{JwtAuth, PublicPathRule};
+use backend::services::{self, StorageBackendType};
+use backend::tasks;
+use backend::utils::{internal_error, not_found};
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -55,8 +49,6 @@ async fn health_check(config: web::Data<AppState>) -> impl Responder {
 /// 使用后端代理模式读取文件，避免浏览器直接访问 OSS 产生 CORS 问题
 #[get("/images/{image_id}")]
 async fn serve_image(data: web::Data<AppState>, path: web::Path<Uuid>) -> impl Responder {
-    use crate::services::StorageBackendType;
-
     let image_id = path.into_inner();
 
     // 从数据库获取图片路径和存储类型
