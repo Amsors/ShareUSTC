@@ -16,29 +16,29 @@ check_backend() {
     echo "==> [backend] cargo fmt --check"
     (cd "$ROOT/backend" && cargo fmt --check)
     echo "==> [backend] cargo clippy"
-    # 存量整改期间允许 warning；整改完成后按 code_remediation_guide.md 阶段7 加回 -- -D warnings
-    (cd "$ROOT/backend" && cargo clippy --all-targets)
+    (cd "$ROOT/backend" && cargo clippy --all-targets -- -D warnings)
     echo "==> [backend] cargo test"
     (cd "$ROOT/backend" && cargo test)
 }
 
 check_frontend() {
-    # 存量整改期间 prettier/eslint 不阻断（与 CI 的 continue-on-error 一致）；
-    # 整改完成后按 code_remediation_guide.md 阶段7 移除 "|| echo" 兜底
     echo "==> [frontend] prettier --check"
-    (cd "$ROOT/frontend" && npm run format:check) \
-        || echo "⚠️  prettier 未通过（存量整改中，暂不阻断）"
+    (cd "$ROOT/frontend" && npm run format:check)
     echo "==> [frontend] eslint"
-    (cd "$ROOT/frontend" && npm run lint) \
-        || echo "⚠️  eslint 未通过（存量整改中，暂不阻断）"
+    (cd "$ROOT/frontend" && npm run lint)
     echo "==> [frontend] vue-tsc"
     (cd "$ROOT/frontend" && npm run typecheck)
+    echo "==> [frontend] vitest"
+    (cd "$ROOT/frontend" && npm run test)
 }
 
 case "$TARGET" in
     backend)  check_backend ;;
     frontend) check_frontend ;;
-    all)      check_backend && check_frontend ;;
+    all)
+        check_backend
+        check_frontend
+        ;;
     *)        echo "用法: $0 [backend|frontend|all]"; exit 1 ;;
 esac
 

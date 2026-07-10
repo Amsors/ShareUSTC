@@ -1,6 +1,4 @@
 # CI 门禁：与 scripts/check.sh 保持一致
-# 注意：后端 clippy 当前允许 warning（存量整改中），整改完成后
-# 按 dev_docs/guides/code_remediation_guide.md 将 clippy 改为 -D warnings
 name: CI
 
 on:
@@ -11,12 +9,27 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: shareustc_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     defaults:
       run:
         working-directory: backend
     env:
       # 使用提交的 .sqlx 离线缓存校验 query! 宏，无需数据库即可编译
       SQLX_OFFLINE: "true"
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/shareustc_test
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -28,7 +41,7 @@ jobs:
       - name: rustfmt
         run: cargo fmt --check
       - name: clippy
-        run: cargo clippy --all-targets
+        run: cargo clippy --all-targets -- -D warnings
       - name: test
         run: cargo test
 
@@ -52,3 +65,5 @@ jobs:
         run: npm run lint
       - name: typecheck
         run: npm run typecheck
+      - name: test
+        run: npm run test

@@ -42,7 +42,7 @@ export default tseslint.config(
       // 禁止绕过 src/api/request.ts 直接使用 fetch 调用后端 API。
       // 例外（下载 OSS 预签名 URL 等非 API 场景）需行内注释说明并 eslint-disable-next-line
       'no-restricted-globals': [
-        'warn',
+        'error',
         {
           name: 'fetch',
           message: '调用后端 API 必须走 src/api/request.ts；非 API 场景请注释说明并禁用本规则。',
