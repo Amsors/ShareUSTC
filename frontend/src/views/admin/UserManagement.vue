@@ -176,8 +176,8 @@
 import { ref, onMounted, computed } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { UserFilled, Search } from '@element-plus/icons-vue';
-import { adminApi } from '../../api/admin';
-import type { UserRealInfo } from '../../api/admin';
+import { getUserList, updateUserStatus, getUserRealInfo } from '../../api/admin';
+import type { UserRealInfo } from '../../types/admin';
 import { isHandledError } from '@/api/request';
 
 interface User {
@@ -242,7 +242,7 @@ const formatDate = (date: string) => {
 const fetchUsers = async () => {
   loading.value = true;
   try {
-    const data = await adminApi.getUserList(page.value, perPage.value);
+    const data = await getUserList(page.value, perPage.value);
     users.value = data.users;
     total.value = data.total;
   } catch (error) {
@@ -263,7 +263,7 @@ const toggleUserStatus = async (user: User) => {
       type: 'warning',
     });
 
-    await adminApi.updateUserStatus(user.id, !user.isActive);
+    await updateUserStatus(user.id, !user.isActive);
     ElMessage.success(`用户已${action}`);
     fetchUsers();
   } catch (error) {
@@ -280,7 +280,7 @@ const showUserRealInfo = async (user: User) => {
   currentRealInfo.value = null;
 
   try {
-    const data = await adminApi.getUserRealInfo(user.id);
+    const data = await getUserRealInfo(user.id);
     currentRealInfo.value = data;
   } catch (error) {
     if (!isHandledError(error)) {

@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
-import { getSiteConfig, type SiteConfig } from '../api/user';
+import { getSiteConfig } from '../api/user';
+import type { SiteConfig } from '../types/user';
 import logger from '../utils/logger';
 
 export const useSiteConfigStore = defineStore('siteConfig', () => {

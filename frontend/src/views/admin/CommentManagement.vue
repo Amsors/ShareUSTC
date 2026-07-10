@@ -116,7 +116,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Refresh, UserFilled, Document, Clock } from '@element-plus/icons-vue';
-import { adminApi } from '../../api/admin';
+import { getCommentList, auditComment, deleteComment } from '../../api/admin';
 import { isHandledError } from '@/api/request';
 
 interface Comment {
@@ -170,11 +170,7 @@ const formatDate = (date: string) => {
 const fetchComments = async () => {
   loading.value = true;
   try {
-    const data = await adminApi.getCommentList(
-      page.value,
-      perPage.value,
-      filterStatus.value || undefined
-    );
+    const data = await getCommentList(page.value, perPage.value, filterStatus.value || undefined);
     comments.value = data.comments;
     total.value = data.total;
   } catch (error) {
@@ -203,7 +199,7 @@ const handleApprove = async (comment: Comment) => {
       type: 'success',
     });
 
-    await adminApi.auditComment(comment.id, 'approved');
+    await auditComment(comment.id, 'approved');
     ElMessage.success('评论已通过');
     fetchComments();
   } catch (error) {
@@ -221,7 +217,7 @@ const handleReject = async (comment: Comment) => {
       type: 'warning',
     });
 
-    await adminApi.auditComment(comment.id, 'rejected');
+    await auditComment(comment.id, 'rejected');
     ElMessage.success('评论已拒绝');
     fetchComments();
   } catch (error) {
@@ -239,7 +235,7 @@ const handleDelete = async (comment: Comment) => {
       type: 'warning',
     });
 
-    await adminApi.deleteComment(comment.id);
+    await deleteComment(comment.id);
     ElMessage.success('评论已删除');
     fetchComments();
   } catch (error) {

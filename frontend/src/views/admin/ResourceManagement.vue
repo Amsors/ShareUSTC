@@ -209,9 +209,8 @@ import {
   recalculateResourceHash,
   getAdminFavorites,
   deleteAllFavoriteResources,
-  type AdminResource,
-  type AdminFavorite,
 } from '../../api/admin';
+import type { AdminResource, AdminFavorite } from '../../types/admin';
 import { getErrorMessage } from '@/api/request';
 
 const authStore = useAuthStore();

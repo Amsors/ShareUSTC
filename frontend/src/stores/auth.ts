@@ -4,7 +4,7 @@ import { login, register, refreshToken, logout } from '../api/auth';
 import { getCurrentUser } from '../api/user';
 import { getErrorMessage, isHandledError } from '@/api/request';
 import axios from 'axios';
-import type { User, LoginRequest, RegisterRequest, AuthResponse } from '../types/auth';
+import type { User, LoginRequest, RegisterRequest } from '../types/auth';
 import { UserRole } from '../types/auth';
 import { ElMessage } from 'element-plus';
 import logger from '../utils/logger';
@@ -134,8 +134,8 @@ export const useAuthStore = defineStore('auth', () => {
   };
 
   // 设置认证数据
-  // 注意：AuthResponse 类型已定义为 User 的别名，API 直接返回用户信息
-  const setAuthData = (response: AuthResponse) => {
+  // 注意：API 直接返回 User 对象
+  const setAuthData = (response: User) => {
     // 设置用户信息
     user.value = response;
 

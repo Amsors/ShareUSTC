@@ -458,7 +458,7 @@ import {
   changePassword,
 } from '../api/user';
 import MarkdownEditor from '../components/editor/MarkdownEditor.vue';
-import type { UpdateProfileRequest, VerificationRequest } from '../api/user';
+import type { UpdateProfileRequest, VerificationRequest } from '../types/user';
 import type { FormInstance, FormRules, FormItemRule } from 'element-plus';
 import { getMyResources, deleteResource } from '../api/resource';
 import type { ResourceListItem } from '../types/resource';

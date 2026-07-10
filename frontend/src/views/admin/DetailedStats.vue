@@ -226,7 +226,8 @@ import {
   Pointer,
   Loading,
 } from '@element-plus/icons-vue';
-import { getDetailedStats, type DetailedStats } from '../../api/admin';
+import { getDetailedStats } from '../../api/admin';
+import type { DetailedStats } from '../../types/admin';
 import { isHandledError } from '@/api/request';
 
 const router = useRouter();

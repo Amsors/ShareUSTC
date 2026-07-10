@@ -335,7 +335,7 @@ import type {
   BatchImportCourseItem,
   BatchImportCoursesResult,
   BatchDeleteCoursesResult,
-} from '@/api/admin';
+} from '@/types/admin';
 import { SemesterOptions } from '@/types/course';
 import type { CourseListItem, CreateCourseRequest, UpdateCourseRequest } from '@/types/course';
 import type { UploadFile } from 'element-plus';

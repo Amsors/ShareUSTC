@@ -102,7 +102,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { UserFilled, Document, Download, Warning, ChatDotSquare } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
-import { adminApi } from '../../api/admin';
+import { getDashboardStats } from '../../api/admin';
 import { isHandledError } from '@/api/request';
 
 interface DashboardStats {
@@ -148,7 +148,7 @@ const statsCards = computed(() => [
 const fetchStats = async () => {
   loading.value = true;
   try {
-    const data = await adminApi.getDashboardStats();
+    const data = await getDashboardStats();
     stats.value = data;
   } catch (error) {
     if (!isHandledError(error)) {

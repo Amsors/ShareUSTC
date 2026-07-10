@@ -137,7 +137,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import MarkdownIt from 'markdown-it';
 import { getUserHomepage } from '../../api/user';
-import type { UserHomepage } from '../../api/user';
+import type { UserHomepage } from '../../types/user';
 import { ResourceTypeLabels, getResourceTypeColor as getTypeColor } from '../../types/resource';
 import { UserFilled, View, Download, Star, Loading } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';

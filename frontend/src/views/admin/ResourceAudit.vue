@@ -129,7 +129,7 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Refresh } from '@element-plus/icons-vue';
-import { adminApi } from '../../api/admin';
+import { getPendingResources, auditResource } from '../../api/admin';
 import { isHandledError } from '@/api/request';
 
 interface Resource {
@@ -169,7 +169,7 @@ const formatDate = (date: string) => {
 const fetchResources = async () => {
   loading.value = true;
   try {
-    const data = await adminApi.getPendingResources(page.value, perPage.value);
+    const data = await getPendingResources(page.value, perPage.value);
     resources.value = data.resources;
     total.value = data.total;
     pendingCount.value = data.total;
@@ -194,7 +194,7 @@ const handleApprove = async (resource: Resource) => {
       type: 'success',
     });
 
-    await adminApi.auditResource(resource.id, 'approved');
+    await auditResource(resource.id, 'approved');
     ElMessage.success('资源审核通过');
     fetchResources();
   } catch (error) {
@@ -219,7 +219,7 @@ const confirmReject = async () => {
   }
 
   try {
-    await adminApi.auditResource(rejectForm.value.resourceId, 'rejected', rejectForm.value.reason);
+    await auditResource(rejectForm.value.resourceId, 'rejected', rejectForm.value.reason);
     ElMessage.success('资源已拒绝');
     rejectDialogVisible.value = false;
     fetchResources();

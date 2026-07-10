@@ -189,7 +189,8 @@ import {
   Document,
 } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
-import { checkDuplicateResources, type DuplicateResourceCheckResponse } from '../../api/admin';
+import { checkDuplicateResources } from '../../api/admin';
+import type { DuplicateResourceCheckResponse } from '../../types/admin';
 import { isHandledError, getErrorMessage } from '@/api/request';
 import { ResourceTypeLabels, type ResourceTypeType, formatFileSize } from '../../types/resource';
 

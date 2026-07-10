@@ -297,7 +297,7 @@ import type {
   BatchImportTeacherItem,
   BatchImportTeachersResult,
   BatchDeleteTeachersResult,
-} from '@/api/admin';
+} from '@/types/admin';
 import type { UploadFile } from 'element-plus';
 import { getErrorMessage } from '@/api/request';
 
