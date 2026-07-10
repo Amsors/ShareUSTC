@@ -447,28 +447,28 @@
 import { ref, reactive, onMounted, watch, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import MarkdownIt from 'markdown-it';
-import { useAuthStore } from '../stores/auth';
-import { useSiteConfigStore } from '../stores/siteConfig';
-import logger from '../utils/logger';
+import { useAuthStore } from '@/stores/auth';
+import { useSiteConfigStore } from '@/stores/siteConfig';
+import logger from '@/utils/logger';
 import {
   getCurrentUser,
   updateProfile,
   verifyUser,
   getUserProfile,
   changePassword,
-} from '../api/user';
-import MarkdownEditor from '../components/editor/MarkdownEditor.vue';
-import type { UpdateProfileRequest, VerificationRequest } from '../types/user';
+} from '@/api/user';
+import MarkdownEditor from '@/components/editor/MarkdownEditor.vue';
+import type { UpdateProfileRequest, VerificationRequest } from '@/types/user';
 import type { FormInstance, FormRules, FormItemRule } from 'element-plus';
-import { getMyResources, deleteResource } from '../api/resource';
-import type { ResourceListItem } from '../types/resource';
+import { getMyResources, deleteResource } from '@/api/resource';
+import type { ResourceListItem } from '@/types/resource';
 import {
   getMyImages,
   deleteImage,
   copyToClipboard,
   formatFileSize as formatImageFileSize,
-} from '../api/imageHost';
-import type { Image } from '../types/image';
+} from '@/api/imageHost';
+import type { Image } from '@/types/image';
 import {
   UserFilled,
   User,

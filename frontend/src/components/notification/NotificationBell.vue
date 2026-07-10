@@ -63,9 +63,9 @@
 import { computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { Bell } from '@element-plus/icons-vue';
-import { useNotificationStore } from '../../stores/notification';
-import { useAuthStore } from '../../stores/auth';
-import type { Notification } from '../../types/notification';
+import { useNotificationStore } from '@/stores/notification';
+import { useAuthStore } from '@/stores/auth';
+import type { Notification } from '@/types/notification';
 import { ElMessage } from 'element-plus';
 import { isHandledError } from '@/api/request';
 import logger from '@/utils/logger';

@@ -1,4 +1,4 @@
-import type { ResourceStats, StorageType } from './resource';
+import type { ResourceStats, StorageType } from '@/types/resource';
 
 // 收藏夹基础信息
 export interface Favorite {

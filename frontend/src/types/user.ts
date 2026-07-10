@@ -1,5 +1,5 @@
 // 用户相关类型定义
-import type { ResourceListItem } from './resource';
+import type { ResourceListItem } from '@/types/resource';
 
 // 用户资料更新请求
 export interface UpdateProfileRequest {

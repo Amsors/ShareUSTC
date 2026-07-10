@@ -55,7 +55,7 @@ import {
   Folder,
   DocumentCopy,
 } from '@element-plus/icons-vue';
-import { brandConfig } from '../config/site.config';
+import { brandConfig } from '@/config/site.config';
 
 const isCollapsed = ref(false);
 

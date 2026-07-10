@@ -176,8 +176,8 @@
 import { ref, onMounted, computed } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { UserFilled, Search } from '@element-plus/icons-vue';
-import { getUserList, updateUserStatus, getUserRealInfo } from '../../api/admin';
-import type { UserRealInfo } from '../../types/admin';
+import { getUserList, updateUserStatus, getUserRealInfo } from '@/api/admin';
+import type { UserRealInfo } from '@/types/admin';
 import { isHandledError } from '@/api/request';
 import logger from '@/utils/logger';
 

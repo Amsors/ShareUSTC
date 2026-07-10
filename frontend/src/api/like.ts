@@ -1,5 +1,5 @@
-import request from './request';
-import type { LikeStatus, LikeToggleResponse } from '../types/like';
+import request from '@/api/request';
+import type { LikeStatus, LikeToggleResponse } from '@/types/like';
 
 /**
  * 点赞/取消点赞

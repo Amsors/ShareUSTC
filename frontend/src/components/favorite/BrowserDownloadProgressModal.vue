@@ -168,7 +168,7 @@ import {
   Check,
   Close,
 } from '@element-plus/icons-vue';
-import type { DownloadProgress } from '../../utils/browserZip';
+import type { DownloadProgress } from '@/utils/browserZip';
 
 interface Props {
   modelValue: boolean;

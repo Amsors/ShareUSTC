@@ -72,9 +72,9 @@
 import { ref, watch, onMounted, computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Plus, Folder, Check } from '@element-plus/icons-vue';
-import { useFavoriteStore } from '../../stores/favorite';
+import { useFavoriteStore } from '@/stores/favorite';
 import { storeToRefs } from 'pinia';
-import * as favoriteApi from '../../api/favorite';
+import * as favoriteApi from '@/api/favorite';
 import { getErrorMessage, isHandledError } from '@/api/request';
 import logger from '@/utils/logger';
 

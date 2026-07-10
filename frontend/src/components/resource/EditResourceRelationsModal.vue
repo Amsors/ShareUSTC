@@ -91,15 +91,15 @@
 <script setup lang="ts">
 import { ref, reactive, watch, onMounted, computed } from 'vue';
 import { ElMessage } from 'element-plus';
-import { getTeachers } from '../../api/teacher';
-import { getCourses } from '../../api/course';
-import { searchResourcesForRelation, updateResourceRelations } from '../../api/resource';
+import { getTeachers } from '@/api/teacher';
+import { getCourses } from '@/api/course';
+import { searchResourcesForRelation, updateResourceRelations } from '@/api/resource';
 import { getErrorMessage, isHandledError } from '@/api/request';
-import { ResourceTypeLabels } from '../../types/resource';
-import type { Teacher } from '../../types/teacher';
-import type { Course } from '../../types/course';
-import type { RelatedResourceItem } from '../../types/resource';
-import logger from '../../utils/logger';
+import { ResourceTypeLabels } from '@/types/resource';
+import type { Teacher } from '@/types/teacher';
+import type { Course } from '@/types/course';
+import type { RelatedResourceItem } from '@/types/resource';
+import logger from '@/utils/logger';
 
 const props = defineProps<{
   modelValue: boolean;

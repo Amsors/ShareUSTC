@@ -118,8 +118,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { getLeaderboard } from '../../api/user';
-import type { LeaderboardUser, LeaderboardResponse } from '../../types/user';
+import { getLeaderboard } from '@/api/user';
+import type { LeaderboardUser, LeaderboardResponse } from '@/types/user';
 import { Trophy, Medal, UserFilled, ArrowRight, Loading } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { getErrorMessage, isHandledError } from '@/api/request';

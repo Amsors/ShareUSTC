@@ -1,14 +1,14 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { login, register, refreshToken, logout } from '../api/auth';
-import { getCurrentUser } from '../api/user';
+import { login, register, refreshToken, logout } from '@/api/auth';
+import { getCurrentUser } from '@/api/user';
 import { getErrorMessage, isHandledError } from '@/api/request';
 import axios from 'axios';
-import type { User, LoginRequest, RegisterRequest } from '../types/auth';
-import { UserRole } from '../types/auth';
+import type { User, LoginRequest, RegisterRequest } from '@/types/auth';
+import { UserRole } from '@/types/auth';
 import { ElMessage } from 'element-plus';
-import logger from '../utils/logger';
-import { clearDefaultFavoriteStorage } from '../composables/useDefaultFavorite';
+import logger from '@/utils/logger';
+import { clearDefaultFavoriteStorage } from '@/composables/useDefaultFavorite';
 
 export const useAuthStore = defineStore('auth', () => {
   // State

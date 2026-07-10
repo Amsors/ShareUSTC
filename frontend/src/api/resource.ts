@@ -1,9 +1,9 @@
-import request from './request';
-import logger from '../utils/logger';
-import { getServerOrigin } from '../utils/apiUrl';
-import { getOssStatus, getStsToken, resourceUploadCallback } from './oss';
-import { uploadToOssWithSts, uploadToSignedUrl } from '../utils/oss-upload';
-import { resourceCache } from '../utils/resourceCache';
+import request from '@/api/request';
+import logger from '@/utils/logger';
+import { getServerOrigin } from '@/utils/apiUrl';
+import { getOssStatus, getStsToken, resourceUploadCallback } from '@/api/oss';
+import { uploadToOssWithSts, uploadToSignedUrl } from '@/utils/oss-upload';
+import { resourceCache } from '@/utils/resourceCache';
 import type {
   ResourceListResponse,
   ResourceListQuery,
@@ -17,7 +17,7 @@ import type {
   HotResourceItem,
   RelatedResourceItem,
   ResourceListItem,
-} from '../types/resource';
+} from '@/types/resource';
 
 /**
  * 获取资源列表

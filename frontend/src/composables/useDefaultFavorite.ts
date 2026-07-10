@@ -1,5 +1,5 @@
 import { ref, computed, watch } from 'vue';
-import { useAuthStore } from '../stores/auth';
+import { useAuthStore } from '@/stores/auth';
 import { storeToRefs } from 'pinia';
 
 const DEFAULT_FAVORITE_KEY = 'default_favorite';

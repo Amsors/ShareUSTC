@@ -129,7 +129,7 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Refresh } from '@element-plus/icons-vue';
-import { getPendingResources, auditResource } from '../../api/admin';
+import { getPendingResources, auditResource } from '@/api/admin';
 import { isHandledError } from '@/api/request';
 import logger from '@/utils/logger';
 

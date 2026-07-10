@@ -126,8 +126,8 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Loading, Check, Upload } from '@element-plus/icons-vue';
-import { getMyImages, uploadImage } from '../../api/imageHost';
-import type { Image } from '../../types/image';
+import { getMyImages, uploadImage } from '@/api/imageHost';
+import type { Image } from '@/types/image';
 import { getErrorMessage, isHandledError } from '@/api/request';
 import logger from '@/utils/logger';
 

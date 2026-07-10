@@ -202,15 +202,15 @@
 import { ref, onMounted, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Search, Refresh, Folder, Delete, View, Download, Pointer } from '@element-plus/icons-vue';
-import { useAuthStore } from '../../stores/auth';
+import { useAuthStore } from '@/stores/auth';
 import {
   getAllResources,
   adminDeleteResource,
   recalculateResourceHash,
   getAdminFavorites,
   deleteAllFavoriteResources,
-} from '../../api/admin';
-import type { AdminResource, AdminFavorite } from '../../types/admin';
+} from '@/api/admin';
+import type { AdminResource, AdminFavorite } from '@/types/admin';
 import { getErrorMessage, isHandledError } from '@/api/request';
 import logger from '@/utils/logger';
 

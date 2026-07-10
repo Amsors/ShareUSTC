@@ -1,8 +1,8 @@
 import axios, { type AxiosError, type AxiosInstance, type AxiosResponse } from 'axios';
-import { useAuthStore } from '../stores/auth';
+import { useAuthStore } from '@/stores/auth';
 import { ElMessage } from 'element-plus';
-import router from '../router';
-import logger from '../utils/logger';
+import router from '@/router';
+import logger from '@/utils/logger';
 
 // 扩展 axios 请求配置，声明本项目自定义字段（替代散落的 as any 访问）
 declare module 'axios' {

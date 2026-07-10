@@ -116,7 +116,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Refresh, UserFilled, Document, Clock } from '@element-plus/icons-vue';
-import { getCommentList, auditComment, deleteComment } from '../../api/admin';
+import { getCommentList, auditComment, deleteComment } from '@/api/admin';
 import { isHandledError } from '@/api/request';
 import logger from '@/utils/logger';
 

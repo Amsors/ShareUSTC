@@ -73,7 +73,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { Timer, Delete, Refresh } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { resourceCache, type CacheStats } from '../../utils/resourceCache';
+import { resourceCache, type CacheStats } from '@/utils/resourceCache';
 import { isHandledError } from '@/api/request';
 import logger from '@/utils/logger';
 

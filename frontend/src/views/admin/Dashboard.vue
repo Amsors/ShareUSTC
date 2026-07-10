@@ -102,7 +102,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { UserFilled, Document, Download, Warning, ChatDotSquare } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
-import { getDashboardStats } from '../../api/admin';
+import { getDashboardStats } from '@/api/admin';
 import { isHandledError } from '@/api/request';
 import logger from '@/utils/logger';
 

@@ -103,11 +103,11 @@
 import { ref, reactive, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { User, Lock, Message } from '@element-plus/icons-vue';
-import { useAuthStore } from '../../stores/auth';
-import { useSiteConfigStore } from '../../stores/siteConfig';
+import { useAuthStore } from '@/stores/auth';
+import { useSiteConfigStore } from '@/stores/siteConfig';
 import type { FormInstance, FormRules, FormItemRule } from 'element-plus';
-import logger from '../../utils/logger';
-import { authConfig } from '../../config/site.config';
+import logger from '@/utils/logger';
+import { authConfig } from '@/config/site.config';
 
 const router = useRouter();
 const authStore = useAuthStore();

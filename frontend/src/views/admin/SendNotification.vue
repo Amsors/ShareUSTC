@@ -112,8 +112,8 @@ import { reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import type { FormInstance, FormRules } from 'element-plus';
 import { Bell, Promotion } from '@element-plus/icons-vue';
-import { sendNotification } from '../../api/admin';
-import type { SendNotificationRequest } from '../../types/admin';
+import { sendNotification } from '@/api/admin';
+import type { SendNotificationRequest } from '@/types/admin';
 import { isHandledError, getErrorMessage } from '@/api/request';
 import logger from '@/utils/logger';
 

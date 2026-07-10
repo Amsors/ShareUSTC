@@ -94,13 +94,13 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { Loading, Warning, CircleCheck, Key } from '@element-plus/icons-vue';
-import PdfViewer from '../components/preview/PdfViewer.vue';
+import PdfViewer from '@/components/preview/PdfViewer.vue';
 import {
   getPdfPreviewChallengeConfig,
   verifyPdfPreviewChallenge,
   type PdfPreviewChallengeConfig,
-} from '../api/resource';
-import logger from '../utils/logger';
+} from '@/api/resource';
+import logger from '@/utils/logger';
 import { isHandledError } from '@/api/request';
 
 const router = useRouter();

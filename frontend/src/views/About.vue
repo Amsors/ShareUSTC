@@ -314,7 +314,7 @@ import {
   InfoFilled,
 } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
-import logger from '../utils/logger';
+import logger from '@/utils/logger';
 import {
   brandConfig,
   platformConfig,
@@ -324,7 +324,7 @@ import {
   contactConfig,
   type ChangelogItem,
   type SourceDetail,
-} from '../config/site.config';
+} from '@/config/site.config';
 
 interface Contributor {
   login: string;

@@ -185,8 +185,8 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { Collection, Timer, Delete, Refresh, Setting } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { resourceCache, type CacheStats } from '../utils/resourceCache';
-import logger from '../utils/logger';
+import { resourceCache, type CacheStats } from '@/utils/resourceCache';
+import logger from '@/utils/logger';
 import { isHandledError } from '@/api/request';
 
 const router = useRouter();

@@ -142,14 +142,14 @@ import {
   ResourceTypeLabels,
   type ResourceCategoryType,
   type ResourceTypeType,
-} from '../../types/resource';
-import { getTeachers } from '../../api/teacher';
-import { getCourses } from '../../api/course';
-import { searchResourcesForRelation } from '../../api/resource';
-import type { Teacher } from '../../types/teacher';
-import type { Course } from '../../types/course';
-import type { RelatedResourceItem } from '../../types/resource';
-import logger from '../../utils/logger';
+} from '@/types/resource';
+import { getTeachers } from '@/api/teacher';
+import { getCourses } from '@/api/course';
+import { searchResourcesForRelation } from '@/api/resource';
+import type { Teacher } from '@/types/teacher';
+import type { Course } from '@/types/course';
+import type { RelatedResourceItem } from '@/types/resource';
+import logger from '@/utils/logger';
 
 interface FormData {
   title: string;

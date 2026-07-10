@@ -78,7 +78,7 @@
 import { ref, onMounted } from 'vue';
 import { CircleCheck } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
-import logger from '../../utils/logger';
+import logger from '@/utils/logger';
 
 // 状态
 const visible = ref(false);

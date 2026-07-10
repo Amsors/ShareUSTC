@@ -66,10 +66,10 @@
 import { ref, onMounted, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Delete } from '@element-plus/icons-vue';
-import { getComments, createComment, deleteComment } from '../../api/comment';
-import { useAuthStore } from '../../stores/auth';
-import type { Comment } from '../../types/comment';
-import logger from '../../utils/logger';
+import { getComments, createComment, deleteComment } from '@/api/comment';
+import { useAuthStore } from '@/stores/auth';
+import type { Comment } from '@/types/comment';
+import logger from '@/utils/logger';
 import { getErrorMessage, isHandledError } from '@/api/request';
 
 const props = defineProps<{

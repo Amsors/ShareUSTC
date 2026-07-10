@@ -1,11 +1,11 @@
 import JSZip from 'jszip';
-import logger from './logger';
-import { resourceCache } from './resourceCache';
-import { getServerOrigin } from './apiUrl';
-import { trackResourceDownload } from '../api/resource';
-import { getErrorMessage } from '../api/request';
-import type { PreviewUrlResponse } from '../api/resource';
-import type { FavoriteResourceItem } from '../types/favorite';
+import logger from '@/utils/logger';
+import { resourceCache } from '@/utils/resourceCache';
+import { getServerOrigin } from '@/utils/apiUrl';
+import { trackResourceDownload } from '@/api/resource';
+import { getErrorMessage } from '@/api/request';
+import type { PreviewUrlResponse } from '@/api/resource';
+import type { FavoriteResourceItem } from '@/types/favorite';
 
 // 下载进度信息
 export interface DownloadProgress {

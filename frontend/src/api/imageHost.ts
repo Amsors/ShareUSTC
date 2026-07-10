@@ -1,8 +1,8 @@
-import request from './request';
-import logger from '../utils/logger';
-import { getOssStatus, getStsToken, imageUploadCallback } from './oss';
-import { uploadToOssWithSts, uploadToSignedUrl } from '../utils/oss-upload';
-import type { Image, ImageUploadResponse, ImageListResponse, ImageListQuery } from '../types/image';
+import request from '@/api/request';
+import logger from '@/utils/logger';
+import { getOssStatus, getStsToken, imageUploadCallback } from '@/api/oss';
+import { uploadToOssWithSts, uploadToSignedUrl } from '@/utils/oss-upload';
+import type { Image, ImageUploadResponse, ImageListResponse, ImageListQuery } from '@/types/image';
 
 /**
  * 上传图片

@@ -1,10 +1,10 @@
-import request from './request';
+import request from '@/api/request';
 import type {
   Comment,
   CommentListResponse,
   CommentListQuery,
   CreateCommentRequest,
-} from '../types/comment';
+} from '@/types/comment';
 
 /**
  * 获取评论列表

@@ -1,6 +1,6 @@
-import request from './request';
+import request from '@/api/request';
 import type { AxiosRequestConfig } from 'axios';
-import type { LoginRequest, RegisterRequest, User } from '../types/auth';
+import type { LoginRequest, RegisterRequest, User } from '@/types/auth';
 
 // 用户注册
 export const register = (data: RegisterRequest): Promise<User> => {

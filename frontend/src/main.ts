@@ -1,11 +1,11 @@
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
-import router from './router';
-import App from './App.vue';
-import { useAuthStore } from './stores/auth';
+import router from '@/router';
+import App from '@/App.vue';
+import { useAuthStore } from '@/stores/auth';
 
 // 全局样式（包含隐藏文本光标的设置）
-import './style.css';
+import '@/style.css';
 
 // Element Plus
 import ElementPlus from 'element-plus';
@@ -13,7 +13,7 @@ import 'element-plus/dist/index.css';
 import * as ElementPlusIconsVue from '@element-plus/icons-vue';
 
 // 项目自有设计 token（品牌色 / 渐变），置于 Element Plus 之后以便按需覆盖
-import './styles/tokens.css';
+import '@/styles/tokens.css';
 
 const app = createApp(App);
 

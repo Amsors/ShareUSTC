@@ -220,11 +220,11 @@ import {
   Document,
   FolderOpened,
 } from '@element-plus/icons-vue';
-import { useDefaultFavorite } from '../../composables/useDefaultFavorite';
-import { useFavoriteStore } from '../../stores/favorite';
+import { useDefaultFavorite } from '@/composables/useDefaultFavorite';
+import { useFavoriteStore } from '@/stores/favorite';
 import { getErrorMessage, isHandledError } from '@/api/request';
 import logger from '@/utils/logger';
-import { downloadFavorite } from '../../api/favorite';
+import { downloadFavorite } from '@/api/favorite';
 import {
   browserDownloadFavorite,
   checkBrowserSupport,
@@ -232,10 +232,10 @@ import {
   checkFileSystemAccessSupport,
   type DownloadProgress,
   type FolderDownloadProgress,
-} from '../../utils/browserZip';
-import CreateFavoriteModal from '../../components/favorite/CreateFavoriteModal.vue';
-import BrowserDownloadProgressModal from '../../components/favorite/BrowserDownloadProgressModal.vue';
-import FolderDownloadProgressModal from '../../components/favorite/FolderDownloadProgressModal.vue';
+} from '@/utils/browserZip';
+import CreateFavoriteModal from '@/components/favorite/CreateFavoriteModal.vue';
+import BrowserDownloadProgressModal from '@/components/favorite/BrowserDownloadProgressModal.vue';
+import FolderDownloadProgressModal from '@/components/favorite/FolderDownloadProgressModal.vue';
 
 const route = useRoute();
 const router = useRouter();

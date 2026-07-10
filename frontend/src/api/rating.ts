@@ -1,5 +1,5 @@
-import request from './request';
-import type { Rating, CreateRatingRequest, ResourceRatingInfo } from '../types/rating';
+import request from '@/api/request';
+import type { Rating, CreateRatingRequest, ResourceRatingInfo } from '@/types/rating';
 
 /**
  * 提交评分（创建或更新）

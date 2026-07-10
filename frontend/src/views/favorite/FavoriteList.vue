@@ -105,10 +105,10 @@ import {
   StarFilled,
 } from '@element-plus/icons-vue';
 import { storeToRefs } from 'pinia';
-import { useFavoriteStore } from '../../stores/favorite';
-import type { Favorite } from '../../types/favorite';
-import CreateFavoriteModal from '../../components/favorite/CreateFavoriteModal.vue';
-import { useDefaultFavorite } from '../../composables/useDefaultFavorite';
+import { useFavoriteStore } from '@/stores/favorite';
+import type { Favorite } from '@/types/favorite';
+import CreateFavoriteModal from '@/components/favorite/CreateFavoriteModal.vue';
+import { useDefaultFavorite } from '@/composables/useDefaultFavorite';
 import { getErrorMessage, isHandledError } from '@/api/request';
 import logger from '@/utils/logger';
 

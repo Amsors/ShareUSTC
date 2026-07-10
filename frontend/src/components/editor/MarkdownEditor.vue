@@ -41,8 +41,8 @@ import { MdEditor } from 'md-editor-v3';
 // 工具栏/底栏类型未从包入口导出，从内部类型路径引入（类型导入编译期擦除，不影响运行时）
 import type { ToolbarNames, Footers } from 'md-editor-v3/lib/types/MdEditor/type';
 import 'md-editor-v3/lib/style.css';
-import ImageSelector from './ImageSelector.vue';
-import { uploadImage } from '../../api/imageHost';
+import ImageSelector from '@/components/editor/ImageSelector.vue';
+import { uploadImage } from '@/api/imageHost';
 import { getErrorMessage, isHandledError } from '@/api/request';
 import logger from '@/utils/logger';
 

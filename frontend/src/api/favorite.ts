@@ -1,5 +1,5 @@
-import request from './request';
-import { getServerOrigin } from '../utils/apiUrl';
+import request from '@/api/request';
+import { getServerOrigin } from '@/utils/apiUrl';
 import type {
   FavoriteListResponse,
   FavoriteDetail,
@@ -8,7 +8,7 @@ import type {
   UpdateFavoriteRequest,
   AddToFavoriteRequest,
   CheckResourceInFavoriteResponse,
-} from '../types/favorite';
+} from '@/types/favorite';
 
 /**
  * 创建收藏夹

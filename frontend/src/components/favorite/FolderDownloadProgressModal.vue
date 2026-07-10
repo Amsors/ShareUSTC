@@ -172,7 +172,7 @@ import {
   Check,
   Close,
 } from '@element-plus/icons-vue';
-import type { FolderDownloadProgress } from '../../utils/browserZip';
+import type { FolderDownloadProgress } from '@/utils/browserZip';
 
 interface Props {
   modelValue?: boolean;

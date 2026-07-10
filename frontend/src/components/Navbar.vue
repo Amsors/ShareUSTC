@@ -42,12 +42,12 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
-import { useAuthStore } from '../stores/auth';
+import { useAuthStore } from '@/stores/auth';
 import { ArrowDown } from '@element-plus/icons-vue';
 import { ElMessageBox } from 'element-plus';
-import NotificationBell from './notification/NotificationBell.vue';
+import NotificationBell from '@/components/notification/NotificationBell.vue';
 import { computed } from 'vue';
-import { brandConfig } from '../config/site.config';
+import { brandConfig } from '@/config/site.config';
 
 const router = useRouter();
 const authStore = useAuthStore();

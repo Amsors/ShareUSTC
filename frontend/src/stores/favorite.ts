@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { Favorite, FavoriteDetail } from '../types/favorite';
-import * as favoriteApi from '../api/favorite';
-import request, { isBusinessError } from '../api/request';
+import type { Favorite, FavoriteDetail } from '@/types/favorite';
+import * as favoriteApi from '@/api/favorite';
+import request, { isBusinessError } from '@/api/request';
 
 export const useFavoriteStore = defineStore('favorite', () => {
   // State

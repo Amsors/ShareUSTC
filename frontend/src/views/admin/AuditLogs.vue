@@ -164,8 +164,8 @@
 import { reactive, ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Search, User, Loading } from '@element-plus/icons-vue';
-import { getAuditLogs } from '../../api/admin';
-import type { AuditLogItem, AuditLogQuery } from '../../types/admin';
+import { getAuditLogs } from '@/api/admin';
+import type { AuditLogItem, AuditLogQuery } from '@/types/admin';
 import { isHandledError } from '@/api/request';
 import logger from '@/utils/logger';
 

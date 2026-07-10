@@ -46,8 +46,8 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { WarningFilled } from '@element-plus/icons-vue';
-import { useNotificationStore } from '../../stores/notification';
-import type { Notification } from '../../types/notification';
+import { useNotificationStore } from '@/stores/notification';
+import type { Notification } from '@/types/notification';
 import { ElMessage } from 'element-plus';
 import { isHandledError } from '@/api/request';
 import logger from '@/utils/logger';

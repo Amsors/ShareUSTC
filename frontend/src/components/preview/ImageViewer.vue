@@ -49,8 +49,8 @@ import {
   getResourcePreviewInfo,
   getResourcePreviewContent,
   type PreviewUrlResponse,
-} from '../../api/resource';
-import logger from '../../utils/logger';
+} from '@/api/resource';
+import logger from '@/utils/logger';
 
 const props = defineProps<{
   resourceId: string;

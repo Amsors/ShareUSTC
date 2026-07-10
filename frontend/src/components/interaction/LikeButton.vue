@@ -17,8 +17,8 @@
 import { ref, onMounted } from 'vue';
 import { Star } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
-import { toggleLike, getLikeStatus } from '../../api/like';
-import logger from '../../utils/logger';
+import { toggleLike, getLikeStatus } from '@/api/like';
+import logger from '@/utils/logger';
 import { getErrorMessage, isHandledError } from '@/api/request';
 
 const props = defineProps<{

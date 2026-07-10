@@ -58,10 +58,10 @@
 import { ref, reactive } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { User, Lock } from '@element-plus/icons-vue';
-import { useAuthStore } from '../../stores/auth';
+import { useAuthStore } from '@/stores/auth';
 import type { FormInstance, FormRules } from 'element-plus';
-import logger from '../../utils/logger';
-import { authConfig } from '../../config/site.config';
+import logger from '@/utils/logger';
+import { authConfig } from '@/config/site.config';
 
 const router = useRouter();
 const route = useRoute();

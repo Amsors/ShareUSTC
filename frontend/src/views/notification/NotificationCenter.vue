@@ -60,9 +60,9 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { Bell, Check } from '@element-plus/icons-vue';
-import { useNotificationStore } from '../../stores/notification';
-import type { Notification } from '../../types/notification';
-import NotificationList from '../../components/notification/NotificationList.vue';
+import { useNotificationStore } from '@/stores/notification';
+import type { Notification } from '@/types/notification';
+import NotificationList from '@/components/notification/NotificationList.vue';
 import { ElMessage } from 'element-plus';
 import { isHandledError } from '@/api/request';
 import logger from '@/utils/logger';

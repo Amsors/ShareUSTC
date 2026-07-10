@@ -73,13 +73,9 @@ import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { ArrowLeft, Check, Document, DocumentChecked, Loading } from '@element-plus/icons-vue';
 import MarkdownIt from 'markdown-it';
-import MarkdownEditor from '../../components/editor/MarkdownEditor.vue';
-import {
-  getResourceDetail,
-  getResourceRawContent,
-  updateResourceContent,
-} from '../../api/resource';
-import type { ResourceDetail } from '../../types/resource';
+import MarkdownEditor from '@/components/editor/MarkdownEditor.vue';
+import { getResourceDetail, getResourceRawContent, updateResourceContent } from '@/api/resource';
+import type { ResourceDetail } from '@/types/resource';
 import { getErrorMessage, isHandledError } from '@/api/request';
 import logger from '@/utils/logger';
 

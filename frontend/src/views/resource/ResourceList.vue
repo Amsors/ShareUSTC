@@ -291,23 +291,23 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { Search, Upload, Reading, View, Download, Star, Loading } from '@element-plus/icons-vue';
-import { getResourceList, searchResources } from '../../api/resource';
-import { getTeachers } from '../../api/teacher';
-import { getCourses } from '../../api/course';
+import { getResourceList, searchResources } from '@/api/resource';
+import { getTeachers } from '@/api/teacher';
+import { getCourses } from '@/api/course';
 import {
   ResourceTypeLabels,
   ResourceTypeFilterLabels,
   ResourceCategoryLabels,
   type ResourceListItem,
   type ResourceCategoryType,
-} from '../../types/resource';
-import type { Teacher } from '../../types/teacher';
-import type { Course } from '../../types/course';
-import { useFavoriteStore } from '../../stores/favorite';
-import { useAuthStore } from '../../stores/auth';
-import type { Favorite } from '../../types/favorite';
-import logger from '../../utils/logger';
-import ResourceGuideModal from '../../components/common/ResourceGuideModal.vue';
+} from '@/types/resource';
+import type { Teacher } from '@/types/teacher';
+import type { Course } from '@/types/course';
+import { useFavoriteStore } from '@/stores/favorite';
+import { useAuthStore } from '@/stores/auth';
+import type { Favorite } from '@/types/favorite';
+import logger from '@/utils/logger';
+import ResourceGuideModal from '@/components/common/ResourceGuideModal.vue';
 import { getErrorMessage, isHandledError } from '@/api/request';
 
 const router = useRouter();

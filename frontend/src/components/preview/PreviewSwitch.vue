@@ -37,11 +37,11 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { Document } from '@element-plus/icons-vue';
-import ImageViewer from './ImageViewer.vue';
-import PdfViewer from './PdfViewer.vue';
-import MarkdownViewer from './MarkdownViewer.vue';
-import TxtViewer from './TxtViewer.vue';
-import { downloadResource } from '../../api/resource';
+import ImageViewer from '@/components/preview/ImageViewer.vue';
+import PdfViewer from '@/components/preview/PdfViewer.vue';
+import MarkdownViewer from '@/components/preview/MarkdownViewer.vue';
+import TxtViewer from '@/components/preview/TxtViewer.vue';
+import { downloadResource } from '@/api/resource';
 
 const props = defineProps<{
   resourceId: string;

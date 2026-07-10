@@ -4,8 +4,8 @@
  * 支持版本控制（通过 updatedAt），确保缓存一致性
  */
 
-import logger from './logger';
-import { cacheConfig } from '../config/site.config';
+import logger from '@/utils/logger';
+import { cacheConfig } from '@/config/site.config';
 
 const DB_NAME = cacheConfig.dbName;
 const DB_VERSION = 2; // 升级版本以支持 updatedAt

@@ -1,135 +1,135 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import { useAuthStore } from '../stores/auth';
-import logger from '../utils/logger';
+import { useAuthStore } from '@/stores/auth';
+import logger from '@/utils/logger';
 
 // 导入管理后台组件
-import AdminLayout from '../layouts/AdminLayout.vue';
-import AdminDashboard from '../views/admin/Dashboard.vue';
-import UserManagement from '../views/admin/UserManagement.vue';
-import TeacherManagement from '../views/admin/TeacherManagement.vue';
-import CourseManagement from '../views/admin/CourseManagement.vue';
-import ResourceAudit from '../views/admin/ResourceAudit.vue';
-import ResourceManagement from '../views/admin/ResourceManagement.vue';
-import CommentManagement from '../views/admin/CommentManagement.vue';
-import SendNotification from '../views/admin/SendNotification.vue';
-import DetailedStats from '../views/admin/DetailedStats.vue';
-import AuditLogs from '../views/admin/AuditLogs.vue';
-import DuplicateResourceCheck from '../views/admin/DuplicateResourceCheck.vue';
+import AdminLayout from '@/layouts/AdminLayout.vue';
+import AdminDashboard from '@/views/admin/Dashboard.vue';
+import UserManagement from '@/views/admin/UserManagement.vue';
+import TeacherManagement from '@/views/admin/TeacherManagement.vue';
+import CourseManagement from '@/views/admin/CourseManagement.vue';
+import ResourceAudit from '@/views/admin/ResourceAudit.vue';
+import ResourceManagement from '@/views/admin/ResourceManagement.vue';
+import CommentManagement from '@/views/admin/CommentManagement.vue';
+import SendNotification from '@/views/admin/SendNotification.vue';
+import DetailedStats from '@/views/admin/DetailedStats.vue';
+import AuditLogs from '@/views/admin/AuditLogs.vue';
+import DuplicateResourceCheck from '@/views/admin/DuplicateResourceCheck.vue';
 
 // 路由配置
 const routes = [
   {
     path: '/',
     name: 'Home',
-    component: () => import('../views/Home.vue'),
+    component: () => import('@/views/Home.vue'),
     meta: { public: true },
   },
   {
     path: '/about',
     name: 'About',
-    component: () => import('../views/About.vue'),
+    component: () => import('@/views/About.vue'),
     meta: { public: true },
   },
   {
     path: '/login',
     name: 'Login',
-    component: () => import('../views/auth/Login.vue'),
+    component: () => import('@/views/auth/Login.vue'),
     meta: { public: true, guestOnly: true },
   },
   {
     path: '/register',
     name: 'Register',
-    component: () => import('../views/auth/Register.vue'),
+    component: () => import('@/views/auth/Register.vue'),
     meta: { public: true, guestOnly: true },
   },
   {
     path: '/profile',
     name: 'Profile',
-    component: () => import('../views/Profile.vue'),
+    component: () => import('@/views/Profile.vue'),
     meta: { requiresAuth: true },
   },
   {
     path: '/settings',
     name: 'Settings',
-    component: () => import('../views/Settings.vue'),
+    component: () => import('@/views/Settings.vue'),
     meta: { public: true },
   },
   {
     path: '/pdf-preview-challenge',
     name: 'PdfPreviewChallenge',
-    component: () => import('../views/PdfPreviewChallenge.vue'),
+    component: () => import('@/views/PdfPreviewChallenge.vue'),
     meta: { public: true },
   },
   {
     path: '/my-resources',
     name: 'MyResources',
-    component: () => import('../views/Profile.vue'),
+    component: () => import('@/views/Profile.vue'),
     meta: { requiresAuth: true },
   },
   {
     path: '/verification',
     name: 'Verification',
-    component: () => import('../views/Profile.vue'),
+    component: () => import('@/views/Profile.vue'),
     meta: { requiresAuth: true },
   },
   {
     path: '/image-host',
     name: 'ImageHost',
-    component: () => import('../views/ImageHost.vue'),
+    component: () => import('@/views/ImageHost.vue'),
     meta: { requiresAuth: true },
   },
   {
     path: '/upload',
     name: 'UploadResource',
-    component: () => import('../views/upload/UploadResource.vue'),
+    component: () => import('@/views/upload/UploadResource.vue'),
     meta: { requiresAuth: true },
   },
   {
     path: '/resources',
     name: 'ResourceList',
-    component: () => import('../views/resource/ResourceList.vue'),
+    component: () => import('@/views/resource/ResourceList.vue'),
     meta: { public: true },
   },
   {
     path: '/resources/:id',
     name: 'ResourceDetail',
-    component: () => import('../views/resource/ResourceDetail.vue'),
+    component: () => import('@/views/resource/ResourceDetail.vue'),
     meta: { public: true },
   },
   {
     path: '/resources/:id/edit',
     name: 'EditMarkdownResource',
-    component: () => import('../views/resource/EditMarkdownResource.vue'),
+    component: () => import('@/views/resource/EditMarkdownResource.vue'),
     meta: { requiresAuth: true },
   },
   {
     path: '/user/:id',
     name: 'UserHomepage',
-    component: () => import('../views/user/UserHomepage.vue'),
+    component: () => import('@/views/user/UserHomepage.vue'),
     meta: { public: true },
   },
   {
     path: '/leaderboard',
     name: 'ContributionLeaderboard',
-    component: () => import('../views/user/ContributionLeaderboard.vue'),
+    component: () => import('@/views/user/ContributionLeaderboard.vue'),
     meta: { public: true },
   },
   {
     path: '/notifications',
     name: 'NotificationCenter',
-    component: () => import('../views/notification/NotificationCenter.vue'),
+    component: () => import('@/views/notification/NotificationCenter.vue'),
     meta: { requiresAuth: true },
   },
   {
     path: '/favorites',
     name: 'FavoriteList',
-    component: () => import('../views/favorite/FavoriteList.vue'),
+    component: () => import('@/views/favorite/FavoriteList.vue'),
     meta: { requiresAuth: true },
   },
   {
     path: '/favorites/:id',
     name: 'FavoriteDetail',
-    component: () => import('../views/favorite/FavoriteDetail.vue'),
+    component: () => import('@/views/favorite/FavoriteDetail.vue'),
     meta: { requiresAuth: true },
   },
   // 管理员路由
@@ -199,7 +199,7 @@ const routes = [
   {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
-    component: () => import('../views/NotFound.vue'),
+    component: () => import('@/views/NotFound.vue'),
     meta: { public: true },
   },
 ];

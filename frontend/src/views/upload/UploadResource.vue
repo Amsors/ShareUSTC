@@ -161,10 +161,10 @@ import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { ArrowRight, Document, Loading, CircleCheck, CircleClose } from '@element-plus/icons-vue';
-import FileUploader from '../../components/upload/FileUploader.vue';
-import MetadataForm from '../../components/upload/MetadataForm.vue';
-import MarkdownEditor from '../../components/editor/MarkdownEditor.vue';
-import { uploadResource } from '../../api/resource';
+import FileUploader from '@/components/upload/FileUploader.vue';
+import MetadataForm from '@/components/upload/MetadataForm.vue';
+import MarkdownEditor from '@/components/editor/MarkdownEditor.vue';
+import { uploadResource } from '@/api/resource';
 import { getErrorMessage, isHandledError } from '@/api/request';
 import logger from '@/utils/logger';
 import {
@@ -173,7 +173,7 @@ import {
   ResourceType,
   type ResourceTypeType,
   type ResourceCategoryType,
-} from '../../types/resource';
+} from '@/types/resource';
 
 const router = useRouter();
 

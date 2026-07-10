@@ -165,8 +165,8 @@ import {
   getResourcePreviewContent,
   downloadResource,
   type PreviewUrlResponse,
-} from '../../api/resource';
-import logger from '../../utils/logger';
+} from '@/api/resource';
+import logger from '@/utils/logger';
 import { ElMessage } from 'element-plus';
 import { getErrorMessage, isHandledError } from '@/api/request';
 

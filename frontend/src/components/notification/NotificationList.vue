@@ -44,7 +44,7 @@
 <script setup lang="ts">
 // 无需额外导入 computed
 import { Bell, Check, Document, Star, Warning, ChatDotRound } from '@element-plus/icons-vue';
-import type { Notification, NotificationType } from '../../types/notification';
+import type { Notification, NotificationType } from '@/types/notification';
 
 defineProps<{
   notifications: Notification[];

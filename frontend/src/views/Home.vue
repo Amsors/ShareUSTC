@@ -231,14 +231,14 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAuthStore } from '../stores/auth';
-import { getHotResources, getResourceCount } from '../api/resource';
-import type { HotResourceItem } from '../types/resource';
-import { ResourceTypeLabels } from '../types/resource';
-import UserGuideModal from '../components/common/UserGuideModal.vue';
-import logger from '../utils/logger';
+import { useAuthStore } from '@/stores/auth';
+import { getHotResources, getResourceCount } from '@/api/resource';
+import type { HotResourceItem } from '@/types/resource';
+import { ResourceTypeLabels } from '@/types/resource';
+import UserGuideModal from '@/components/common/UserGuideModal.vue';
+import logger from '@/utils/logger';
 import { isHandledError } from '@/api/request';
-import { homeConfig } from '../config/site.config';
+import { homeConfig } from '@/config/site.config';
 import {
   Search,
   Trophy,

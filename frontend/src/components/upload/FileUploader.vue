@@ -116,11 +116,11 @@ import {
   ResourceTypeLabels,
   type ResourceTypeType,
   type ResourceListItem,
-} from '../../types/resource';
-import { calculateFileHash } from '../../utils/fileHash';
-import { getResourcesByFileHash } from '../../api/resource';
+} from '@/types/resource';
+import { calculateFileHash } from '@/utils/fileHash';
+import { getResourcesByFileHash } from '@/api/resource';
 import { getErrorMessage } from '@/api/request';
-import logger from '../../utils/logger';
+import logger from '@/utils/logger';
 
 const props = defineProps<{
   modelValue?: File | null;

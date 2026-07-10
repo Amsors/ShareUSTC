@@ -39,8 +39,8 @@
 import { ref, watch } from 'vue';
 import type { FormInstance, FormRules, InputInstance } from 'element-plus';
 import { ElMessage } from 'element-plus';
-import { useFavoriteStore } from '../../stores/favorite';
-import type { Favorite } from '../../types/favorite';
+import { useFavoriteStore } from '@/stores/favorite';
+import type { Favorite } from '@/types/favorite';
 import { getErrorMessage, isHandledError } from '@/api/request';
 import logger from '@/utils/logger';
 

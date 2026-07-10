@@ -114,11 +114,11 @@ import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Edit, StarFilled, InfoFilled, Loading, Lock } from '@element-plus/icons-vue';
-import { getResourceRatingInfo, submitRating, deleteRating } from '../../api/rating';
-import type { ResourceRatingInfo, CreateRatingRequest } from '../../types/rating';
-import { RatingDimensionsConfig } from '../../types/rating';
-import logger from '../../utils/logger';
-import { useAuthStore } from '../../stores/auth';
+import { getResourceRatingInfo, submitRating, deleteRating } from '@/api/rating';
+import type { ResourceRatingInfo, CreateRatingRequest } from '@/types/rating';
+import { RatingDimensionsConfig } from '@/types/rating';
+import logger from '@/utils/logger';
+import { useAuthStore } from '@/stores/auth';
 import { getErrorMessage, isHandledError } from '@/api/request';
 
 const props = defineProps<{

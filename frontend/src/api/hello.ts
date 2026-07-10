@@ -1,5 +1,5 @@
-import request from './request';
-import type { HelloResponse } from '../types';
+import request from '@/api/request';
+import type { HelloResponse } from '@/types';
 
 export const helloApi = {
   async getHello(): Promise<HelloResponse> {

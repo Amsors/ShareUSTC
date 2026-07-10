@@ -1,6 +1,6 @@
-import request from './request';
+import request from '@/api/request';
 import type { AxiosRequestConfig } from 'axios';
-import type { User } from '../types/auth';
+import type { User } from '@/types/auth';
 import type { PaginationQuery } from '@/types/common';
 import type {
   UpdateProfileRequest,
@@ -11,7 +11,7 @@ import type {
   ChangePasswordRequest,
   LeaderboardResponse,
   LeaderboardQuery,
-} from '../types/user';
+} from '@/types/user';
 
 // 获取当前用户信息
 // config 可传入 skipAuthError 等自定义字段（如会话检查时静默处理 401）

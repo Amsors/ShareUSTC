@@ -4,8 +4,8 @@ import type {
   NotificationListResponse,
   UnreadCountResponse,
   MarkAllReadResponse,
-} from '../types/notification';
-import request from './request';
+} from '@/types/notification';
+import request from '@/api/request';
 
 /**
  * 获取通知列表

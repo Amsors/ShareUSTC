@@ -226,8 +226,8 @@ import {
   Pointer,
   Loading,
 } from '@element-plus/icons-vue';
-import { getDetailedStats } from '../../api/admin';
-import type { DetailedStats } from '../../types/admin';
+import { getDetailedStats } from '@/api/admin';
+import type { DetailedStats } from '@/types/admin';
 import { isHandledError } from '@/api/request';
 import logger from '@/utils/logger';
 

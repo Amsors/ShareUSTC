@@ -403,17 +403,17 @@ import {
   downloadResource,
   deleteResource,
   updateResourceDescription,
-} from '../../api/resource';
-import { checkResourceInFavorite } from '../../api/favorite';
-import { useAuthStore } from '../../stores/auth';
-import { useFavoriteStore } from '../../stores/favorite';
-import { useDefaultFavorite } from '../../composables/useDefaultFavorite';
-import PreviewSwitch from '../../components/preview/PreviewSwitch.vue';
-import LikeButton from '../../components/interaction/LikeButton.vue';
-import CommentSection from '../../components/interaction/CommentSection.vue';
-import AddToFavoriteModal from '../../components/favorite/AddToFavoriteModal.vue';
-import RatingWidget from '../../components/interaction/RatingWidget.vue';
-import EditResourceRelationsModal from '../../components/resource/EditResourceRelationsModal.vue';
+} from '@/api/resource';
+import { checkResourceInFavorite } from '@/api/favorite';
+import { useAuthStore } from '@/stores/auth';
+import { useFavoriteStore } from '@/stores/favorite';
+import { useDefaultFavorite } from '@/composables/useDefaultFavorite';
+import PreviewSwitch from '@/components/preview/PreviewSwitch.vue';
+import LikeButton from '@/components/interaction/LikeButton.vue';
+import CommentSection from '@/components/interaction/CommentSection.vue';
+import AddToFavoriteModal from '@/components/favorite/AddToFavoriteModal.vue';
+import RatingWidget from '@/components/interaction/RatingWidget.vue';
+import EditResourceRelationsModal from '@/components/resource/EditResourceRelationsModal.vue';
 import {
   ResourceTypeLabels,
   ResourceCategoryLabels,
@@ -422,8 +422,8 @@ import {
   type ResourceDetail,
   type ResourceCategoryType,
   type ResourceTypeType,
-} from '../../types/resource';
-import type { ResourceRatingInfo } from '../../types/rating';
+} from '@/types/resource';
+import type { ResourceRatingInfo } from '@/types/rating';
 import { getErrorMessage, isHandledError } from '@/api/request';
 import logger from '@/utils/logger';
 

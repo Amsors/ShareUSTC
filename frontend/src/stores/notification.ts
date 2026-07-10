@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { Notification, NotificationListQuery } from '../types/notification';
+import type { Notification, NotificationListQuery } from '@/types/notification';
 import {
   getNotifications,
   markAsRead,
@@ -8,7 +8,7 @@ import {
   getUnreadCount,
   getPriorityNotifications,
   dismissPriorityNotification,
-} from '../api/notification';
+} from '@/api/notification';
 
 export const useNotificationStore = defineStore('notification', () => {
   // State

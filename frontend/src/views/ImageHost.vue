@@ -193,11 +193,11 @@ import {
   deleteImage,
   copyToClipboard,
   formatFileSize,
-} from '../api/imageHost';
-import type { Image, ImageUploadResponse } from '../types/image';
+} from '@/api/imageHost';
+import type { Image, ImageUploadResponse } from '@/types/image';
 import { getErrorMessage, isHandledError } from '@/api/request';
 import logger from '@/utils/logger';
-import { StorageTypeLabels } from '../types/resource';
+import { StorageTypeLabels } from '@/types/resource';
 import { Picture, Upload, CopyDocument, Refresh, Delete } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 
