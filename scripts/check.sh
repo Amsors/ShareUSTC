@@ -10,6 +10,9 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TARGET="${1:-all}"
 
 check_backend() {
+    # 使用提交的 .sqlx 离线缓存校验 query! 宏（与 CI 一致，无需数据库）；
+    # 新增/修改查询后需运行 `cargo sqlx prepare` 更新 .sqlx
+    export SQLX_OFFLINE=true
     echo "==> [backend] cargo fmt --check"
     (cd "$ROOT/backend" && cargo fmt --check)
     echo "==> [backend] cargo clippy"

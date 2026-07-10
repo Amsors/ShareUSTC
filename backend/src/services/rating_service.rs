@@ -46,7 +46,9 @@ impl RatingService {
         let mut tx = pool.begin().await?;
 
         // 插入或更新评分
-        let rating = sqlx::query_as::<_, Rating>(
+        // 各评分维度列在库中可空，但业务保证一次写入五项，故用 `!` 断言非空以匹配 Rating 结构体
+        let rating = sqlx::query_as!(
+            Rating,
             r#"
             INSERT INTO ratings (
                 resource_id, user_id,
@@ -61,17 +63,20 @@ impl RatingService {
                 format_quality = EXCLUDED.format_quality,
                 detail_level = EXCLUDED.detail_level,
                 updated_at = CURRENT_TIMESTAMP
-            RETURNING id, resource_id, user_id, difficulty, overall_quality,
-                      answer_quality, format_quality, detail_level, created_at, updated_at
+            RETURNING id, resource_id, user_id,
+                      difficulty AS "difficulty!", overall_quality AS "overall_quality!",
+                      answer_quality AS "answer_quality!", format_quality AS "format_quality!",
+                      detail_level AS "detail_level!",
+                      created_at AS "created_at!", updated_at AS "updated_at!"
             "#,
+            resource_id,
+            user_id,
+            request.difficulty,
+            request.overall_quality,
+            request.answer_quality,
+            request.format_quality,
+            request.detail_level
         )
-        .bind(resource_id)
-        .bind(user_id)
-        .bind(request.difficulty)
-        .bind(request.overall_quality)
-        .bind(request.answer_quality)
-        .bind(request.format_quality)
-        .bind(request.detail_level)
         .fetch_one(&mut *tx)
         .await?;
 
@@ -90,31 +95,31 @@ impl RatingService {
     /// 评分时通知资源上传者
     async fn notify_uploader_on_rating(pool: &PgPool, resource_id: Uuid, rater_id: Uuid) {
         // 使用单个JOIN查询获取资源信息和评分者用户名（避免N+1查询）
-        let result = sqlx::query_as::<_, (Uuid, String, Option<Uuid>, String)>(
+        let result = sqlx::query!(
             r#"
             SELECT r.uploader_id, r.title, r.author_id, u.username
             FROM resources r
             LEFT JOIN users u ON u.id = $2
             WHERE r.id = $1
             "#,
+            resource_id,
+            rater_id
         )
-        .bind(resource_id)
-        .bind(rater_id)
         .fetch_optional(pool)
         .await;
 
-        if let Ok(Some((uploader_id, resource_title, author_id, rater_name))) = result {
+        if let Ok(Some(row)) = result {
             // 优先通知作者（如果存在），否则通知上传者
-            let notify_user_id = author_id.unwrap_or(uploader_id);
+            let notify_user_id = row.author_id.unwrap_or(row.uploader_id);
 
             // 不给自己发通知
             if notify_user_id != rater_id {
                 if let Err(e) = NotificationService::create_rating_notification(
                     pool,
                     resource_id,
-                    &resource_title,
+                    &row.title,
                     notify_user_id,
-                    &rater_name,
+                    &row.username,
                 )
                 .await
                 {
@@ -130,15 +135,19 @@ impl RatingService {
         resource_id: Uuid,
         user_id: Uuid,
     ) -> Result<Option<RatingResponse>, RatingError> {
-        let rating = sqlx::query_as::<_, Rating>(
+        let rating = sqlx::query_as!(
+            Rating,
             r#"
-            SELECT id, resource_id, user_id, difficulty, overall_quality,
-                   answer_quality, format_quality, detail_level, created_at, updated_at
+            SELECT id, resource_id, user_id,
+                   difficulty AS "difficulty!", overall_quality AS "overall_quality!",
+                   answer_quality AS "answer_quality!", format_quality AS "format_quality!",
+                   detail_level AS "detail_level!",
+                   created_at AS "created_at!", updated_at AS "updated_at!"
             FROM ratings WHERE resource_id = $1 AND user_id = $2
             "#,
+            resource_id,
+            user_id
         )
-        .bind(resource_id)
-        .bind(user_id)
         .fetch_optional(pool)
         .await?;
 
@@ -155,11 +164,13 @@ impl RatingService {
         let mut tx = pool.begin().await?;
 
         // 删除评分
-        sqlx::query("DELETE FROM ratings WHERE resource_id = $1 AND user_id = $2")
-            .bind(resource_id)
-            .bind(user_id)
-            .execute(&mut *tx)
-            .await?;
+        sqlx::query!(
+            "DELETE FROM ratings WHERE resource_id = $1 AND user_id = $2",
+            resource_id,
+            user_id
+        )
+        .execute(&mut *tx)
+        .await?;
 
         // 更新资源统计（在事务中）
         Self::update_resource_stats_in_tx(&mut tx, resource_id).await?;
@@ -175,24 +186,26 @@ impl RatingService {
         pool: &PgPool,
         resource_id: Uuid,
     ) -> Result<RatingSummary, RatingError> {
-        let summary = sqlx::query_as::<_, RatingSummary>(
+        // 各汇总列用 `?` 强制为可空 i64，匹配 RatingSummary 的 Option<i64> 字段
+        let summary = sqlx::query_as!(
+            RatingSummary,
             r#"
             SELECT
-                COALESCE(SUM(difficulty), 0) as difficulty_total,
-                COUNT(difficulty) as difficulty_count,
-                COALESCE(SUM(overall_quality), 0) as overall_quality_total,
-                COUNT(overall_quality) as overall_quality_count,
-                COALESCE(SUM(answer_quality), 0) as answer_quality_total,
-                COUNT(answer_quality) as answer_quality_count,
-                COALESCE(SUM(format_quality), 0) as format_quality_total,
-                COUNT(format_quality) as format_quality_count,
-                COALESCE(SUM(detail_level), 0) as detail_level_total,
-                COUNT(detail_level) as detail_level_count
+                COALESCE(SUM(difficulty), 0) AS "difficulty_total?",
+                COUNT(difficulty) AS "difficulty_count?",
+                COALESCE(SUM(overall_quality), 0) AS "overall_quality_total?",
+                COUNT(overall_quality) AS "overall_quality_count?",
+                COALESCE(SUM(answer_quality), 0) AS "answer_quality_total?",
+                COUNT(answer_quality) AS "answer_quality_count?",
+                COALESCE(SUM(format_quality), 0) AS "format_quality_total?",
+                COUNT(format_quality) AS "format_quality_count?",
+                COALESCE(SUM(detail_level), 0) AS "detail_level_total?",
+                COUNT(detail_level) AS "detail_level_count?"
             FROM ratings
             WHERE resource_id = $1
             "#,
+            resource_id
         )
-        .bind(resource_id)
         .fetch_one(pool)
         .await?;
 
@@ -262,7 +275,7 @@ impl RatingService {
         tx: &mut Transaction<'_, Postgres>,
         resource_id: Uuid,
     ) -> Result<(), RatingError> {
-        sqlx::query(
+        sqlx::query!(
             r#"
             INSERT INTO resource_stats (
                 resource_id,
@@ -299,8 +312,8 @@ impl RatingService {
                 detail_level_total = EXCLUDED.detail_level_total,
                 detail_level_count = EXCLUDED.detail_level_count
             "#,
+            resource_id
         )
-        .bind(resource_id)
         .execute(&mut **tx)
         .await?;
 

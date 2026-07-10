@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::db::AppState;
 use crate::models::CurrentUser;
-use crate::services::{AdminService, AuditLogService};
+use crate::services::{AdminCommentListQuery, AdminService, AuditCommentRequest, AuditLogService};
 use crate::utils::no_content;
 
 use super::check_admin;
@@ -13,24 +13,20 @@ use super::check_admin;
 async fn get_comment_list(
     data: web::Data<AppState>,
     current_user: actix_web::web::ReqData<CurrentUser>,
-    query: web::Query<std::collections::HashMap<String, String>>,
+    query: web::Query<AdminCommentListQuery>,
 ) -> Result<actix_web::HttpResponse, actix_web::Error> {
     let user = current_user.into_inner();
     log::info!("[Admin] 获取评论列表 | admin_id={}", user.id);
 
     check_admin(&user)?;
 
-    let page = query
-        .get("page")
-        .and_then(|p| p.parse::<i32>().ok())
-        .unwrap_or(1);
-    let per_page = query
-        .get("perPage")
-        .and_then(|p| p.parse::<i32>().ok())
-        .unwrap_or(20);
-    let audit_status = query.get("auditStatus").cloned();
-
-    let response = AdminService::get_comment_list(&data.pool, page, per_page, audit_status).await?;
+    let response = AdminService::get_comment_list(
+        &data.pool,
+        query.get_page(),
+        query.get_per_page(),
+        query.audit_status.clone(),
+    )
+    .await?;
     Ok(HttpResponse::Ok().json(response))
 }
 
@@ -89,14 +85,14 @@ async fn audit_comment(
     data: web::Data<AppState>,
     current_user: actix_web::web::ReqData<CurrentUser>,
     path: web::Path<Uuid>,
-    req: web::Json<std::collections::HashMap<String, String>>,
+    req: web::Json<AuditCommentRequest>,
 ) -> Result<actix_web::HttpResponse, actix_web::Error> {
     let user = current_user.into_inner();
 
     check_admin(&user)?;
 
     let comment_id = path.into_inner();
-    let status = req.get("status").cloned().unwrap_or_default();
+    let status = req.status.clone();
     log::info!(
         "[Admin] 审核评论 | admin_id={}, comment_id={}, status={}",
         user.id,

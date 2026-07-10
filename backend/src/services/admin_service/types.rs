@@ -245,6 +245,76 @@ pub struct AuditLogQuery {
     pub end_date: Option<String>,
 }
 
+/// 管理端分页查询参数（仅需分页的接口共用：用户列表、待审核资源列表）
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AdminPaginationQuery {
+    pub page: Option<i32>,
+    pub per_page: Option<i32>,
+}
+
+impl AdminPaginationQuery {
+    /// 页码，缺省为 1
+    pub fn get_page(&self) -> i32 {
+        self.page.unwrap_or(1)
+    }
+
+    /// 每页数量，缺省为 20
+    pub fn get_per_page(&self) -> i32 {
+        self.per_page.unwrap_or(20)
+    }
+}
+
+/// 管理端全部资源列表查询参数（支持关键词搜索）
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AdminAllResourcesQuery {
+    pub page: Option<i32>,
+    pub per_page: Option<i32>,
+    pub keyword: Option<String>,
+}
+
+impl AdminAllResourcesQuery {
+    /// 页码，缺省为 1
+    pub fn get_page(&self) -> i32 {
+        self.page.unwrap_or(1)
+    }
+
+    /// 每页数量，缺省为 20
+    pub fn get_per_page(&self) -> i32 {
+        self.per_page.unwrap_or(20)
+    }
+}
+
+/// 管理端评论列表查询参数（支持按审核状态过滤）
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AdminCommentListQuery {
+    pub page: Option<i32>,
+    pub per_page: Option<i32>,
+    pub audit_status: Option<String>,
+}
+
+impl AdminCommentListQuery {
+    /// 页码，缺省为 1
+    pub fn get_page(&self) -> i32 {
+        self.page.unwrap_or(1)
+    }
+
+    /// 每页数量，缺省为 20
+    pub fn get_per_page(&self) -> i32 {
+        self.per_page.unwrap_or(20)
+    }
+}
+
+/// 管理端评论审核请求
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AuditCommentRequest {
+    /// 审核结果：approved / rejected
+    pub status: String,
+}
+
 /// 操作日志列表项
 #[derive(Debug, sqlx::FromRow)]
 pub struct AuditLogItem {

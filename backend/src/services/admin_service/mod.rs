@@ -23,8 +23,9 @@ pub use service::AdminService;
 // 这些类型是公共 API，供其他模块使用
 #[allow(unused_imports)]
 pub use types::{
-    AdminCommentItem, AdminCommentListResponse, AdminResourceListItem, AdminResourceListResponse,
-    AdminUserListItem, AdminUserListResponse, AuditLogItem, AuditLogItemResponse,
+    AdminAllResourcesQuery, AdminCommentItem, AdminCommentListQuery, AdminCommentListResponse,
+    AdminPaginationQuery, AdminResourceListItem, AdminResourceListResponse, AdminUserListItem,
+    AdminUserListResponse, AuditCommentRequest, AuditLogItem, AuditLogItemResponse,
     AuditLogListResponse, AuditLogQuery, AuditResourceRequest, DashboardStats,
     DeleteFavoriteResourcesResult, DetailedStats, DownloadStats, DuplicateResourceCheckResponse,
     DuplicateResourceGroup, DuplicateResourceItem, InteractionStats, NotificationTarget,

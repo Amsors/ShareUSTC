@@ -14,6 +14,9 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    env:
+      # 使用提交的 .sqlx 离线缓存校验 query! 宏，无需数据库即可编译
+      SQLX_OFFLINE: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable

@@ -36,11 +36,11 @@ impl LikeService {
 
         // 尝试插入点赞记录
         // 利用唯一索引 (resource_id, user_id) 来避免重复点赞
-        let insert_result = sqlx::query(
-            "INSERT INTO likes (resource_id, user_id) VALUES ($1, $2) ON CONFLICT (resource_id, user_id) DO NOTHING"
+        let insert_result = sqlx::query!(
+            "INSERT INTO likes (resource_id, user_id) VALUES ($1, $2) ON CONFLICT (resource_id, user_id) DO NOTHING",
+            resource_id,
+            user_id
         )
-        .bind(resource_id)
-        .bind(user_id)
         .execute(pool)
         .await?;
 
@@ -50,11 +50,13 @@ impl LikeService {
             message = "点赞成功".to_string();
         } else {
             // 插入失败（冲突），表示已经点赞，现在取消点赞
-            sqlx::query("DELETE FROM likes WHERE resource_id = $1 AND user_id = $2")
-                .bind(resource_id)
-                .bind(user_id)
-                .execute(pool)
-                .await?;
+            sqlx::query!(
+                "DELETE FROM likes WHERE resource_id = $1 AND user_id = $2",
+                resource_id,
+                user_id
+            )
+            .execute(pool)
+            .await?;
 
             is_liked = false;
             message = "已取消点赞".to_string();
@@ -79,11 +81,11 @@ impl LikeService {
         resource_id: Uuid,
         user_id: Uuid,
     ) -> Result<LikeStatusResponse, LikeError> {
-        let is_liked = sqlx::query_scalar::<_, bool>(
-            "SELECT EXISTS(SELECT 1 FROM likes WHERE resource_id = $1 AND user_id = $2)",
+        let is_liked = sqlx::query_scalar!(
+            r#"SELECT EXISTS(SELECT 1 FROM likes WHERE resource_id = $1 AND user_id = $2) AS "exists!""#,
+            resource_id,
+            user_id
         )
-        .bind(resource_id)
-        .bind(user_id)
         .fetch_one(pool)
         .await?;
 
@@ -97,11 +99,12 @@ impl LikeService {
 
     /// 获取资源的点赞数
     pub async fn get_like_count(pool: &PgPool, resource_id: Uuid) -> Result<i64, LikeError> {
-        let count =
-            sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM likes WHERE resource_id = $1")
-                .bind(resource_id)
-                .fetch_one(pool)
-                .await?;
+        let count = sqlx::query_scalar!(
+            r#"SELECT COUNT(*) AS "count!" FROM likes WHERE resource_id = $1"#,
+            resource_id
+        )
+        .fetch_one(pool)
+        .await?;
 
         Ok(count)
     }
@@ -110,16 +113,16 @@ impl LikeService {
     async fn update_like_count(pool: &PgPool, resource_id: Uuid) -> Result<(), LikeError> {
         let count = Self::get_like_count(pool, resource_id).await?;
 
-        sqlx::query(
+        sqlx::query!(
             r#"
             INSERT INTO resource_stats (resource_id, likes)
             VALUES ($1, $2)
             ON CONFLICT (resource_id)
             DO UPDATE SET likes = EXCLUDED.likes
             "#,
+            resource_id,
+            count as i32
         )
-        .bind(resource_id)
-        .bind(count as i32)
         .execute(pool)
         .await?;
 

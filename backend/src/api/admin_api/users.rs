@@ -3,7 +3,9 @@ use uuid::Uuid;
 
 use crate::db::AppState;
 use crate::models::CurrentUser;
-use crate::services::{AdminService, AuditLogService, UpdateUserStatusRequest};
+use crate::services::{
+    AdminPaginationQuery, AdminService, AuditLogService, UpdateUserStatusRequest,
+};
 use crate::utils::bad_request;
 
 use super::check_admin;
@@ -13,23 +15,15 @@ use super::check_admin;
 async fn get_user_list(
     data: web::Data<AppState>,
     current_user: actix_web::web::ReqData<CurrentUser>,
-    query: web::Query<std::collections::HashMap<String, String>>,
+    query: web::Query<AdminPaginationQuery>,
 ) -> Result<actix_web::HttpResponse, actix_web::Error> {
     let user = current_user.into_inner();
     log::info!("[Admin] 获取用户列表 | admin_id={}", user.id);
 
     check_admin(&user)?;
 
-    let page = query
-        .get("page")
-        .and_then(|p| p.parse::<i32>().ok())
-        .unwrap_or(1);
-    let per_page = query
-        .get("perPage")
-        .and_then(|p| p.parse::<i32>().ok())
-        .unwrap_or(20);
-
-    let response = AdminService::get_user_list(&data.pool, page, per_page).await?;
+    let response =
+        AdminService::get_user_list(&data.pool, query.get_page(), query.get_per_page()).await?;
     Ok(HttpResponse::Ok().json(response))
 }
 

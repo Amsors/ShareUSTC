@@ -190,6 +190,16 @@ async fn main() -> std::io::Result<()> {
         }
     };
 
+    // 执行数据库迁移（backend/migrations/）
+    // 迁移采用 IF NOT EXISTS 幂等写法：新库建全量 schema，存量库重复执行无副作用
+    match sqlx::migrate!().run(&pool).await {
+        Ok(()) => log::info!("[System] 数据库迁移完成"),
+        Err(e) => {
+            log::error!("[System] 数据库迁移失败 | error={}", e);
+            std::process::exit(1);
+        }
+    }
+
     // 同步管理员权限（根据环境变量配置）
     if !config.admin_usernames.is_empty() {
         log::info!(

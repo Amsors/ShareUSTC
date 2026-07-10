@@ -3,7 +3,10 @@ use uuid::Uuid;
 
 use crate::db::AppState;
 use crate::models::CurrentUser;
-use crate::services::{AdminService, AuditLogService, AuditResourceRequest, ResourceService};
+use crate::services::{
+    AdminAllResourcesQuery, AdminPaginationQuery, AdminService, AuditLogService,
+    AuditResourceRequest, ResourceService,
+};
 
 use super::check_admin;
 
@@ -12,23 +15,16 @@ use super::check_admin;
 async fn get_pending_resources(
     data: web::Data<AppState>,
     current_user: actix_web::web::ReqData<CurrentUser>,
-    query: web::Query<std::collections::HashMap<String, String>>,
+    query: web::Query<AdminPaginationQuery>,
 ) -> Result<actix_web::HttpResponse, actix_web::Error> {
     let user = current_user.into_inner();
     log::info!("[Admin] 获取待审核资源列表 | admin_id={}", user.id);
 
     check_admin(&user)?;
 
-    let page = query
-        .get("page")
-        .and_then(|p| p.parse::<i32>().ok())
-        .unwrap_or(1);
-    let per_page = query
-        .get("perPage")
-        .and_then(|p| p.parse::<i32>().ok())
-        .unwrap_or(20);
-
-    let response = AdminService::get_pending_resources(&data.pool, page, per_page).await?;
+    let response =
+        AdminService::get_pending_resources(&data.pool, query.get_page(), query.get_per_page())
+            .await?;
     Ok(HttpResponse::Ok().json(response))
 }
 
@@ -74,24 +70,20 @@ async fn audit_resource(
 async fn get_all_resources(
     data: web::Data<AppState>,
     current_user: actix_web::web::ReqData<CurrentUser>,
-    query: web::Query<std::collections::HashMap<String, String>>,
+    query: web::Query<AdminAllResourcesQuery>,
 ) -> Result<actix_web::HttpResponse, actix_web::Error> {
     let user = current_user.into_inner();
     log::info!("[Admin] 获取所有资源列表 | admin_id={}", user.id);
 
     check_admin(&user)?;
 
-    let page = query
-        .get("page")
-        .and_then(|p| p.parse::<i32>().ok())
-        .unwrap_or(1);
-    let per_page = query
-        .get("perPage")
-        .and_then(|p| p.parse::<i32>().ok())
-        .unwrap_or(20);
-    let keyword = query.get("keyword").cloned();
-
-    let response = AdminService::get_all_resources(&data.pool, page, per_page, keyword).await?;
+    let response = AdminService::get_all_resources(
+        &data.pool,
+        query.get_page(),
+        query.get_per_page(),
+        query.keyword.clone(),
+    )
+    .await?;
     Ok(HttpResponse::Ok().json(response))
 }
 

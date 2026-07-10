@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO resource_stats (\n                resource_id,\n                difficulty_total, difficulty_count,\n                overall_quality_total, overall_quality_count,\n                answer_quality_total, answer_quality_count,\n                format_quality_total, format_quality_count,\n                detail_level_total, detail_level_count\n            )\n            SELECT\n                $1,\n                COALESCE(SUM(difficulty), 0),\n                COUNT(difficulty),\n                COALESCE(SUM(overall_quality), 0),\n                COUNT(overall_quality),\n                COALESCE(SUM(answer_quality), 0),\n                COUNT(answer_quality),\n                COALESCE(SUM(format_quality), 0),\n                COUNT(format_quality),\n                COALESCE(SUM(detail_level), 0),\n                COUNT(detail_level)\n            FROM ratings\n            WHERE resource_id = $1\n            ON CONFLICT (resource_id)\n            DO UPDATE SET\n                difficulty_total = EXCLUDED.difficulty_total,\n                difficulty_count = EXCLUDED.difficulty_count,\n                overall_quality_total = EXCLUDED.overall_quality_total,\n                overall_quality_count = EXCLUDED.overall_quality_count,\n                answer_quality_total = EXCLUDED.answer_quality_total,\n                answer_quality_count = EXCLUDED.answer_quality_count,\n                format_quality_total = EXCLUDED.format_quality_total,\n                format_quality_count = EXCLUDED.format_quality_count,\n                detail_level_total = EXCLUDED.detail_level_total,\n                detail_level_count = EXCLUDED.detail_level_count\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "edd11df06e3484af13609b2f427c7c86ac485ae9b1e8676dc8099e5069203aa7"
+}
