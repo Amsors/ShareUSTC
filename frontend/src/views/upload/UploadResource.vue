@@ -19,11 +19,7 @@
         <!-- 上传方式选项卡 -->
         <el-tabs v-model="uploadMode" class="upload-mode-tabs">
           <el-tab-pane label="上传文件" name="file">
-            <FileUploader
-              v-model="selectedFile"
-              :max-size-mb="100"
-              :disabled="isUploading"
-            />
+            <FileUploader v-model="selectedFile" :max-size-mb="100" :disabled="isUploading" />
           </el-tab-pane>
           <el-tab-pane label="在线编写 Markdown" name="markdown">
             <div class="markdown-editor-section">
@@ -40,7 +36,7 @@
                 v-model="markdownContent"
                 :auto-save-key="'upload_markdown_draft'"
                 placeholder="开始编写你的 Markdown 内容..."
-                style="height: 500px;"
+                style="height: 500px"
               />
             </div>
           </el-tab-pane>
@@ -91,8 +87,12 @@
       <!-- 步骤3: AI审核 -->
       <div v-if="currentStep === 2" class="step-content">
         <div class="ai-audit-status">
-          <el-icon v-if="auditStatus === 'checking'" class="audit-icon is-loading"><Loading /></el-icon>
-          <el-icon v-else-if="auditStatus === 'passed'" class="audit-icon is-success"><CircleCheck /></el-icon>
+          <el-icon v-if="auditStatus === 'checking'" class="audit-icon is-loading"
+            ><Loading
+          /></el-icon>
+          <el-icon v-else-if="auditStatus === 'passed'" class="audit-icon is-success"
+            ><CircleCheck
+          /></el-icon>
           <el-icon v-else class="audit-icon is-error"><CircleClose /></el-icon>
 
           <h3>{{ auditStatusText }}</h3>
@@ -106,11 +106,7 @@
         </div>
 
         <div v-if="auditStatus !== 'checking'" class="step-actions">
-          <el-button
-            v-if="auditStatus === 'rejected'"
-            size="large"
-            @click="currentStep = 0"
-          >
+          <el-button v-if="auditStatus === 'rejected'" size="large" @click="currentStep = 0">
             重新上传
           </el-button>
           <el-button
@@ -135,9 +131,7 @@
             <el-button type="primary" size="large" @click="goToResourceDetail">
               查看资源
             </el-button>
-            <el-button size="large" @click="resetAndUpload">
-              继续上传
-            </el-button>
+            <el-button size="large" @click="resetAndUpload"> 继续上传 </el-button>
           </div>
         </div>
       </div>
@@ -166,13 +160,7 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import {
-  ArrowRight,
-  Document,
-  Loading,
-  CircleCheck,
-  CircleClose
-} from '@element-plus/icons-vue';
+import { ArrowRight, Document, Loading, CircleCheck, CircleClose } from '@element-plus/icons-vue';
 import FileUploader from '../../components/upload/FileUploader.vue';
 import MetadataForm from '../../components/upload/MetadataForm.vue';
 import MarkdownEditor from '../../components/editor/MarkdownEditor.vue';
@@ -182,7 +170,7 @@ import {
   getResourceTypeFromFileName,
   ResourceType,
   type ResourceTypeType,
-  type ResourceCategoryType
+  type ResourceCategoryType,
 } from '../../types/resource';
 
 const router = useRouter();
@@ -212,7 +200,7 @@ const metadata = ref({
   description: '',
   teacherSns: [] as number[],
   courseSns: [] as number[],
-  relatedResourceIds: [] as string[]
+  relatedResourceIds: [] as string[],
 });
 
 // 上传状态
@@ -314,16 +302,15 @@ const handleUpload = async () => {
       description: metadata.value.description || undefined,
       teacherSns: metadata.value.teacherSns.length > 0 ? metadata.value.teacherSns : undefined,
       courseSns: metadata.value.courseSns.length > 0 ? metadata.value.courseSns : undefined,
-      relatedResourceIds: metadata.value.relatedResourceIds.length > 0 ? metadata.value.relatedResourceIds : undefined
+      relatedResourceIds:
+        metadata.value.relatedResourceIds.length > 0
+          ? metadata.value.relatedResourceIds
+          : undefined,
     };
 
-    const response = await uploadResource(
-      request,
-      selectedFile.value,
-      (progress) => {
-        uploadProgress.value = progress;
-      }
-    );
+    const response = await uploadResource(request, selectedFile.value, (progress) => {
+      uploadProgress.value = progress;
+    });
 
     uploadedResourceId.value = response.id;
     auditStatus.value = 'passed';

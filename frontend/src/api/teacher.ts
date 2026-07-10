@@ -7,7 +7,7 @@ import type { Teacher } from '@/types/teacher';
  */
 export const getTeachers = (withResourcesOnly?: boolean): Promise<Teacher[]> => {
   return request.get('/teachers', {
-    params: { withResourcesOnly }
+    params: { withResourcesOnly },
   });
 };
 

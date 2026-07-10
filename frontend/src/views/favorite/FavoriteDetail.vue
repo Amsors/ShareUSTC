@@ -13,12 +13,8 @@
           <el-icon :size="32" color="#409EFF"><Folder /></el-icon>
           <h1>{{ favoriteName }}</h1>
         </div>
-        <p class="favorite-meta">
-          共 {{ resourceCount }} 个资源 · 创建于 {{ createdAt }}
-        </p>
-        <p v-if="currentFavorite?.id" class="favorite-uuid">
-          收藏夹ID: {{ currentFavorite.id }}
-        </p>
+        <p class="favorite-meta">共 {{ resourceCount }} 个资源 · 创建于 {{ createdAt }}</p>
+        <p v-if="currentFavorite?.id" class="favorite-uuid">收藏夹ID: {{ currentFavorite.id }}</p>
       </div>
       <div class="header-actions">
         <el-button @click="showEditModal = true">
@@ -32,7 +28,7 @@
           <el-icon><Star /></el-icon>
           {{ isDefaultFavorite(currentFavorite?.id || '') ? '取消默认' : '设为默认' }}
         </el-button>
-        
+
         <!-- 下载按钮组 -->
         <el-dropdown
           v-if="resourceCount > 0"
@@ -48,7 +44,7 @@
               <el-dropdown-item command="browser">
                 <el-icon><ChromeFilled /></el-icon>
                 浏览器打包下载
-                <el-tag size="small" type="success" effect="plain" style="margin-left: 8px;">
+                <el-tag size="small" type="success" effect="plain" style="margin-left: 8px">
                   推荐
                 </el-tag>
               </el-dropdown-item>
@@ -63,15 +59,11 @@
             </el-dropdown-menu>
           </template>
         </el-dropdown>
-        <el-button
-          v-else
-          type="primary"
-          disabled
-        >
+        <el-button v-else type="primary" disabled>
           <el-icon><Download /></el-icon>
           打包下载
         </el-button>
-        
+
         <el-button type="danger" text @click="handleDelete">
           <el-icon><Delete /></el-icon>
           删除收藏夹
@@ -87,14 +79,9 @@
       </div>
 
       <!-- 空状态 -->
-      <el-empty
-        v-else-if="resources.length === 0"
-        description="收藏夹是空的"
-      >
+      <el-empty v-else-if="resources.length === 0" description="收藏夹是空的">
         <p>快去浏览资源并添加到收藏夹吧！</p>
-        <el-button type="primary" @click="$router.push('/resources')">
-          浏览资源
-        </el-button>
+        <el-button type="primary" @click="$router.push('/resources')"> 浏览资源 </el-button>
       </el-empty>
 
       <!-- 资源卡片列表 -->
@@ -185,7 +172,12 @@
     <CreateFavoriteModal
       v-if="currentFavorite"
       v-model="showEditModal"
-      :favorite="{ id: currentFavorite.id, name: currentFavorite.name, resourceCount: currentFavorite.resourceCount, createdAt: currentFavorite.createdAt }"
+      :favorite="{
+        id: currentFavorite.id,
+        name: currentFavorite.name,
+        resourceCount: currentFavorite.resourceCount,
+        createdAt: currentFavorite.createdAt,
+      }"
       is-edit
       @success="handleEditSuccess"
     />
@@ -226,7 +218,7 @@ import {
   Loading,
   ChromeFilled,
   Document,
-  FolderOpened
+  FolderOpened,
 } from '@element-plus/icons-vue';
 import { useDefaultFavorite } from '../../composables/useDefaultFavorite';
 import { useFavoriteStore } from '../../stores/favorite';
@@ -237,7 +229,7 @@ import {
   downloadToFolder,
   checkFileSystemAccessSupport,
   type DownloadProgress,
-  type FolderDownloadProgress
+  type FolderDownloadProgress,
 } from '../../utils/browserZip';
 import CreateFavoriteModal from '../../components/favorite/CreateFavoriteModal.vue';
 import BrowserDownloadProgressModal from '../../components/favorite/BrowserDownloadProgressModal.vue';
@@ -298,22 +290,22 @@ const createdAt = computed(() => {
 const hasMixedStorage = computed(() => {
   const resList = resources.value;
   if (resList.length === 0) return false;
-  const hasOss = resList.some(r => r.storageType === 'oss');
-  const hasLocal = resList.some(r => r.storageType === 'local');
+  const hasOss = resList.some((r) => r.storageType === 'oss');
+  const hasLocal = resList.some((r) => r.storageType === 'local');
   return hasOss && hasLocal;
 });
 
 // 获取资源类型颜色
 const getResourceTypeColor = (type: string) => {
   const colorMap: Record<string, string> = {
-    'pdf': '#F56C6C',
-    'ppt': '#E6A23C',
-    'pptx': '#E6A23C',
-    'doc': '#409EFF',
-    'docx': '#409EFF',
-    'web_markdown': '#67C23A',
-    'txt': '#909399',
-    'zip': '#909399'
+    pdf: '#F56C6C',
+    ppt: '#E6A23C',
+    pptx: '#E6A23C',
+    doc: '#409EFF',
+    docx: '#409EFF',
+    web_markdown: '#67C23A',
+    txt: '#909399',
+    zip: '#909399',
   };
   return colorMap[type] || '#909399';
 };
@@ -482,7 +474,7 @@ const handleBrowserDownload = async () => {
         browserDownloadProgress.value = progress;
       }
     );
-    
+
     ElMessage.success('浏览器打包下载完成');
   } catch (error: any) {
     browserDownloadProgress.value = {
@@ -529,14 +521,10 @@ const handleFolderDownloadClick = async () => {
   // 检查浏览器支持
   const support = checkFileSystemAccessSupport();
   if (!support.supported) {
-    ElMessageBox.alert(
-      support.reason || '您的浏览器不支持文件夹选择功能',
-      '浏览器不支持',
-      {
-        confirmButtonText: '知道了',
-        type: 'warning',
-      }
-    );
+    ElMessageBox.alert(support.reason || '您的浏览器不支持文件夹选择功能', '浏览器不支持', {
+      confirmButtonText: '知道了',
+      type: 'warning',
+    });
     return;
   }
 
@@ -582,12 +570,9 @@ const handleFolderDownload = async () => {
   showFolderDownloadModal.value = true;
 
   try {
-    await downloadToFolder(
-      resources.value,
-      (progress) => {
-        folderDownloadProgress.value = progress;
-      }
-    );
+    await downloadToFolder(resources.value, (progress) => {
+      folderDownloadProgress.value = progress;
+    });
 
     if (folderDownloadProgress.value.status !== 'cancelled') {
       ElMessage.success('文件已成功保存到文件夹');
@@ -636,7 +621,7 @@ const handleDelete = async () => {
       {
         confirmButtonText: '删除',
         cancelButtonText: '取消',
-        type: 'warning'
+        type: 'warning',
       }
     );
 
@@ -833,7 +818,7 @@ onMounted(() => {
   z-index: 1;
 
   &.oss {
-    background-color: #67C23A;
+    background-color: #67c23a;
   }
 
   &.local {
@@ -886,7 +871,7 @@ onMounted(() => {
     }
 
     .file-size {
-      color: #409EFF;
+      color: #409eff;
     }
   }
 }

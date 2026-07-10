@@ -37,12 +37,15 @@
             >
               <!-- 排名 -->
               <div class="rank-cell">
-                <div class="rank-badge" :class="{
-                  'rank-1': index === 0,
-                  'rank-2': index === 1,
-                  'rank-3': index === 2,
-                  'rank-other': index >= 3
-                }">
+                <div
+                  class="rank-badge"
+                  :class="{
+                    'rank-1': index === 0,
+                    'rank-2': index === 1,
+                    'rank-3': index === 2,
+                    'rank-other': index >= 3,
+                  }"
+                >
                   <template v-if="index < 3">
                     <el-icon><Medal /></el-icon>
                   </template>
@@ -101,12 +104,7 @@
 
         <!-- 提示信息 -->
         <div class="tips-section">
-          <el-alert
-            title="如何上榜？"
-            type="info"
-            :closable="false"
-            show-icon
-          >
+          <el-alert title="如何上榜？" type="info" :closable="false" show-icon>
             <template #default>
               上传资源并通过审核后即可上榜。上传越多、质量越高（获得更多点赞），排名越靠前！
             </template>
@@ -122,13 +120,7 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { getLeaderboard } from '../../api/user';
 import type { LeaderboardUser, LeaderboardResponse } from '../../api/user';
-import {
-  Trophy,
-  Medal,
-  UserFilled,
-  ArrowRight,
-  Loading
-} from '@element-plus/icons-vue';
+import { Trophy, Medal, UserFilled, ArrowRight, Loading } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 
 const router = useRouter();
@@ -228,8 +220,12 @@ onMounted(() => {
 }
 
 @keyframes rotating {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-state p {

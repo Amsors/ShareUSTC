@@ -34,7 +34,7 @@ export async function markAllAsRead(): Promise<MarkAllReadResponse> {
  * 获取未读通知数量
  */
 export async function getUnreadCount(): Promise<number> {
-  const response = await request.get('/notifications/unread-count') as UnreadCountResponse;
+  const response = (await request.get('/notifications/unread-count')) as UnreadCountResponse;
   return response.count;
 }
 

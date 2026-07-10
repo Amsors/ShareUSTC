@@ -27,9 +27,7 @@
                 <el-tag :type="getUserTagType()" size="default">
                   {{ getUserTagText() }}
                 </el-tag>
-                <el-tag v-if="homepage.isVerified" type="success" size="small">
-                  已认证
-                </el-tag>
+                <el-tag v-if="homepage.isVerified" type="success" size="small"> 已认证 </el-tag>
               </div>
               <p class="join-date">加入于 {{ formatDate(homepage.createdAt) }}</p>
             </div>
@@ -81,21 +79,38 @@
               <div class="resource-main">
                 <h4 class="resource-title">{{ resource.title }}</h4>
                 <div class="resource-meta">
-                  <span v-if="resource.courseName" class="course-name">{{ resource.courseName }}</span>
-                  <el-tag size="small" :color="getResourceTypeColor(resource.resourceType)" effect="dark">
+                  <span v-if="resource.courseName" class="course-name">{{
+                    resource.courseName
+                  }}</span>
+                  <el-tag
+                    size="small"
+                    :color="getResourceTypeColor(resource.resourceType)"
+                    effect="dark"
+                  >
                     {{ getResourceTypeLabel(resource.resourceType) }}
                   </el-tag>
                 </div>
                 <div class="resource-tags" v-if="resource.tags && resource.tags.length > 0">
-                  <el-tag v-for="tag in resource.tags.slice(0, 3)" :key="tag" size="small" effect="plain">
+                  <el-tag
+                    v-for="tag in resource.tags.slice(0, 3)"
+                    :key="tag"
+                    size="small"
+                    effect="plain"
+                  >
                     {{ tag }}
                   </el-tag>
                 </div>
               </div>
               <div class="resource-stats">
-                <span><el-icon><View /></el-icon> {{ resource.stats.views }}</span>
-                <span><el-icon><Download /></el-icon> {{ resource.stats.downloads }}</span>
-                <span><el-icon><Star /></el-icon> {{ resource.stats.likes }}</span>
+                <span
+                  ><el-icon><View /></el-icon> {{ resource.stats.views }}</span
+                >
+                <span
+                  ><el-icon><Download /></el-icon> {{ resource.stats.downloads }}</span
+                >
+                <span
+                  ><el-icon><Star /></el-icon> {{ resource.stats.likes }}</span
+                >
               </div>
             </div>
           </div>
@@ -123,13 +138,7 @@ import MarkdownIt from 'markdown-it';
 import { getUserHomepage } from '../../api/user';
 import type { UserHomepage } from '../../api/user';
 import { ResourceTypeLabels, getResourceTypeColor as getTypeColor } from '../../types/resource';
-import {
-  UserFilled,
-  View,
-  Download,
-  Star,
-  Loading
-} from '@element-plus/icons-vue';
+import { UserFilled, View, Download, Star, Loading } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 
 const route = useRoute();
@@ -139,7 +148,7 @@ const md = new MarkdownIt({
   html: false,
   breaks: true,
   linkify: true,
-  typographer: true
+  typographer: true,
 });
 
 // 状态
@@ -204,7 +213,7 @@ const loadHomepage = async () => {
   try {
     homepage.value = await getUserHomepage(userId, {
       page: currentPage.value,
-      perPage: perPage.value
+      perPage: perPage.value,
     });
   } catch (error: any) {
     if (error.code === 404) {
@@ -218,10 +227,13 @@ const loadHomepage = async () => {
 };
 
 // 监听路由参数变化
-watch(() => route.params.id, () => {
-  currentPage.value = 1;
-  loadHomepage();
-});
+watch(
+  () => route.params.id,
+  () => {
+    currentPage.value = 1;
+    loadHomepage();
+  }
+);
 
 onMounted(() => {
   loadHomepage();
@@ -252,8 +264,12 @@ onMounted(() => {
 }
 
 @keyframes rotating {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-state p {

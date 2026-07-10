@@ -1,27 +1,13 @@
 <template>
-  <el-form
-    ref="formRef"
-    :model="form"
-    :rules="rules"
-    label-position="top"
-    class="metadata-form"
-  >
+  <el-form ref="formRef" :model="form" :rules="rules" label-position="top" class="metadata-form">
     <el-form-item label="资源标题" prop="title">
-      <el-input
-        v-model="form.title"
-        placeholder="请输入资源标题"
-        maxlength="255"
-        show-word-limit
-      />
+      <el-input v-model="form.title" placeholder="请输入资源标题" maxlength="255" show-word-limit />
     </el-form-item>
 
     <el-row :gutter="20">
       <el-col :span="12">
         <el-form-item label="适用课程" prop="courseName">
-          <el-input
-            v-model="form.courseName"
-            placeholder="例如：高等数学A"
-          />
+          <el-input v-model="form.courseName" placeholder="例如：高等数学A" />
         </el-form-item>
       </el-col>
 
@@ -49,12 +35,7 @@
         style="width: 100%"
         :multiple-limit="10"
       >
-        <el-option
-          v-for="tag in commonTags"
-          :key="tag"
-          :label="tag"
-          :value="tag"
-        />
+        <el-option v-for="tag in commonTags" :key="tag" :label="tag" :value="tag" />
       </el-select>
       <div class="form-tip">输入后按回车添加标签，常用标签：{{ commonTags.join('、') }}</div>
     </el-form-item>
@@ -133,7 +114,10 @@
             <div class="resource-option">
               <span class="resource-title">{{ resource.title }}</span>
               <el-tag size="small" :type="getResourceTypeTagType(resource.resourceType)">
-                {{ ResourceTypeLabels[resource.resourceType as keyof typeof ResourceTypeLabels] || resource.resourceType }}
+                {{
+                  ResourceTypeLabels[resource.resourceType as keyof typeof ResourceTypeLabels] ||
+                  resource.resourceType
+                }}
               </el-tag>
             </div>
           </el-option>
@@ -157,7 +141,7 @@ import {
   ResourceCategoryLabels,
   ResourceTypeLabels,
   type ResourceCategoryType,
-  type ResourceTypeType
+  type ResourceTypeType,
 } from '../../types/resource';
 import { getTeachers } from '../../api/teacher';
 import { getCourses } from '../../api/course';
@@ -197,7 +181,7 @@ const form = reactive<FormData>({
   description: props.modelValue.description || '',
   teacherSns: props.modelValue.teacherSns || [],
   courseSns: props.modelValue.courseSns || [],
-  relatedResourceIds: props.modelValue.relatedResourceIds || []
+  relatedResourceIds: props.modelValue.relatedResourceIds || [],
 });
 
 // 教师列表
@@ -276,11 +260,9 @@ const commonTags = ['期末考试', '期中考试', '作业答案', '笔记', '�
 const rules: FormRules = {
   title: [
     { required: true, message: '请输入资源标题', trigger: 'blur' },
-    { min: 1, max: 255, message: '标题长度在1-255个字符之间', trigger: 'blur' }
+    { min: 1, max: 255, message: '标题长度在1-255个字符之间', trigger: 'blur' },
   ],
-  category: [
-    { required: true, message: '请选择资源分类', trigger: 'change' }
-  ]
+  category: [{ required: true, message: '请选择资源分类', trigger: 'change' }],
 };
 
 // 获取资源类型标签类型
@@ -292,7 +274,7 @@ const getResourceTypeTagType = (type: string) => {
     doc: 'primary',
     docx: 'primary',
     web_markdown: 'success',
-    zip: 'info'
+    zip: 'info',
   };
   return typeMap[type] || 'info';
 };
@@ -341,7 +323,7 @@ const resetFields = () => {
 defineExpose({
   validate,
   resetFields,
-  form
+  form,
 });
 </script>
 

@@ -14,5 +14,5 @@ export const helloApi = {
     // 从 main.rs 看 health_check 是独立的公开服务，路径是 /api/health
     // 而 request.ts 的 baseURL 包含 /api，所以这里应该用 /health
     return request.get('/health');
-  }
+  },
 };

@@ -39,12 +39,7 @@
                 </div>
                 <div class="notification-time">{{ formatTime(notification.createdAt) }}</div>
               </div>
-              <el-badge
-                v-if="!notification.isRead"
-                is-dot
-                type="danger"
-                class="unread-dot"
-              />
+              <el-badge v-if="!notification.isRead" is-dot type="danger" class="unread-dot" />
             </el-dropdown-item>
           </div>
 
@@ -56,9 +51,7 @@
           </div>
 
           <div class="notification-footer">
-            <el-button link type="primary" @click="goToNotificationCenter">
-              查看全部
-            </el-button>
+            <el-button link type="primary" @click="goToNotificationCenter"> 查看全部 </el-button>
           </div>
         </el-dropdown-menu>
       </template>
@@ -81,9 +74,7 @@ const authStore = useAuthStore();
 
 // 状态
 const unreadCount = computed(() => notificationStore.unreadCount);
-const recentNotifications = computed(() =>
-  notificationStore.notifications.slice(0, 5)
-);
+const recentNotifications = computed(() => notificationStore.notifications.slice(0, 5));
 
 // 轮询定时器
 let pollTimer: ReturnType<typeof setInterval> | null = null;

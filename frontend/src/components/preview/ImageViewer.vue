@@ -17,20 +17,10 @@
         @click="toggleFullscreen"
       />
       <div class="image-overlay">
-        <el-button
-          circle
-          size="small"
-          @click.stop="zoomIn"
-          :disabled="scale >= 3"
-        >
+        <el-button circle size="small" @click.stop="zoomIn" :disabled="scale >= 3">
           <el-icon><ZoomIn /></el-icon>
         </el-button>
-        <el-button
-          circle
-          size="small"
-          @click.stop="zoomOut"
-          :disabled="scale <= 0.5"
-        >
+        <el-button circle size="small" @click.stop="zoomOut" :disabled="scale <= 0.5">
           <el-icon><ZoomOut /></el-icon>
         </el-button>
         <el-button circle size="small" @click.stop="toggleFullscreen">
@@ -55,7 +45,11 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { ZoomIn, ZoomOut, FullScreen } from '@element-plus/icons-vue';
-import { getResourcePreviewInfo, getResourcePreviewContent, type PreviewUrlResponse } from '../../api/resource';
+import {
+  getResourcePreviewInfo,
+  getResourcePreviewContent,
+  type PreviewUrlResponse,
+} from '../../api/resource';
 import logger from '../../utils/logger';
 
 const props = defineProps<{
@@ -79,14 +73,20 @@ const loadImage = async () => {
 
     // 获取预览信息
     const previewInfo: PreviewUrlResponse = await getResourcePreviewInfo(props.resourceId);
-    logger.debug('[ImageViewer]', `获取到预览信息 | storageType=${previewInfo.storageType}, directAccess=${previewInfo.directAccess}`);
+    logger.debug(
+      '[ImageViewer]',
+      `获取到预览信息 | storageType=${previewInfo.storageType}, directAccess=${previewInfo.directAccess}`
+    );
 
     // 获取内容（会自动使用缓存）
     const blob = await getResourcePreviewContent(props.resourceId, previewInfo, {
-      resourceDetail: props.resourceTitle && props.resourceType ? {
-        title: props.resourceTitle,
-        resourceType: props.resourceType
-      } : undefined
+      resourceDetail:
+        props.resourceTitle && props.resourceType
+          ? {
+              title: props.resourceTitle,
+              resourceType: props.resourceType,
+            }
+          : undefined,
     });
     logger.debug('[ImageViewer]', `获取到blob | type=${blob.type}, size=${blob.size}`);
 
@@ -142,12 +142,16 @@ const toggleFullscreen = () => {
 };
 
 // 监听resourceId变化重新加载
-watch(() => props.resourceId, () => {
-  if (imageUrl.value) {
-    URL.revokeObjectURL(imageUrl.value);
-  }
-  loadImage();
-}, { immediate: true });
+watch(
+  () => props.resourceId,
+  () => {
+    if (imageUrl.value) {
+      URL.revokeObjectURL(imageUrl.value);
+    }
+    loadImage();
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>

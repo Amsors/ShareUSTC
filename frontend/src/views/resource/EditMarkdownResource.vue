@@ -41,7 +41,9 @@
           <el-descriptions-item label="资源类型">
             <el-tag type="success">Markdown</el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="创建时间">{{ formatTime(resource?.createdAt) }}</el-descriptions-item>
+          <el-descriptions-item label="创建时间">{{
+            formatTime(resource?.createdAt)
+          }}</el-descriptions-item>
         </el-descriptions>
       </div>
 
@@ -58,12 +60,7 @@
     </template>
 
     <!-- 预览对话框 -->
-    <el-dialog
-      v-model="previewVisible"
-      title="预览"
-      width="900px"
-      destroy-on-close
-    >
+    <el-dialog v-model="previewVisible" title="预览" width="900px" destroy-on-close>
       <div class="preview-content markdown-body" v-html="renderedContent"></div>
     </el-dialog>
   </div>
@@ -73,16 +70,14 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import {
-  ArrowLeft,
-  Check,
-  Document,
-  DocumentChecked,
-  Loading
-} from '@element-plus/icons-vue';
+import { ArrowLeft, Check, Document, DocumentChecked, Loading } from '@element-plus/icons-vue';
 import MarkdownIt from 'markdown-it';
 import MarkdownEditor from '../../components/editor/MarkdownEditor.vue';
-import { getResourceDetail, getResourceRawContent, updateResourceContent } from '../../api/resource';
+import {
+  getResourceDetail,
+  getResourceRawContent,
+  updateResourceContent,
+} from '../../api/resource';
 import type { ResourceDetail } from '../../types/resource';
 
 const route = useRoute();
@@ -103,7 +98,7 @@ const md = new MarkdownIt({
   html: false,
   breaks: true,
   linkify: true,
-  typographer: true
+  typographer: true,
 });
 
 // 渲染预览内容
@@ -168,15 +163,11 @@ const loadDraft = async () => {
   const draft = localStorage.getItem(`markdown_draft_resource_${resourceId}`);
   if (draft) {
     try {
-      await ElMessageBox.confirm(
-        '确定要加载草稿吗？当前内容将被覆盖。',
-        '确认加载草稿',
-        {
-          confirmButtonText: '加载',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }
-      );
+      await ElMessageBox.confirm('确定要加载草稿吗？当前内容将被覆盖。', '确认加载草稿', {
+        confirmButtonText: '加载',
+        cancelButtonText: '取消',
+        type: 'warning',
+      });
       content.value = draft;
       ElMessage.success('草稿已加载');
     } catch {
@@ -200,7 +191,7 @@ const handleSave = async () => {
   saving.value = true;
   try {
     await updateResourceContent(resourceId, {
-      content: content.value
+      content: content.value,
     });
 
     // 清除草稿
@@ -211,15 +202,11 @@ const handleSave = async () => {
 
     // 询问是否返回详情页
     try {
-      await ElMessageBox.confirm(
-        '修改已保存，是否返回资源详情页？',
-        '保存成功',
-        {
-          confirmButtonText: '返回详情页',
-          cancelButtonText: '继续编辑',
-          type: 'success'
-        }
-      );
+      await ElMessageBox.confirm('修改已保存，是否返回资源详情页？', '保存成功', {
+        confirmButtonText: '返回详情页',
+        cancelButtonText: '继续编辑',
+        type: 'success',
+      });
       router.push(`/resources/${resourceId}`);
     } catch {
       // 用户选择继续编辑
@@ -234,19 +221,17 @@ const handleSave = async () => {
 // 返回上一页
 const goBack = () => {
   if (hasDraft.value) {
-    ElMessageBox.confirm(
-      '您有未保存的草稿，确定要离开吗？',
-      '确认离开',
-      {
-        confirmButtonText: '离开',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    ).then(() => {
-      router.back();
-    }).catch(() => {
-      // 用户取消
-    });
+    ElMessageBox.confirm('您有未保存的草稿，确定要离开吗？', '确认离开', {
+      confirmButtonText: '离开',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+      .then(() => {
+        router.back();
+      })
+      .catch(() => {
+        // 用户取消
+      });
   } else {
     router.back();
   }

@@ -78,7 +78,7 @@ export const useFavoriteStore = defineStore('favorite', () => {
     try {
       await favoriteApi.updateFavorite(favoriteId, { name });
       // 更新本地状态
-      const index = favorites.value.findIndex(f => f.id === favoriteId);
+      const index = favorites.value.findIndex((f) => f.id === favoriteId);
       if (index !== -1) {
         favorites.value[index]!.name = name;
       }
@@ -102,7 +102,7 @@ export const useFavoriteStore = defineStore('favorite', () => {
     try {
       await favoriteApi.deleteFavorite(favoriteId);
       // 从本地列表中移除
-      favorites.value = favorites.value.filter(f => f.id !== favoriteId);
+      favorites.value = favorites.value.filter((f) => f.id !== favoriteId);
       // 如果当前查看的收藏夹被删除，清空它
       if (currentFavorite.value?.id === favoriteId) {
         currentFavorite.value = null;
@@ -122,7 +122,10 @@ export const useFavoriteStore = defineStore('favorite', () => {
    * @returns 是否成功添加（如果资源已存在返回false）
    * @throws 非业务错误（如网络错误）会抛出异常
    */
-  const addResourceToFavorite = async (favoriteId: string, resourceId: string): Promise<boolean> => {
+  const addResourceToFavorite = async (
+    favoriteId: string,
+    resourceId: string
+  ): Promise<boolean> => {
     try {
       // 使用原始request调用，添加skipErrorHandler标记让拦截器不显示弹窗
       await request({
@@ -133,7 +136,7 @@ export const useFavoriteStore = defineStore('favorite', () => {
       } as any);
 
       // 更新本地收藏夹计数
-      const favorite = favorites.value.find(f => f.id === favoriteId);
+      const favorite = favorites.value.find((f) => f.id === favoriteId);
       if (favorite) {
         favorite.resourceCount++;
       }
@@ -160,14 +163,14 @@ export const useFavoriteStore = defineStore('favorite', () => {
     try {
       await favoriteApi.removeFromFavorite(favoriteId, resourceId);
       // 更新本地收藏夹计数
-      const favorite = favorites.value.find(f => f.id === favoriteId);
+      const favorite = favorites.value.find((f) => f.id === favoriteId);
       if (favorite) {
         favorite.resourceCount = Math.max(0, favorite.resourceCount - 1);
       }
       // 如果当前查看的是这个收藏夹，从列表中移除
       if (currentFavorite.value?.id === favoriteId) {
         currentFavorite.value.resources = currentFavorite.value.resources.filter(
-          r => r.id !== resourceId
+          (r) => r.id !== resourceId
         );
         currentFavorite.value.resourceCount = currentFavorite.value.resources.length;
       }

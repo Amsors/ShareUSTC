@@ -14,13 +14,8 @@
     </div>
 
     <!-- 空状态 -->
-    <el-empty
-      v-else-if="!hasFavorites"
-      description="暂无收藏夹"
-    >
-      <el-button type="primary" @click="showCreateModal = true">
-        创建第一个收藏夹
-      </el-button>
+    <el-empty v-else-if="!hasFavorites" description="暂无收藏夹">
+      <el-button type="primary" @click="showCreateModal = true"> 创建第一个收藏夹 </el-button>
     </el-empty>
 
     <!-- 收藏夹列表 -->
@@ -42,9 +37,7 @@
               <el-icon><Document /></el-icon>
               {{ favorite.resourceCount }} 个资源
             </p>
-            <p class="favorite-date">
-              创建于 {{ formatDate(favorite.createdAt) }}
-            </p>
+            <p class="favorite-date">创建于 {{ formatDate(favorite.createdAt) }}</p>
           </div>
         </div>
         <div class="favorite-actions" @click.stop>
@@ -74,7 +67,7 @@
                 </el-dropdown-item>
                 <el-dropdown-item @click="handleDelete(favorite)" divided>
                   <el-icon><Delete /></el-icon>
-                  <span style="color: #f56c6c;">删除</span>
+                  <span style="color: #f56c6c">删除</span>
                 </el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -84,10 +77,7 @@
     </div>
 
     <!-- 创建收藏夹弹窗 -->
-    <CreateFavoriteModal
-      v-model="showCreateModal"
-      @success="handleCreateSuccess"
-    />
+    <CreateFavoriteModal v-model="showCreateModal" @success="handleCreateSuccess" />
 
     <!-- 编辑收藏夹弹窗 -->
     <CreateFavoriteModal
@@ -112,7 +102,7 @@ import {
   Delete,
   Loading,
   Star,
-  StarFilled
+  StarFilled,
 } from '@element-plus/icons-vue';
 import { storeToRefs } from 'pinia';
 import { useFavoriteStore } from '../../stores/favorite';
@@ -141,7 +131,7 @@ const formatDate = (dateStr: string) => {
   return date.toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: 'short',
-    day: 'numeric'
+    day: 'numeric',
   });
 };
 
@@ -177,7 +167,7 @@ const handleDelete = async (favorite: Favorite) => {
       {
         confirmButtonText: '删除',
         cancelButtonText: '取消',
-        type: 'warning'
+        type: 'warning',
       }
     );
 

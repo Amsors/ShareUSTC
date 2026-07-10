@@ -110,9 +110,7 @@ export const useNotificationStore = defineStore('notification', () => {
     await dismissPriorityNotification(notificationId);
 
     // 更新本地状态
-    const index = priorityNotifications.value.findIndex(
-      (n) => n.id === notificationId
-    );
+    const index = priorityNotifications.value.findIndex((n) => n.id === notificationId);
     if (index > -1) {
       priorityNotifications.value.splice(index, 1);
     }

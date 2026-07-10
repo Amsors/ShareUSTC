@@ -176,7 +176,10 @@ class ResourceCache {
     // 检查单个文件大小限制（最大 100MB）
     const MAX_SINGLE_SIZE = 100 * 1024 * 1024;
     if (blob.size > MAX_SINGLE_SIZE) {
-      logger.debug('[ResourceCache]', `文件过大，跳过缓存 | resourceId=${resourceId}, size=${blob.size}`);
+      logger.debug(
+        '[ResourceCache]',
+        `文件过大，跳过缓存 | resourceId=${resourceId}, size=${blob.size}`
+      );
       return;
     }
 
@@ -312,9 +315,8 @@ class ResourceCache {
         request.onsuccess = () => {
           const resources = request.result as CachedResource[];
           const totalSize = resources.reduce((sum, r) => sum + r.fileSize, 0);
-          const oldestEntry = resources.length > 0
-            ? Math.min(...resources.map(r => r.timestamp))
-            : 0;
+          const oldestEntry =
+            resources.length > 0 ? Math.min(...resources.map((r) => r.timestamp)) : 0;
 
           resolve({
             totalEntries: resources.length,
@@ -362,7 +364,10 @@ class ResourceCache {
             cursor.delete();
             cursor.continue();
           } else {
-            logger.debug('[ResourceCache]', `LRU 清理完成 | 目标 ${targetSize} bytes, 当前 ${currentSize} bytes`);
+            logger.debug(
+              '[ResourceCache]',
+              `LRU 清理完成 | 目标 ${targetSize} bytes, 当前 ${currentSize} bytes`
+            );
             resolve();
           }
         };

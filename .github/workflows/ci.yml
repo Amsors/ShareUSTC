@@ -48,8 +48,6 @@ jobs:
         run: npm ci
       - name: prettier
         run: npm run format:check
-        # 存量代码尚未全量格式化，整改期间允许失败；整改后移除 continue-on-error
-        continue-on-error: true
       - name: eslint
         run: npm run lint
         # 存量 35 个 error 待整改；整改后移除 continue-on-error

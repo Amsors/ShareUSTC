@@ -8,7 +8,7 @@ import type { LikeStatus, LikeToggleResponse } from '../types/like';
 export const toggleLike = async (resourceId: string): Promise<LikeToggleResponse> => {
   return request({
     url: `/resources/${resourceId}/like`,
-    method: 'post'
+    method: 'post',
   }) as Promise<LikeToggleResponse>;
 };
 
@@ -19,6 +19,6 @@ export const toggleLike = async (resourceId: string): Promise<LikeToggleResponse
 export const getLikeStatus = async (resourceId: string): Promise<LikeStatus> => {
   return request({
     url: `/resources/${resourceId}/like`,
-    method: 'get'
+    method: 'get',
   }) as Promise<LikeStatus>;
 };

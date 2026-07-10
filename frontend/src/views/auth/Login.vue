@@ -70,18 +70,18 @@ const formRef = ref<FormInstance>();
 
 const form = reactive({
   username: '',
-  password: ''
+  password: '',
 });
 
 const rules: FormRules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 50, message: '用户名长度在 3 到 50 个字符', trigger: 'blur' }
+    { min: 3, max: 50, message: '用户名长度在 3 到 50 个字符', trigger: 'blur' },
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度至少为 6 个字符', trigger: 'blur' }
-  ]
+    { min: 6, message: '密码长度至少为 6 个字符', trigger: 'blur' },
+  ],
 };
 
 const handleSubmit = async () => {
@@ -93,7 +93,7 @@ const handleSubmit = async () => {
 
     const success = await authStore.loginUser({
       username: form.username,
-      password: form.password
+      password: form.password,
     });
 
     if (success) {

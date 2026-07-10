@@ -4,14 +4,14 @@ import type {
   TeacherListResponse,
   CreateTeacherRequest,
   UpdateTeacherRequest,
-  TeacherListQuery
+  TeacherListQuery,
 } from '@/types/teacher';
 import type {
   CourseListItem,
   CourseListResponse,
   CreateCourseRequest,
   UpdateCourseRequest,
-  CourseListQuery
+  CourseListQuery,
 } from '@/types/course';
 
 /**
@@ -85,7 +85,7 @@ export const getDashboardStats = (): Promise<DashboardStats> => {
 // 用户管理
 export const getUserList = (page: number = 1, perPage: number = 20): Promise<UserListResponse> => {
   return request.get('/admin/users', {
-    params: { page, perPage }
+    params: { page, perPage },
   });
 };
 
@@ -109,16 +109,23 @@ export const getUserRealInfo = (userId: string): Promise<UserRealInfo> => {
 };
 
 // 资源审核
-export const getPendingResources = (page: number = 1, perPage: number = 20): Promise<ResourceListResponse> => {
+export const getPendingResources = (
+  page: number = 1,
+  perPage: number = 20
+): Promise<ResourceListResponse> => {
   return request.get('/admin/resources/pending', {
-    params: { page, perPage }
+    params: { page, perPage },
   });
 };
 
-export const auditResource = (resourceId: string, status: string, reason?: string): Promise<void> => {
+export const auditResource = (
+  resourceId: string,
+  status: string,
+  reason?: string
+): Promise<void> => {
   return request.put(`/admin/resources/${resourceId}/audit`, {
     status,
-    reason
+    reason,
   });
 };
 
@@ -382,11 +389,15 @@ export interface BatchImportTeachersResult {
   failedItems: FailedTeacherImportItem[];
 }
 
-export const batchImportCourses = (courses: BatchImportCourseItem[]): Promise<BatchImportCoursesResult> => {
+export const batchImportCourses = (
+  courses: BatchImportCourseItem[]
+): Promise<BatchImportCoursesResult> => {
   return request.post('/admin/courses/batch-import', { courses });
 };
 
-export const batchImportTeachers = (teachers: BatchImportTeacherItem[]): Promise<BatchImportTeachersResult> => {
+export const batchImportTeachers = (
+  teachers: BatchImportTeacherItem[]
+): Promise<BatchImportTeachersResult> => {
   return request.post('/admin/teachers/batch-import', { teachers });
 };
 
@@ -396,8 +407,8 @@ export const batchImportTeachersFromFile = (file: File): Promise<BatchImportTeac
   formData.append('file', file);
   return request.post('/admin/teachers/batch-import-file', formData, {
     headers: {
-      'Content-Type': 'multipart/form-data'
-    }
+      'Content-Type': 'multipart/form-data',
+    },
   });
 };
 
@@ -407,8 +418,8 @@ export const batchImportCoursesFromFile = (file: File): Promise<BatchImportCours
   formData.append('file', file);
   return request.post('/admin/courses/batch-import-file', formData, {
     headers: {
-      'Content-Type': 'multipart/form-data'
-    }
+      'Content-Type': 'multipart/form-data',
+    },
   });
 };
 
@@ -464,7 +475,9 @@ export interface GetAllResourcesParams {
   keyword?: string;
 }
 
-export const getAllResources = (params: GetAllResourcesParams = {}): Promise<AdminResourceListResponse> => {
+export const getAllResources = (
+  params: GetAllResourcesParams = {}
+): Promise<AdminResourceListResponse> => {
   return request.get('/admin/resources/all', { params });
 };
 
@@ -484,16 +497,22 @@ export interface RecalculateHashResult {
 
 export const recalculateResourceHash = (resourceId: string): Promise<RecalculateHashResult> => {
   // 设置1分钟超时，因为大文件在OSS上计算hash需要较长时间
-  return request.post(`/admin/resources/${resourceId}/recalculate-hash`, {}, {
-    timeout: 60000
-  });
+  return request.post(
+    `/admin/resources/${resourceId}/recalculate-hash`,
+    {},
+    {
+      timeout: 60000,
+    }
+  );
 };
 
 export const getAdminFavorites = (): Promise<AdminFavoriteListResponse> => {
   return request.get('/admin/favorites');
 };
 
-export const deleteAllFavoriteResources = (favoriteId: string): Promise<DeleteFavoriteResourcesResult> => {
+export const deleteAllFavoriteResources = (
+  favoriteId: string
+): Promise<DeleteFavoriteResourcesResult> => {
   return request.delete(`/admin/favorites/${favoriteId}/resources`);
 };
 
@@ -573,6 +592,5 @@ export const adminApi = {
   getAdminFavorites,
   deleteAllFavoriteResources,
   // 重复资源检测
-  checkDuplicateResources
+  checkDuplicateResources,
 };
-

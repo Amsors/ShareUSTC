@@ -83,24 +83,9 @@
           </div>
 
           <div class="resource-actions">
-            <el-button
-              type="primary"
-              @click="viewResource(resource)"
-            >
-              查看详情
-            </el-button>
-            <el-button
-              type="success"
-              @click="handleApprove(resource)"
-            >
-              通过
-            </el-button>
-            <el-button
-              type="danger"
-              @click="handleReject(resource)"
-            >
-              拒绝
-            </el-button>
+            <el-button type="primary" @click="viewResource(resource)"> 查看详情 </el-button>
+            <el-button type="success" @click="handleApprove(resource)"> 通过 </el-button>
+            <el-button type="danger" @click="handleReject(resource)"> 拒绝 </el-button>
           </div>
         </el-card>
       </div>
@@ -120,11 +105,7 @@
     </el-card>
 
     <!-- 拒绝理由弹窗 -->
-    <el-dialog
-      v-model="rejectDialogVisible"
-      title="拒绝资源"
-      width="500px"
-    >
+    <el-dialog v-model="rejectDialogVisible" title="拒绝资源" width="500px">
       <el-form :model="rejectForm">
         <el-form-item label="拒绝原因">
           <el-input
@@ -175,7 +156,7 @@ const todayAuditCount = ref(0);
 const rejectDialogVisible = ref(false);
 const rejectForm = ref({
   resourceId: '',
-  reason: ''
+  reason: '',
 });
 
 const formatDate = (date: string) => {
@@ -206,15 +187,11 @@ const viewResource = (resource: Resource) => {
 
 const handleApprove = async (resource: Resource) => {
   try {
-    await ElMessageBox.confirm(
-      `确定要通过资源 "${resource.title}" 吗？`,
-      '确认审核',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'success'
-      }
-    );
+    await ElMessageBox.confirm(`确定要通过资源 "${resource.title}" 吗？`, '确认审核', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'success',
+    });
 
     await adminApi.auditResource(resource.id, 'approved');
     ElMessage.success('资源审核通过');
@@ -229,7 +206,7 @@ const handleApprove = async (resource: Resource) => {
 const handleReject = (resource: Resource) => {
   rejectForm.value = {
     resourceId: resource.id,
-    reason: ''
+    reason: '',
   };
   rejectDialogVisible.value = true;
 };
@@ -241,11 +218,7 @@ const confirmReject = async () => {
   }
 
   try {
-    await adminApi.auditResource(
-      rejectForm.value.resourceId,
-      'rejected',
-      rejectForm.value.reason
-    );
+    await adminApi.auditResource(rejectForm.value.resourceId, 'rejected', rejectForm.value.reason);
     ElMessage.success('资源已拒绝');
     rejectDialogVisible.value = false;
     fetchResources();

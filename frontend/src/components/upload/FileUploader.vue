@@ -3,7 +3,7 @@
     class="file-uploader"
     :class="{
       'is-dragover': isDragOver,
-      'is-disabled': disabled || isCheckingHash
+      'is-disabled': disabled || isCheckingHash,
     }"
     @dragenter.prevent="handleDragEnter"
     @dragover.prevent="handleDragOver"
@@ -60,11 +60,7 @@
     class="duplicate-dialog"
   >
     <div class="duplicate-content">
-      <el-alert
-        type="warning"
-        :closable="false"
-        show-icon
-      >
+      <el-alert type="warning" :closable="false" show-icon>
         <template #title>
           <span>系统中已存在 {{ duplicateResources.length }} 个内容相同的资源</span>
         </template>
@@ -73,11 +69,7 @@
       <p class="duplicate-hint">这些资源可能与你要上传的内容重复，建议先查看已有资源：</p>
 
       <div class="duplicate-list">
-        <div
-          v-for="resource in duplicateResources"
-          :key="resource.id"
-          class="duplicate-item"
-        >
+        <div v-for="resource in duplicateResources" :key="resource.id" class="duplicate-item">
           <div class="resource-info">
             <el-icon class="resource-icon"><Document /></el-icon>
             <div class="resource-details">
@@ -91,7 +83,10 @@
                 <el-icon class="link-icon"><Link /></el-icon>
               </a>
               <div class="resource-meta">
-                <span class="meta-item">{{ ResourceTypeLabels[resource.resourceType as ResourceTypeType] || resource.resourceType }}</span>
+                <span class="meta-item">{{
+                  ResourceTypeLabels[resource.resourceType as ResourceTypeType] ||
+                  resource.resourceType
+                }}</span>
                 <span v-if="resource.courseName" class="meta-item">{{ resource.courseName }}</span>
                 <span class="meta-item">上传者: {{ resource.uploaderName || '未知' }}</span>
                 <span class="meta-item">{{ formatDate(resource.createdAt) }}</span>
@@ -104,12 +99,8 @@
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="handleCancelUpload">
-          取消上传
-        </el-button>
-        <el-button type="primary" @click="handleContinueUpload">
-          仍要上传
-        </el-button>
+        <el-button @click="handleCancelUpload"> 取消上传 </el-button>
+        <el-button type="primary" @click="handleContinueUpload"> 仍要上传 </el-button>
       </div>
     </template>
   </el-dialog>
@@ -119,7 +110,13 @@
 import { ref, computed } from 'vue';
 import { Upload, Document, Close, Loading, Link } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
-import { formatFileSize, SupportedExtensions, ResourceTypeLabels, type ResourceTypeType, type ResourceListItem } from '../../types/resource';
+import {
+  formatFileSize,
+  SupportedExtensions,
+  ResourceTypeLabels,
+  type ResourceTypeType,
+  type ResourceListItem,
+} from '../../types/resource';
 import { calculateFileHash } from '../../utils/fileHash';
 import { getResourcesByFileHash } from '../../api/resource';
 import logger from '../../utils/logger';
@@ -149,7 +146,7 @@ const pendingFile = ref<File | null>(null);
 const acceptedExtensions = SupportedExtensions;
 
 // 默认 accept 值
-const defaultAccept = acceptedExtensions.map(ext => `.${ext}`).join(',');
+const defaultAccept = acceptedExtensions.map((ext) => `.${ext}`).join(',');
 const accept = computed(() => props.accept || defaultAccept);
 
 // 最大文件大小 (MB)
@@ -161,7 +158,7 @@ const selectedFile = computed({
   set: (value) => {
     emit('update:modelValue', value);
     emit('change', value);
-  }
+  },
 });
 
 // 验证文件
@@ -299,7 +296,7 @@ const formatDate = (dateStr: string): string => {
   return date.toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: 'short',
-    day: 'numeric'
+    day: 'numeric',
   });
 };
 </script>

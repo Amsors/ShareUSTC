@@ -54,11 +54,7 @@
           <div class="link-section">
             <div class="link-item">
               <span class="link-label">图片链接：</span>
-              <el-input
-                v-model="lastUploadedImage.url"
-                readonly
-                class="link-input"
-              >
+              <el-input v-model="lastUploadedImage.url" readonly class="link-input">
                 <template #append>
                   <el-button @click="copyUrl(lastUploadedImage.url)">
                     <el-icon><CopyDocument /></el-icon>
@@ -69,11 +65,7 @@
 
             <div class="link-item">
               <span class="link-label">Markdown：</span>
-              <el-input
-                v-model="lastUploadedImage.markdownLink"
-                readonly
-                class="link-input"
-              >
+              <el-input v-model="lastUploadedImage.markdownLink" readonly class="link-input">
                 <template #append>
                   <el-button @click="copyMarkdown(lastUploadedImage.markdownLink)">
                     <el-icon><CopyDocument /></el-icon>
@@ -125,18 +117,15 @@
                 >
                   <el-icon><CopyDocument /></el-icon>
                 </el-button>
-                <el-button
-                  type="danger"
-                  circle
-                  size="small"
-                  @click.stop="confirmDelete(image)"
-                >
+                <el-button type="danger" circle size="small" @click.stop="confirmDelete(image)">
                   <el-icon><Delete /></el-icon>
                 </el-button>
               </div>
             </div>
             <div class="image-info">
-              <p class="image-name" :title="image.originalName">{{ image.originalName || '未命名' }}</p>
+              <p class="image-name" :title="image.originalName">
+                {{ image.originalName || '未命名' }}
+              </p>
               <p class="image-meta">
                 {{ formatFileSize(image.fileSize) }} · {{ formatDate(image.createdAt) }}
               </p>
@@ -163,18 +152,14 @@
     </div>
 
     <!-- 图片详情对话框 -->
-    <el-dialog
-      v-model="detailDialogVisible"
-      title="图片详情"
-      width="600px"
-      destroy-on-close
-    >
+    <el-dialog v-model="detailDialogVisible" title="图片详情" width="600px" destroy-on-close>
       <div v-if="selectedImage" class="image-detail">
         <img :src="selectedImage.url" alt="详情" class="detail-image" />
         <div class="detail-info">
           <p><strong>文件名：</strong>{{ selectedImage.originalName || '未命名' }}</p>
           <p><strong>大小：</strong>{{ formatFileSize(selectedImage.fileSize) }}</p>
-          <p><strong>存储位置：</strong>
+          <p>
+            <strong>存储位置：</strong>
             <el-tag :type="selectedImage.storageType === 'oss' ? 'success' : 'info'" size="small">
               {{ StorageTypeLabels[selectedImage.storageType] || '本地存储' }}
             </el-tag>
@@ -207,17 +192,11 @@ import {
   getMyImages,
   deleteImage,
   copyToClipboard,
-  formatFileSize
+  formatFileSize,
 } from '../api/imageHost';
 import type { Image, ImageUploadResponse } from '../types/image';
 import { StorageTypeLabels } from '../types/resource';
-import {
-  Picture,
-  Upload,
-  CopyDocument,
-  Refresh,
-  Delete
-} from '@element-plus/icons-vue';
+import { Picture, Upload, CopyDocument, Refresh, Delete } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 
 // 上传相关
@@ -304,7 +283,7 @@ const loadImages = async () => {
   try {
     const result = await getMyImages({
       page: currentPage.value,
-      perPage: pageSize.value
+      perPage: pageSize.value,
     });
     images.value = result.images;
     total.value = result.total;
@@ -337,7 +316,7 @@ const confirmDelete = async (image: Image) => {
       {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
-        type: 'warning'
+        type: 'warning',
       }
     );
 

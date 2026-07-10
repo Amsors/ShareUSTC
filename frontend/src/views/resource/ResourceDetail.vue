@@ -16,10 +16,16 @@
           <div class="header-left">
             <div class="resource-tags">
               <el-tag :type="getResourceTypeTagType(resource.resourceType)" size="large">
-                {{ ResourceTypeLabels[resource.resourceType as keyof typeof ResourceTypeLabels] || resource.resourceType }}
+                {{
+                  ResourceTypeLabels[resource.resourceType as keyof typeof ResourceTypeLabels] ||
+                  resource.resourceType
+                }}
               </el-tag>
               <el-tag type="info" size="large">
-                {{ ResourceCategoryLabels[resource.category as ResourceCategoryType] || resource.category }}
+                {{
+                  ResourceCategoryLabels[resource.category as ResourceCategoryType] ||
+                  resource.category
+                }}
               </el-tag>
             </div>
 
@@ -49,9 +55,17 @@
                 下载资源
               </el-button>
 
-              <LikeButton v-if="authStore.isAuthenticated" :resource-id="resourceId" @update="onLikeUpdate" />
+              <LikeButton
+                v-if="authStore.isAuthenticated"
+                :resource-id="resourceId"
+                @update="onLikeUpdate"
+              />
 
-              <el-button v-if="authStore.isAuthenticated" size="large" @click="showAddToFavorite = true">
+              <el-button
+                v-if="authStore.isAuthenticated"
+                size="large"
+                @click="showAddToFavorite = true"
+              >
                 <el-icon><Folder /></el-icon>
                 收藏
               </el-button>
@@ -118,17 +132,28 @@
           <!-- 左侧：描述、预览和评论 -->
           <el-col :xs="24" :lg="16">
             <!-- 资源描述 -->
-            <el-card v-if="resource.description || canEditDescription" class="description-card" shadow="never">
+            <el-card
+              v-if="resource.description || canEditDescription"
+              class="description-card"
+              shadow="never"
+            >
               <template #header>
                 <div class="description-header">
                   <span>资源描述</span>
-                  <el-button v-if="canEditDescription" type="primary" link @click="showEditDescription = true">
+                  <el-button
+                    v-if="canEditDescription"
+                    type="primary"
+                    link
+                    @click="showEditDescription = true"
+                  >
                     <el-icon><Edit /></el-icon>
                     {{ resource.description ? '编辑' : '添加描述' }}
                   </el-button>
                 </div>
               </template>
-              <div v-if="resource.description" class="description-content">{{ resource.description }}</div>
+              <div v-if="resource.description" class="description-content">
+                {{ resource.description }}
+              </div>
             </el-card>
 
             <el-card class="preview-card" shadow="never">
@@ -156,61 +181,68 @@
           <!-- 右侧：标签和推荐 -->
           <el-col :xs="24" :lg="8">
             <!-- 标签 -->
-            <el-card v-if="resource.tags && resource.tags.length > 0" class="tags-card" shadow="never">
+            <el-card
+              v-if="resource.tags && resource.tags.length > 0"
+              class="tags-card"
+              shadow="never"
+            >
               <template #header>
                 <span>标签</span>
               </template>
               <div class="tags-list">
-                <el-tag
-                  v-for="tag in resource.tags"
-                  :key="tag"
-                  class="tag-item"
-                  effect="plain"
-                >
+                <el-tag v-for="tag in resource.tags" :key="tag" class="tag-item" effect="plain">
                   {{ tag }}
                 </el-tag>
               </div>
             </el-card>
 
             <!-- 授课教师 -->
-            <el-card v-if="resource.teachers && resource.teachers.length > 0" class="teachers-card" shadow="never">
+            <el-card
+              v-if="resource.teachers && resource.teachers.length > 0"
+              class="teachers-card"
+              shadow="never"
+            >
               <template #header>
                 <span>授课教师</span>
               </template>
               <div class="teachers-list">
-                <div
-                  v-for="teacher in resource.teachers"
-                  :key="teacher.sn"
-                  class="teacher-item"
-                >
+                <div v-for="teacher in resource.teachers" :key="teacher.sn" class="teacher-item">
                   <el-icon><User /></el-icon>
                   <span class="teacher-name">{{ teacher.name }}</span>
-                  <span v-if="teacher.department" class="teacher-dept">({{ teacher.department }})</span>
+                  <span v-if="teacher.department" class="teacher-dept"
+                    >({{ teacher.department }})</span
+                  >
                 </div>
               </div>
             </el-card>
 
             <!-- 关联课程 -->
-            <el-card v-if="resource.courses && resource.courses.length > 0" class="courses-card" shadow="never">
+            <el-card
+              v-if="resource.courses && resource.courses.length > 0"
+              class="courses-card"
+              shadow="never"
+            >
               <template #header>
                 <span>关联课程</span>
               </template>
               <div class="courses-list">
-                <div
-                  v-for="course in resource.courses"
-                  :key="course.sn"
-                  class="course-item"
-                >
+                <div v-for="course in resource.courses" :key="course.sn" class="course-item">
                   <el-icon><Reading /></el-icon>
                   <span class="course-name">{{ course.name }}</span>
-                  <span v-if="course.semester" class="course-semester">({{ course.semester }})</span>
+                  <span v-if="course.semester" class="course-semester"
+                    >({{ course.semester }})</span
+                  >
                   <span v-if="course.credits" class="course-credits">{{ course.credits }}学分</span>
                 </div>
               </div>
             </el-card>
 
             <!-- 关联资源 -->
-            <el-card v-if="resource.relatedResources && resource.relatedResources.length > 0" class="related-resources-card" shadow="never">
+            <el-card
+              v-if="resource.relatedResources && resource.relatedResources.length > 0"
+              class="related-resources-card"
+              shadow="never"
+            >
               <template #header>
                 <span>关联资源</span>
               </template>
@@ -227,11 +259,21 @@
                   <div class="related-resource-info">
                     <div class="related-resource-title">{{ relatedResource.title }}</div>
                     <div class="related-resource-meta">
-                      <el-tag size="small" :type="getResourceTypeTagType(relatedResource.resourceType)">
-                        {{ ResourceTypeLabels[relatedResource.resourceType as ResourceTypeType] || relatedResource.resourceType }}
+                      <el-tag
+                        size="small"
+                        :type="getResourceTypeTagType(relatedResource.resourceType)"
+                      >
+                        {{
+                          ResourceTypeLabels[relatedResource.resourceType as ResourceTypeType] ||
+                          relatedResource.resourceType
+                        }}
                       </el-tag>
                       <span class="related-resource-category">
-                        {{ ResourceCategoryLabels[relatedResource.category as ResourceCategoryType] || relatedResource.category }}
+                        {{
+                          ResourceCategoryLabels[
+                            relatedResource.category as ResourceCategoryType
+                          ] || relatedResource.category
+                        }}
                       </span>
                     </div>
                   </div>
@@ -301,9 +343,9 @@
         v-if="resource"
         v-model="showEditRelations"
         :resource-id="resourceId"
-        :initial-teachers="resource.teachers?.map(t => t.sn) || []"
-        :initial-courses="resource.courses?.map(c => c.sn) || []"
-        :initial-related-resources="resource.relatedResources?.map(r => r.id) || []"
+        :initial-teachers="resource.teachers?.map((t) => t.sn) || []"
+        :initial-courses="resource.courses?.map((c) => c.sn) || []"
+        :initial-related-resources="resource.relatedResources?.map((r) => r.id) || []"
         @success="handleRelationsUpdated"
       />
 
@@ -354,9 +396,14 @@ import {
   CopyDocument,
   Document,
   ArrowRight,
-  Link
+  Link,
 } from '@element-plus/icons-vue';
-import { getResourceDetail, downloadResource, deleteResource, updateResourceDescription } from '../../api/resource';
+import {
+  getResourceDetail,
+  downloadResource,
+  deleteResource,
+  updateResourceDescription,
+} from '../../api/resource';
 import { checkResourceInFavorite } from '../../api/favorite';
 import { useAuthStore } from '../../stores/auth';
 import { useFavoriteStore } from '../../stores/favorite';
@@ -374,7 +421,7 @@ import {
   formatFileSize,
   type ResourceDetail,
   type ResourceCategoryType,
-  type ResourceTypeType
+  type ResourceTypeType,
 } from '../../types/resource';
 import type { ResourceRatingInfo } from '../../types/rating';
 
@@ -453,7 +500,7 @@ const getResourceTypeTagType = (type: string) => {
     doc: 'primary',
     docx: 'primary',
     web_markdown: 'success',
-    zip: 'info'
+    zip: 'info',
   };
   return typeMap[type] || 'info';
 };
@@ -591,8 +638,8 @@ const handleDownload = async () => {
       useCache: true,
       resourceDetail: {
         title: resource.value.title,
-        resourceType: resource.value.resourceType
-      }
+        resourceType: resource.value.resourceType,
+      },
     });
     ElMessage.success('开始下载');
     // 更新下载次数
@@ -611,15 +658,11 @@ const handleDelete = async () => {
   if (!resource.value) return;
 
   try {
-    await ElMessageBox.confirm(
-      '确定要删除这个资源吗？此操作不可恢复。',
-      '删除确认',
-      {
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    );
+    await ElMessageBox.confirm('确定要删除这个资源吗？此操作不可恢复。', '删除确认', {
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+      type: 'warning',
+    });
 
     await deleteResource(resourceId.value);
     ElMessage.success('删除成功');
@@ -662,7 +705,10 @@ const addToDefaultFavorite = async () => {
 
   addingToDefault.value = true;
   try {
-    const added = await favoriteStore.addResourceToFavorite(defaultFavoriteId.value, resourceId.value);
+    const added = await favoriteStore.addResourceToFavorite(
+      defaultFavoriteId.value,
+      resourceId.value
+    );
 
     if (added) {
       isInDefaultFavorite.value = true;

@@ -53,7 +53,9 @@
               <span class="favorite-count">{{ favorite.resourceCount }} 个资源</span>
             </div>
             <div class="favorite-check">
-              <el-icon v-if="isInFavorite(favorite.id)" :size="20" color="#67C23A"><Check /></el-icon>
+              <el-icon v-if="isInFavorite(favorite.id)" :size="20" color="#67C23A"
+                ><Check
+              /></el-icon>
             </div>
           </div>
         </div>
@@ -96,17 +98,23 @@ const favorites = computed(() => storeFavorites.value);
 const visible = ref(props.modelValue);
 
 // 监听 modelValue 变化
-watch(() => props.modelValue, (newVal) => {
-  visible.value = newVal;
-  if (newVal) {
-    fetchData();
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    visible.value = newVal;
+    if (newVal) {
+      fetchData();
+    }
   }
-});
+);
 
 // 监听 visible 变化，同步到父组件
-watch(() => visible.value, (newVal) => {
-  emit('update:modelValue', newVal);
-});
+watch(
+  () => visible.value,
+  (newVal) => {
+    emit('update:modelValue', newVal);
+  }
+);
 
 // 状态
 const loading = ref(false);
@@ -121,7 +129,7 @@ const fetchData = async () => {
     // 并行获取收藏夹列表和资源收藏状态
     const [, statusRes] = await Promise.all([
       favoriteStore.fetchFavorites(),
-      favoriteApi.checkResourceInFavorite(props.resourceId)
+      favoriteApi.checkResourceInFavorite(props.resourceId),
     ]);
 
     // 设置已选中的收藏夹

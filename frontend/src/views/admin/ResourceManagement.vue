@@ -38,12 +38,7 @@
       <el-empty v-if="favorites.length === 0" description="暂无收藏夹" />
 
       <div v-else class="favorites-list">
-        <el-alert
-          type="info"
-          :closable="false"
-          show-icon
-          class="favorites-tip"
-        >
+        <el-alert type="info" :closable="false" show-icon class="favorites-tip">
           <template #title>
             您可以一键删除自己收藏夹内的所有资源。此操作会永久删除资源文件，不可恢复。
           </template>
@@ -99,13 +94,7 @@
       </template>
 
       <div class="table-wrapper">
-        <el-table
-          :data="resources"
-          v-loading="loading"
-          border
-          stripe
-          style="width: 100%"
-        >
+        <el-table :data="resources" v-loading="loading" border stripe style="width: 100%">
           <el-table-column prop="title" label="资源标题" min-width="200" show-overflow-tooltip>
             <template #default="{ row }">
               <div class="resource-title">
@@ -116,7 +105,12 @@
             </template>
           </el-table-column>
 
-          <el-table-column prop="courseName" label="课程名称" min-width="140" show-overflow-tooltip />
+          <el-table-column
+            prop="courseName"
+            label="课程名称"
+            min-width="140"
+            show-overflow-tooltip
+          />
 
           <el-table-column label="类型/分类" width="90" align="center">
             <template #default="{ row }">
@@ -180,11 +174,7 @@
                 <el-icon><Refresh /></el-icon>
                 Hash
               </el-button>
-              <el-button
-                type="danger"
-                size="small"
-                @click="handleDeleteResource(row)"
-              >
+              <el-button type="danger" size="small" @click="handleDeleteResource(row)">
                 <el-icon><Delete /></el-icon>
               </el-button>
             </template>
@@ -211,15 +201,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import {
-  Search,
-  Refresh,
-  Folder,
-  Delete,
-  View,
-  Download,
-  Pointer
-} from '@element-plus/icons-vue';
+import { Search, Refresh, Folder, Delete, View, Download, Pointer } from '@element-plus/icons-vue';
 import { useAuthStore } from '../../stores/auth';
 import {
   getAllResources,
@@ -228,7 +210,7 @@ import {
   getAdminFavorites,
   deleteAllFavoriteResources,
   type AdminResource,
-  type AdminFavorite
+  type AdminFavorite,
 } from '../../api/admin';
 
 const authStore = useAuthStore();
@@ -256,7 +238,7 @@ const fetchResources = async () => {
     const response = await getAllResources({
       page: page.value,
       perPage: perPage.value,
-      keyword: searchKeyword.value || undefined
+      keyword: searchKeyword.value || undefined,
     });
     resources.value = response.resources;
     total.value = response.total;
@@ -308,7 +290,7 @@ const handleDeleteResource = async (resource: AdminResource) => {
         confirmButtonText: '确认删除',
         cancelButtonText: '取消',
         type: 'warning',
-        dangerouslyUseHTMLString: false
+        dangerouslyUseHTMLString: false,
       }
     );
 
@@ -335,7 +317,7 @@ const handleDeleteFavoriteResources = async (favorite: AdminFavorite) => {
         confirmButtonText: '确认删除',
         cancelButtonText: '取消',
         type: 'warning',
-        dangerouslyUseHTMLString: false
+        dangerouslyUseHTMLString: false,
       }
     );
 
@@ -367,7 +349,7 @@ const handleRecalculateHash = async (resource: AdminResource) => {
       {
         confirmButtonText: '确认',
         cancelButtonText: '取消',
-        type: 'info'
+        type: 'info',
       }
     );
 
@@ -375,15 +357,13 @@ const handleRecalculateHash = async (resource: AdminResource) => {
     const result = await recalculateResourceHash(resource.id);
 
     // 显示详细结果
-    const oldHashDisplay = result.oldHash
-      ? `${result.oldHash.substring(0, 16)}...`
-      : '无';
+    const oldHashDisplay = result.oldHash ? `${result.oldHash.substring(0, 16)}...` : '无';
     const newHashDisplay = `${result.newHash.substring(0, 16)}...`;
 
     ElMessage.success({
       message: `Hash重新计算成功！\n原Hash: ${oldHashDisplay}\n新Hash: ${newHashDisplay}`,
       duration: 5000,
-      showClose: true
+      showClose: true,
     });
 
     // 刷新列表以更新显示
@@ -406,7 +386,7 @@ const formatDate = (dateStr: string) => {
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   });
 };
 
@@ -423,18 +403,18 @@ const formatFileSize = (bytes?: number) => {
 // 格式化资源类型
 const formatResourceType = (type: string) => {
   const typeMap: Record<string, string> = {
-    'web_markdown': 'Markdown',
-    'pdf': 'PDF',
-    'ppt': 'PPT',
-    'pptx': 'PPTX',
-    'doc': 'DOC',
-    'docx': 'DOCX',
-    'txt': 'TXT',
-    'zip': 'ZIP',
-    'image': '图片',
-    'jpeg': 'JPEG',
-    'jpg': 'JPG',
-    'png': 'PNG'
+    web_markdown: 'Markdown',
+    pdf: 'PDF',
+    ppt: 'PPT',
+    pptx: 'PPTX',
+    doc: 'DOC',
+    docx: 'DOCX',
+    txt: 'TXT',
+    zip: 'ZIP',
+    image: '图片',
+    jpeg: 'JPEG',
+    jpg: 'JPG',
+    png: 'PNG',
   };
   return typeMap[type] || type.toUpperCase();
 };
@@ -442,14 +422,14 @@ const formatResourceType = (type: string) => {
 // 获取资源类型标签样式
 const getResourceTypeType = (type: string) => {
   const typeMap: Record<string, any> = {
-    'web_markdown': 'primary',
-    'pdf': 'danger',
-    'ppt': 'warning',
-    'pptx': 'warning',
-    'doc': 'info',
-    'docx': 'info',
-    'txt': '',
-    'zip': 'success'
+    web_markdown: 'primary',
+    pdf: 'danger',
+    ppt: 'warning',
+    pptx: 'warning',
+    doc: 'info',
+    docx: 'info',
+    txt: '',
+    zip: 'success',
   };
   return typeMap[type] || '';
 };
@@ -457,10 +437,10 @@ const getResourceTypeType = (type: string) => {
 // 格式化分类
 const formatCategory = (category: string) => {
   const categoryMap: Record<string, string> = {
-    'exam': '试题',
-    'note': '笔记',
-    'slides': '课件',
-    'other': '其他'
+    exam: '试题',
+    note: '笔记',
+    slides: '课件',
+    other: '其他',
   };
   return categoryMap[category] || category;
 };
@@ -468,9 +448,9 @@ const formatCategory = (category: string) => {
 // 格式化审核状态
 const formatAuditStatus = (status: string) => {
   const statusMap: Record<string, string> = {
-    'pending': '待审核',
-    'approved': '已通过',
-    'rejected': '已拒绝'
+    pending: '待审核',
+    approved: '已通过',
+    rejected: '已拒绝',
   };
   return statusMap[status] || status;
 };
@@ -478,9 +458,9 @@ const formatAuditStatus = (status: string) => {
 // 获取审核状态标签样式
 const getAuditStatusType = (status: string) => {
   const typeMap: Record<string, any> = {
-    'pending': 'warning',
-    'approved': 'success',
-    'rejected': 'danger'
+    pending: 'warning',
+    approved: 'success',
+    rejected: 'danger',
   };
   return typeMap[status] || 'info';
 };
@@ -545,7 +525,7 @@ onMounted(() => {
   gap: 8px;
 
   .el-icon {
-    color: #409EFF;
+    color: #409eff;
   }
 }
 

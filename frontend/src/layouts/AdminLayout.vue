@@ -53,7 +53,7 @@ import {
   User,
   Reading,
   Folder,
-  DocumentCopy
+  DocumentCopy,
 } from '@element-plus/icons-vue';
 import { brandConfig } from '../config/site.config';
 

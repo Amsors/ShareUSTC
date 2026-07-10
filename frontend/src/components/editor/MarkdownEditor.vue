@@ -19,8 +19,8 @@
     <div class="editor-container">
       <md-editor
         v-model="content"
-        :toolbars="(toolbars as any)"
-        :footers="(footers as any)"
+        :toolbars="toolbars as any"
+        :footers="footers as any"
         @on-upload-img="handleUploadImg"
         @on-change="handleChange"
         placeholder="开始编写你的 Markdown 内容..."
@@ -29,10 +29,7 @@
     </div>
 
     <!-- 图片选择器弹窗 -->
-    <ImageSelector
-      v-model="showImageSelector"
-      @select="insertImage"
-    />
+    <ImageSelector v-model="showImageSelector" @select="insertImage" />
   </div>
 </template>
 
@@ -92,7 +89,7 @@ const toolbars = [
   'pageFullscreen',
   'preview',
   'htmlPreview',
-  'catalog'
+  'catalog',
 ];
 
 // 底部工具栏
@@ -112,11 +109,15 @@ const wordCount = computed(() => {
 });
 
 // 监听props变化
-watch(() => props.modelValue, (newVal) => {
-  if (newVal !== content.value) {
-    content.value = newVal || '';
-  }
-}, { immediate: true });
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    if (newVal !== content.value) {
+      content.value = newVal || '';
+    }
+  },
+  { immediate: true }
+);
 
 // 监听内容变化
 watch(content, (newVal) => {
@@ -216,7 +217,7 @@ defineExpose({
   saveDraft,
   loadDraft,
   clearDraft,
-  getContent: () => content.value
+  getContent: () => content.value,
 });
 </script>
 

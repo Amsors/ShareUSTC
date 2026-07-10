@@ -19,16 +19,8 @@
         </el-form-item>
 
         <!-- 指定用户ID -->
-        <el-form-item
-          v-if="form.target === 'specific'"
-          label="用户ID"
-          prop="userId"
-        >
-          <el-input
-            v-model="form.userId"
-            placeholder="请输入用户UUID"
-            clearable
-          />
+        <el-form-item v-if="form.target === 'specific'" label="用户ID" prop="userId">
+          <el-input v-model="form.userId" placeholder="请输入用户UUID" clearable />
           <div class="form-tip">输入要接收通知的用户的唯一标识符</div>
         </el-form-item>
 
@@ -132,7 +124,7 @@ const form = reactive<SendNotificationRequest>({
   content: '',
   notificationType: 'system',
   priority: 'normal',
-  linkUrl: ''
+  linkUrl: '',
 });
 
 const rules: FormRules = {
@@ -148,19 +140,19 @@ const rules: FormRules = {
         } else {
           callback();
         }
-      }
-    }
+      },
+    },
   ],
   notificationType: [{ required: true, message: '请选择通知类型', trigger: 'change' }],
   priority: [{ required: true, message: '请选择优先级', trigger: 'change' }],
   title: [
     { required: true, message: '请输入通知标题', trigger: 'blur' },
-    { min: 2, max: 100, message: '标题长度应为2-100个字符', trigger: 'blur' }
+    { min: 2, max: 100, message: '标题长度应为2-100个字符', trigger: 'blur' },
   ],
   content: [
     { required: true, message: '请输入通知内容', trigger: 'blur' },
-    { min: 5, max: 1000, message: '内容长度应为5-1000个字符', trigger: 'blur' }
-  ]
+    { min: 5, max: 1000, message: '内容长度应为5-1000个字符', trigger: 'blur' },
+  ],
 };
 
 const handleSend = async () => {
@@ -178,7 +170,7 @@ const handleSend = async () => {
           {
             confirmButtonText: '确认发送',
             cancelButtonText: '取消',
-            type: 'warning'
+            type: 'warning',
           }
         );
       } catch {
@@ -189,15 +181,11 @@ const handleSend = async () => {
     // 群发确认
     if (form.target === 'all') {
       try {
-        await ElMessageBox.confirm(
-          '该通知将发送给所有用户，请确认？',
-          '确认群发通知',
-          {
-            confirmButtonText: '确认发送',
-            cancelButtonText: '取消',
-            type: 'warning'
-          }
-        );
+        await ElMessageBox.confirm('该通知将发送给所有用户，请确认？', '确认群发通知', {
+          confirmButtonText: '确认发送',
+          cancelButtonText: '取消',
+          type: 'warning',
+        });
       } catch {
         return;
       }
@@ -211,7 +199,7 @@ const handleSend = async () => {
         content: form.content.trim(),
         notificationType: form.notificationType,
         priority: form.priority,
-        linkUrl: form.linkUrl?.trim() || undefined
+        linkUrl: form.linkUrl?.trim() || undefined,
       };
 
       if (form.target === 'specific' && form.userId) {

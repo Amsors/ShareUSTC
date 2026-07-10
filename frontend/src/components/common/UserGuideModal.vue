@@ -10,7 +10,6 @@
   >
     <div class="guide-content">
       <div class="guide-items">
-
         <div class="guide-item">
           <div class="item-number">1</div>
           <div class="item-text">
@@ -54,7 +53,6 @@
             <span>分享，禁止用于任何形式的盈利活动</span>
           </div>
         </div>
-
       </div>
 
       <div class="guide-footer-hint">
@@ -66,14 +64,10 @@
     <template #footer>
       <div class="guide-footer">
         <div class="footer-left">
-          <el-checkbox v-model="dontShowAgain" size="small">
-            不再显示
-          </el-checkbox>
+          <el-checkbox v-model="dontShowAgain" size="small"> 不再显示 </el-checkbox>
         </div>
         <div class="footer-right">
-          <el-button type="primary" @click="handleClose" size="default">
-            我知道了
-          </el-button>
+          <el-button type="primary" @click="handleClose" size="default"> 我知道了 </el-button>
         </div>
       </div>
     </template>
@@ -123,10 +117,13 @@ function handleClose() {
   // 如果勾选了"不再显示"，则保存到 localStorage
   if (dontShowAgain.value) {
     try {
-      localStorage.setItem(GUIDE_MODAL_KEY, JSON.stringify({
-        permanent: true,
-        timestamp: Date.now()
-      }));
+      localStorage.setItem(
+        GUIDE_MODAL_KEY,
+        JSON.stringify({
+          permanent: true,
+          timestamp: Date.now(),
+        })
+      );
       ElMessage.success('已永久关闭用户指南弹窗，可在设置中重新开启');
     } catch (e) {
       logger.error('[UserGuideModal]', 'Failed to save user guide modal setting:', e);
@@ -153,10 +150,13 @@ function isPermanentlyClosed(): boolean {
 function setPermanentlyClosed(closed: boolean): void {
   try {
     if (closed) {
-      localStorage.setItem(GUIDE_MODAL_KEY, JSON.stringify({
-        permanent: true,
-        timestamp: Date.now()
-      }));
+      localStorage.setItem(
+        GUIDE_MODAL_KEY,
+        JSON.stringify({
+          permanent: true,
+          timestamp: Date.now(),
+        })
+      );
     } else {
       // 清除永久关闭设置，下次进入首页会显示
       localStorage.removeItem(GUIDE_MODAL_KEY);
@@ -178,7 +178,7 @@ onMounted(() => {
 defineExpose({
   show,
   isPermanentlyClosed,
-  setPermanentlyClosed
+  setPermanentlyClosed,
 });
 </script>
 

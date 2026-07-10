@@ -14,9 +14,7 @@
           <div class="setting-item">
             <div class="setting-info">
               <div class="setting-label">首页用户指南弹窗</div>
-              <div class="setting-desc">
-                进入首页时显示用户指南
-              </div>
+              <div class="setting-desc">进入首页时显示用户指南</div>
             </div>
             <div class="setting-control">
               <el-switch
@@ -31,9 +29,7 @@
           <div class="setting-item">
             <div class="setting-info">
               <div class="setting-label">资源页面指南弹窗</div>
-              <div class="setting-desc">
-                进入资源列表页面时显示使用指南
-              </div>
+              <div class="setting-desc">进入资源列表页面时显示使用指南</div>
             </div>
             <div class="setting-control">
               <el-switch
@@ -52,9 +48,7 @@
                 <template v-if="pdfPreviewVerified">
                   通过检测后，可自动加载 PDF 预览以提升体验
                 </template>
-                <template v-else>
-                  需要通过检测才能启用此功能
-                </template>
+                <template v-else> 需要通过检测才能启用此功能 </template>
               </div>
             </div>
             <div class="setting-control">
@@ -66,19 +60,18 @@
                 @change="handleAutoLoadPdfPreviewChange"
               />
               <div v-if="!pdfPreviewVerified" class="setting-hint">
-                <el-link type="primary" @click="goToPdfPreviewChallenge">
-                  前往检测
-                </el-link>
+                <el-link type="primary" @click="goToPdfPreviewChallenge"> 前往检测 </el-link>
               </div>
             </div>
           </div>
 
-          <div v-if="pdfPreviewVerified && autoLoadPdfPreview" class="setting-item threshold-setting">
+          <div
+            v-if="pdfPreviewVerified && autoLoadPdfPreview"
+            class="setting-item threshold-setting"
+          >
             <div class="setting-info">
               <div class="setting-label">自动加载大小阈值</div>
-              <div class="setting-desc">
-                超过此大小的 PDF 不会自动加载，需要手动点击加载
-              </div>
+              <div class="setting-desc">超过此大小的 PDF 不会自动加载，需要手动点击加载</div>
             </div>
             <div class="setting-control">
               <el-input-number
@@ -184,7 +177,6 @@
         </section>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -359,16 +351,22 @@ const loadPdfPreviewSettings = () => {
 // 处理 PDF 预览自动加载设置变化
 const handleAutoLoadPdfPreviewChange = (value: boolean) => {
   try {
-    localStorage.setItem(PDF_PREVIEW_AUTO_LOAD_KEY, JSON.stringify({
-      enabled: value,
-      timestamp: Date.now()
-    }));
+    localStorage.setItem(
+      PDF_PREVIEW_AUTO_LOAD_KEY,
+      JSON.stringify({
+        enabled: value,
+        timestamp: Date.now(),
+      })
+    );
 
     // 同时更新用户启用状态
-    localStorage.setItem(PDF_PREVIEW_USER_ENABLED_KEY, JSON.stringify({
-      enabled: true,
-      timestamp: Date.now()
-    }));
+    localStorage.setItem(
+      PDF_PREVIEW_USER_ENABLED_KEY,
+      JSON.stringify({
+        enabled: true,
+        timestamp: Date.now(),
+      })
+    );
 
     if (value) {
       ElMessage.success('已开启自动加载 PDF 预览');
@@ -389,10 +387,13 @@ const goToPdfPreviewChallenge = () => {
 // 处理阈值变化
 const handleThresholdChange = (value: number) => {
   try {
-    localStorage.setItem('pdfPreviewSizeThreshold', JSON.stringify({
-      value: value,
-      timestamp: Date.now()
-    }));
+    localStorage.setItem(
+      'pdfPreviewSizeThreshold',
+      JSON.stringify({
+        value: value,
+        timestamp: Date.now(),
+      })
+    );
     ElMessage.success(`已设置自动加载阈值：${value}MB`);
   } catch (e) {
     logger.error('[Settings]', 'Failed to save threshold setting:', e);
@@ -445,10 +446,13 @@ const handleUserGuideChange = (value: boolean) => {
       ElMessage.success('已开启首页用户指南弹窗');
     } else {
       // 关闭显示：设置永久关闭
-      localStorage.setItem(GUIDE_MODAL_KEY, JSON.stringify({
-        permanent: true,
-        timestamp: Date.now()
-      }));
+      localStorage.setItem(
+        GUIDE_MODAL_KEY,
+        JSON.stringify({
+          permanent: true,
+          timestamp: Date.now(),
+        })
+      );
       ElMessage.success('已永久关闭首页用户指南弹窗');
     }
   } catch (e) {
@@ -466,10 +470,13 @@ const handleResourceGuideChange = (value: boolean) => {
       ElMessage.success('已开启资源页面指南弹窗');
     } else {
       // 关闭显示：设置永久关闭
-      localStorage.setItem(RESOURCE_GUIDE_MODAL_KEY, JSON.stringify({
-        permanent: true,
-        timestamp: Date.now()
-      }));
+      localStorage.setItem(
+        RESOURCE_GUIDE_MODAL_KEY,
+        JSON.stringify({
+          permanent: true,
+          timestamp: Date.now(),
+        })
+      );
       ElMessage.success('已永久关闭资源页面指南弹窗');
     }
   } catch (e) {
@@ -499,10 +506,13 @@ const loadFilterEmptyResourcesSetting = () => {
 // 处理搜索页面过滤空资源设置变化
 const handleFilterEmptyResourcesChange = (value: boolean) => {
   try {
-    localStorage.setItem(FILTER_EMPTY_RESOURCES_KEY, JSON.stringify({
-      enabled: value,
-      timestamp: Date.now()
-    }));
+    localStorage.setItem(
+      FILTER_EMPTY_RESOURCES_KEY,
+      JSON.stringify({
+        enabled: value,
+        timestamp: Date.now(),
+      })
+    );
 
     if (value) {
       ElMessage.success('已开启搜索页面过滤，只显示有资源的课程/教师');

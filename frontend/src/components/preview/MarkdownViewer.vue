@@ -16,7 +16,11 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import MarkdownIt from 'markdown-it';
-import { getResourcePreviewInfo, getResourcePreviewContent, type PreviewUrlResponse } from '../../api/resource';
+import {
+  getResourcePreviewInfo,
+  getResourcePreviewContent,
+  type PreviewUrlResponse,
+} from '../../api/resource';
 import logger from '../../utils/logger';
 
 const props = defineProps<{
@@ -31,10 +35,10 @@ const content = ref('');
 
 // 初始化 MarkdownIt（使用安全模式）
 const md = new MarkdownIt({
-  html: false,        // 禁用 HTML 标签，防止 XSS
-  breaks: true,       // 转换换行符为 <br>
-  linkify: true,      // 自动转换 URL 为链接
-  typographer: true,  // 启用排版美化
+  html: false, // 禁用 HTML 标签，防止 XSS
+  breaks: true, // 转换换行符为 <br>
+  linkify: true, // 自动转换 URL 为链接
+  typographer: true, // 启用排版美化
 });
 
 const renderedContent = computed(() => {
@@ -47,14 +51,20 @@ const loadContent = async () => {
   try {
     // 获取预览信息
     const previewInfo: PreviewUrlResponse = await getResourcePreviewInfo(props.resourceId);
-    logger.debug('[MarkdownViewer]', `获取到预览信息 | storageType=${previewInfo.storageType}, directAccess=${previewInfo.directAccess}`);
+    logger.debug(
+      '[MarkdownViewer]',
+      `获取到预览信息 | storageType=${previewInfo.storageType}, directAccess=${previewInfo.directAccess}`
+    );
 
     // 获取内容（会自动使用缓存）
     const blob = await getResourcePreviewContent(props.resourceId, previewInfo, {
-      resourceDetail: props.resourceTitle && props.resourceType ? {
-        title: props.resourceTitle,
-        resourceType: props.resourceType
-      } : undefined
+      resourceDetail:
+        props.resourceTitle && props.resourceType
+          ? {
+              title: props.resourceTitle,
+              resourceType: props.resourceType,
+            }
+          : undefined,
     });
     const text = await blob.text();
 
@@ -73,9 +83,13 @@ const loadContent = async () => {
   }
 };
 
-watch(() => props.resourceId, () => {
-  loadContent();
-}, { immediate: true });
+watch(
+  () => props.resourceId,
+  () => {
+    loadContent();
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>

@@ -27,7 +27,9 @@
         <el-form-item :label="emailLabel" prop="email">
           <el-input
             v-model="form.email"
-            :placeholder="siteConfigStore.requireEmailOnRegister ? '请输入邮箱（必填）' : '请输入邮箱'"
+            :placeholder="
+              siteConfigStore.requireEmailOnRegister ? '请输入邮箱（必填）' : '请输入邮箱'
+            "
             :prefix-icon="Message"
             size="large"
             autocomplete="off"
@@ -51,7 +53,10 @@
             <div class="strength-bar">
               <div
                 class="strength-fill"
-                :style="{ width: passwordStrength.percent + '%', backgroundColor: passwordStrength.color }"
+                :style="{
+                  width: passwordStrength.percent + '%',
+                  backgroundColor: passwordStrength.color,
+                }"
               />
             </div>
             <span class="strength-text" :style="{ color: passwordStrength.color }">
@@ -119,12 +124,10 @@ const emailRules = computed<FormItemRule[]>(() => {
   if (siteConfigStore.requireEmailOnRegister) {
     return [
       { required: true, message: '请输入邮箱', trigger: 'blur' },
-      { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
+      { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' },
     ];
   }
-  return [
-    { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
-  ];
+  return [{ type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }];
 });
 
 // 页面加载时获取站点配置
@@ -136,14 +139,14 @@ const form = reactive({
   username: '',
   email: '',
   password: '',
-  confirmPassword: ''
+  confirmPassword: '',
 });
 
 // 密码强度
 const passwordStrength = reactive({
   percent: 0,
   color: '#ff4d4f',
-  text: '弱'
+  text: '弱',
 });
 
 const checkPasswordStrength = () => {
@@ -183,22 +186,22 @@ const baseRules: FormRules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
     { min: 3, max: 50, message: '用户名长度在 3 到 50 个字符', trigger: 'blur' },
-    { pattern: /^[a-zA-Z0-9_]+$/, message: '用户名只能包含字母、数字和下划线', trigger: 'blur' }
+    { pattern: /^[a-zA-Z0-9_]+$/, message: '用户名只能包含字母、数字和下划线', trigger: 'blur' },
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度至少为 6 个字符', trigger: 'blur' }
+    { min: 6, message: '密码长度至少为 6 个字符', trigger: 'blur' },
   ],
   confirmPassword: [
     { required: true, message: '请确认密码', trigger: 'blur' },
-    { validator: validateConfirmPassword, trigger: 'blur' }
-  ]
+    { validator: validateConfirmPassword, trigger: 'blur' },
+  ],
 };
 
 // 动态规则
 const rules = computed<FormRules>(() => ({
   ...baseRules,
-  email: emailRules.value
+  email: emailRules.value,
 }));
 
 const handleSubmit = async () => {
@@ -211,7 +214,7 @@ const handleSubmit = async () => {
     const success = await authStore.registerUser({
       username: form.username,
       password: form.password,
-      email: form.email || undefined
+      email: form.email || undefined,
     });
 
     if (success) {

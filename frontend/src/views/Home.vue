@@ -15,8 +15,12 @@
             </el-avatar>
             <div class="welcome-info">
               <span class="welcome-name">欢迎回来，{{ authStore.user?.username }}</span>
-              <el-tag :type="authStore.isAdmin ? 'danger' : (authStore.isVerified ? 'success' : 'info')" size="small" effect="plain">
-                {{ authStore.isAdmin ? '管理员' : (authStore.isVerified ? '已认证' : '普通用户') }}
+              <el-tag
+                :type="authStore.isAdmin ? 'danger' : authStore.isVerified ? 'success' : 'info'"
+                size="small"
+                effect="plain"
+              >
+                {{ authStore.isAdmin ? '管理员' : authStore.isVerified ? '已认证' : '普通用户' }}
               </el-tag>
             </div>
           </div>
@@ -75,7 +79,9 @@
             <template v-else>
               <div class="guide-item">
                 <el-icon class="guide-icon" color="#409eff"><Collection /></el-icon>
-                <span>可创建并自主命名收藏夹（如 线性代数 力学），将资源一键加入收藏夹后打包下载</span>
+                <span
+                  >可创建并自主命名收藏夹（如 线性代数 力学），将资源一键加入收藏夹后打包下载</span
+                >
               </div>
               <div class="guide-item">
                 <el-icon class="guide-icon" color="#409eff"><Collection /></el-icon>
@@ -102,7 +108,11 @@
             <el-icon class="link-arrow"><ArrowRight /></el-icon>
           </div>
 
-          <div class="quick-link-card" @click="$router.push('/upload')" v-if="authStore.isAuthenticated">
+          <div
+            class="quick-link-card"
+            @click="$router.push('/upload')"
+            v-if="authStore.isAuthenticated"
+          >
             <div class="link-icon green">
               <el-icon :size="32"><Upload /></el-icon>
             </div>
@@ -175,13 +185,20 @@
               class="hot-resource-item"
               @click="goToResource(item.id)"
             >
-              <div class="rank-badge" :class="{ 'rank-1': index === 0, 'rank-2': index === 1, 'rank-3': index === 2 }">
+              <div
+                class="rank-badge"
+                :class="{ 'rank-1': index === 0, 'rank-2': index === 1, 'rank-3': index === 2 }"
+              >
                 {{ index + 1 }}
               </div>
               <div class="resource-content">
                 <div class="resource-title-row">
                   <span class="resource-title" :title="item.title">{{ item.title }}</span>
-                  <el-tag size="small" :type="getResourceTypeTagType(item.resourceType)" effect="plain">
+                  <el-tag
+                    size="small"
+                    :type="getResourceTypeTagType(item.resourceType)"
+                    effect="plain"
+                  >
                     {{ getResourceTypeLabel(item.resourceType) }}
                   </el-tag>
                 </div>
@@ -194,7 +211,11 @@
                 </div>
               </div>
             </div>
-            <el-empty v-if="!loadingHot && hotResources.length === 0" description="暂无数据" :image-size="60" />
+            <el-empty
+              v-if="!loadingHot && hotResources.length === 0"
+              description="暂无数据"
+              :image-size="60"
+            />
           </div>
           <div class="view-more">
             <el-link type="primary" @click="$router.push('/resources')">
@@ -229,7 +250,7 @@ import {
   Calendar,
   CircleCheck,
   Collection,
-  Document
+  Document,
 } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 
@@ -260,17 +281,17 @@ const getResourceTypeLabel = (type: string): string => {
 // 获取资源类型标签样式
 const getResourceTypeTagType = (type: string): any => {
   const typeMap: Record<string, any> = {
-    'pdf': 'danger',
-    'ppt': 'warning',
-    'pptx': 'warning',
-    'doc': 'primary',
-    'docx': 'primary',
-    'web_markdown': 'success',
-    'txt': 'info',
-    'jpeg': 'success',
-    'jpg': 'success',
-    'png': 'success',
-    'zip': 'info'
+    pdf: 'danger',
+    ppt: 'warning',
+    pptx: 'warning',
+    doc: 'primary',
+    docx: 'primary',
+    web_markdown: 'success',
+    txt: 'info',
+    jpeg: 'success',
+    jpg: 'success',
+    png: 'success',
+    zip: 'info',
   };
   return typeMap[type] || 'info';
 };
@@ -320,7 +341,7 @@ const handleSearch = () => {
   }
   router.push({
     path: '/resources',
-    query: { q: searchKeyword.value.trim() }
+    query: { q: searchKeyword.value.trim() },
   });
 };
 
@@ -950,5 +971,4 @@ onMounted(() => {
     font-size: 28px;
   }
 }
-
 </style>

@@ -29,9 +29,7 @@
     <div v-else class="unsupported-preview">
       <el-icon class="unsupported-icon"><Document /></el-icon>
       <p>该类型文件暂不支持预览</p>
-      <el-button type="primary" @click="handleDownload">
-        下载查看
-      </el-button>
+      <el-button type="primary" @click="handleDownload"> 下载查看 </el-button>
     </div>
   </div>
 </template>
@@ -85,8 +83,8 @@ const handleDownload = async () => {
       useCache: true,
       resourceDetail: {
         title: props.resourceTitle,
-        resourceType: props.resourceType
-      }
+        resourceType: props.resourceType,
+      },
     });
   } catch (error: any) {
     // 错误已在API中处理

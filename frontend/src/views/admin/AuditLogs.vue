@@ -72,12 +72,7 @@
       </div>
 
       <template v-else>
-        <el-table
-          :data="logs"
-          stripe
-          style="width: 100%"
-          v-if="logs.length > 0"
-        >
+        <el-table :data="logs" stripe style="width: 100%" v-if="logs.length > 0">
           <el-table-column label="时间" width="180">
             <template #default="{ row }">
               {{ formatDateTime(row.createdAt) }}
@@ -111,7 +106,9 @@
 
           <el-table-column label="目标类型" width="100">
             <template #default="{ row }">
-              <span v-if="row.targetType" class="target-type">{{ formatTargetType(row.targetType) }}</span>
+              <span v-if="row.targetType" class="target-type">{{
+                formatTargetType(row.targetType)
+              }}</span>
               <span v-else class="no-data">-</span>
             </template>
           </el-table-column>
@@ -125,19 +122,16 @@
 
           <el-table-column label="详情" min-width="200">
             <template #default="{ row }">
-              <div v-if="row.details && Object.keys(row.details).length > 0" class="details-preview">
-                <el-popover
-                  placement="top-start"
-                  :width="300"
-                  trigger="hover"
-                >
+              <div
+                v-if="row.details && Object.keys(row.details).length > 0"
+                class="details-preview"
+              >
+                <el-popover placement="top-start" :width="300" trigger="hover">
                   <template #default>
                     <pre class="details-json">{{ JSON.stringify(row.details, null, 2) }}</pre>
                   </template>
                   <template #reference>
-                    <el-link type="primary" :underline="false">
-                      查看详情
-                    </el-link>
+                    <el-link type="primary" :underline="false"> 查看详情 </el-link>
                   </template>
                 </el-popover>
               </div>
@@ -183,7 +177,7 @@ const query = reactive<AuditLogQuery>({
   action: undefined,
   userId: undefined,
   startDate: undefined,
-  endDate: undefined
+  endDate: undefined,
 });
 
 const actionOptions = [
@@ -204,7 +198,7 @@ const actionOptions = [
   { value: 'audit_resource', label: '审核资源（预留）' },
   { value: 'audit_comment', label: '审核评论（预留）' },
   { value: 'update_user_status', label: '更新用户状态' },
-  { value: 'send_notification', label: '发送通知' }
+  { value: 'send_notification', label: '发送通知' },
 ];
 
 const fetchLogs = async () => {
@@ -268,37 +262,38 @@ const formatDateTime = (dateStr: string): string => {
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit'
+    second: '2-digit',
   });
 };
 
 const formatAction = (action: string): string => {
   const actionMap: Record<string, string> = {
-    'register': '注册',
-    'login': '登录',
-    'upload_resource': '上传资源',
-    'delete_resource': '删除资源',
-    'update_resource': '更新资源',
-    'download_resource': '下载资源',
-    'create_comment': '发表评论',
-    'delete_comment': '删除评论',
-    'rate_resource': '评分资源',
-    'like_resource': '点赞资源',
-    'unlike_resource': '取消点赞',
-    'create_favorite': '创建收藏夹',
-    'pack_download': '打包下载',
-    'update_profile': '更新个人主页',
-    'audit_resource': '审核资源（预留）',
-    'audit_comment': '审核评论（预留）',
-    'update_user_status': '更新用户状态',
-    'send_notification': '发送通知'
+    register: '注册',
+    login: '登录',
+    upload_resource: '上传资源',
+    delete_resource: '删除资源',
+    update_resource: '更新资源',
+    download_resource: '下载资源',
+    create_comment: '发表评论',
+    delete_comment: '删除评论',
+    rate_resource: '评分资源',
+    like_resource: '点赞资源',
+    unlike_resource: '取消点赞',
+    create_favorite: '创建收藏夹',
+    pack_download: '打包下载',
+    update_profile: '更新个人主页',
+    audit_resource: '审核资源（预留）',
+    audit_comment: '审核评论（预留）',
+    update_user_status: '更新用户状态',
+    send_notification: '发送通知',
   };
   return actionMap[action] || action;
 };
 
 const getActionType = (action: string): '' | 'success' | 'warning' | 'danger' | 'info' => {
   if (action.includes('delete') || action.includes('reject')) return 'danger';
-  if (action.includes('create') || action.includes('upload') || action.includes('register')) return 'success';
+  if (action.includes('create') || action.includes('upload') || action.includes('register'))
+    return 'success';
   if (action.includes('audit') || action.includes('update')) return 'warning';
   if (action.includes('login') || action.includes('logout')) return 'info';
   return '';
@@ -306,11 +301,11 @@ const getActionType = (action: string): '' | 'success' | 'warning' | 'danger' | 
 
 const formatTargetType = (type: string): string => {
   const typeMap: Record<string, string> = {
-    'user': '用户',
-    'resource': '资源',
-    'comment': '评论',
-    'favorite': '收藏夹',
-    'notification': '通知'
+    user: '用户',
+    resource: '资源',
+    comment: '评论',
+    favorite: '收藏夹',
+    notification: '通知',
   };
   return typeMap[type] || type;
 };

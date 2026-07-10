@@ -3,10 +3,10 @@ export const UserRole = {
   Guest: 'guest',
   User: 'user',
   Verified: 'verified',
-  Admin: 'admin'
+  Admin: 'admin',
 } as const;
 
-export type UserRoleType = typeof UserRole[keyof typeof UserRole];
+export type UserRoleType = (typeof UserRole)[keyof typeof UserRole];
 
 // 用户信息
 export interface User {

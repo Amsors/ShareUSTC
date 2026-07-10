@@ -5,12 +5,7 @@
         <h1>重复资源检测</h1>
         <p class="subtitle">扫描数据库中文件内容相同的资源</p>
       </div>
-      <el-button
-        type="primary"
-        :loading="loading"
-        :icon="Search"
-        @click="handleCheck"
-      >
+      <el-button type="primary" :loading="loading" :icon="Search" @click="handleCheck">
         {{ loading ? '检测中...' : '开始检测' }}
       </el-button>
     </div>
@@ -19,7 +14,7 @@
     <div v-if="result" class="stats-cards">
       <el-card class="stat-card" :body-style="{ padding: '20px' }">
         <div class="stat-content">
-          <div class="stat-icon" style="background-color: #f56c6c20; color: #f56c6c;">
+          <div class="stat-icon" style="background-color: #f56c6c20; color: #f56c6c">
             <el-icon :size="28"><DocumentCopy /></el-icon>
           </div>
           <div class="stat-info">
@@ -31,7 +26,7 @@
 
       <el-card class="stat-card" :body-style="{ padding: '20px' }">
         <div class="stat-content">
-          <div class="stat-icon" style="background-color: #e6a23c20; color: #e6a23c;">
+          <div class="stat-icon" style="background-color: #e6a23c20; color: #e6a23c">
             <el-icon :size="28"><Files /></el-icon>
           </div>
           <div class="stat-info">
@@ -43,7 +38,7 @@
 
       <el-card class="stat-card" :body-style="{ padding: '20px' }">
         <div class="stat-content">
-          <div class="stat-icon" style="background-color: #409eff20; color: #409eff;">
+          <div class="stat-icon" style="background-color: #409eff20; color: #409eff">
             <el-icon :size="28"><DataAnalysis /></el-icon>
           </div>
           <div class="stat-info">
@@ -90,7 +85,12 @@
               <template #default="{ row }">
                 <div class="resource-title-cell">
                   <el-icon class="title-icon"><Document /></el-icon>
-                  <a :href="`/resources/${row.id}`" target="_blank" class="resource-link" @click.stop>
+                  <a
+                    :href="`/resources/${row.id}`"
+                    target="_blank"
+                    class="resource-link"
+                    @click.stop
+                  >
                     {{ row.title }}
                   </a>
                 </div>
@@ -147,11 +147,7 @@
           </el-table>
 
           <div class="group-actions">
-            <el-alert
-              type="info"
-              :closable="false"
-              show-icon
-            >
+            <el-alert type="info" :closable="false" show-icon>
               <template #title>
                 <span>建议：保留最早上传的资源，删除其余重复项</span>
               </template>
@@ -174,11 +170,7 @@
     </el-empty>
 
     <!-- 初始状态 -->
-    <el-empty
-      v-else
-      description="点击上方按钮开始检测"
-      :image-size="200"
-    >
+    <el-empty v-else description="点击上方按钮开始检测" :image-size="200">
       <template #image>
         <el-icon :size="80" color="#909399"><Search /></el-icon>
       </template>
@@ -194,7 +186,7 @@ import {
   Files,
   DataAnalysis,
   Download,
-  Document
+  Document,
 } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { checkDuplicateResources, type DuplicateResourceCheckResponse } from '../../api/admin';
@@ -224,9 +216,10 @@ const handleCheck = async () => {
     result.value = data;
 
     // 默认展开前3个
-    activeGroups.value = Math.min(data.groups.length, 3) > 0
-      ? Array.from({ length: Math.min(data.groups.length, 3) }, (_, i) => i)
-      : [];
+    activeGroups.value =
+      Math.min(data.groups.length, 3) > 0
+        ? Array.from({ length: Math.min(data.groups.length, 3) }, (_, i) => i)
+        : [];
 
     if (data.totalGroups > 0) {
       ElMessage.success(`检测到 ${data.totalGroups} 组重复资源`);
@@ -256,13 +249,13 @@ const exportResult = () => {
     summary: {
       totalGroups: result.value.totalGroups,
       totalDuplicateResources: result.value.totalDuplicateResources,
-      totalWastedSpace: totalWastedSpace.value
+      totalWastedSpace: totalWastedSpace.value,
     },
-    groups: result.value.groups.map(group => ({
+    groups: result.value.groups.map((group) => ({
       fileHash: group.fileHash,
       resourceCount: group.resourceCount,
       totalFileSize: group.totalFileSize,
-      resources: group.resources.map(r => ({
+      resources: group.resources.map((r) => ({
         id: r.id,
         title: r.title,
         courseName: r.courseName,
@@ -270,9 +263,9 @@ const exportResult = () => {
         uploaderName: r.uploaderName,
         fileSize: r.fileSize,
         storageType: r.storageType,
-        createdAt: r.createdAt
-      }))
-    }))
+        createdAt: r.createdAt,
+      })),
+    })),
   };
 
   const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
@@ -296,7 +289,7 @@ const formatDate = (dateStr: string): string => {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   });
 };
 </script>

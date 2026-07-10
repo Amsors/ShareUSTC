@@ -1,7 +1,7 @@
 <template>
   <nav class="navbar">
     <div class="nav-brand">
-      <h1 @click="$router.push('/')" style="cursor: pointer;">
+      <h1 @click="$router.push('/')" style="cursor: pointer">
         {{ brandConfig.siteName }}
         <span v-if="isDevMode" class="dev-badge">开发版</span>
       </h1>
@@ -61,7 +61,7 @@ const handleCommand = async (command: string) => {
       await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
-        type: 'warning'
+        type: 'warning',
       });
       await authStore.logoutUser();
       router.push('/');

@@ -51,12 +51,7 @@
         </div>
       </template>
 
-      <el-table
-        :data="filteredUsers"
-        v-loading="loading"
-        style="width: 100%"
-        stripe
-      >
+      <el-table :data="filteredUsers" v-loading="loading" style="width: 100%" stripe>
         <el-table-column prop="sn" label="编号" width="80">
           <template #default="{ row }">
             <span class="user-sn">#{{ row.sn ?? '-' }}</span>
@@ -102,12 +97,7 @@
         </el-table-column>
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button
-              type="primary"
-              link
-              size="small"
-              @click="showUserRealInfo(row)"
-            >
+            <el-button type="primary" link size="small" @click="showUserRealInfo(row)">
               实名信息
             </el-button>
             <el-button
@@ -137,12 +127,7 @@
     </el-card>
 
     <!-- 实名信息对话框 -->
-    <el-dialog
-      v-model="realInfoDialogVisible"
-      title="用户实名信息"
-      width="500px"
-      destroy-on-close
-    >
+    <el-dialog v-model="realInfoDialogVisible" title="用户实名信息" width="500px" destroy-on-close>
       <div v-loading="realInfoLoading" class="real-info-content">
         <!-- 未实名提示 -->
         <el-alert
@@ -219,23 +204,21 @@ const searchQuery = ref('');
 
 // 统计
 const totalUsers = computed(() => total.value);
-const verifiedUsers = computed(() => users.value.filter(u => u.isVerified).length);
-const disabledUsers = computed(() => users.value.filter(u => !u.isActive).length);
+const verifiedUsers = computed(() => users.value.filter((u) => u.isVerified).length);
+const disabledUsers = computed(() => users.value.filter((u) => !u.isActive).length);
 
 // 过滤后的用户列表
 const filteredUsers = computed(() => {
   if (!searchQuery.value) return users.value;
   const query = searchQuery.value.toLowerCase();
-  return users.value.filter(user =>
-    user.username.toLowerCase().includes(query)
-  );
+  return users.value.filter((user) => user.username.toLowerCase().includes(query));
 });
 
 const getRoleType = (role: string) => {
   const types: Record<string, string> = {
     admin: 'danger',
     verified: 'success',
-    user: 'info'
+    user: 'info',
   };
   return types[role] || 'info';
 };
@@ -244,7 +227,7 @@ const getRoleLabel = (role: string) => {
   const labels: Record<string, string> = {
     admin: '管理员',
     verified: '实名用户',
-    user: '普通用户'
+    user: '普通用户',
   };
   return labels[role] || role;
 };
@@ -273,15 +256,11 @@ const fetchUsers = async () => {
 const toggleUserStatus = async (user: User) => {
   const action = user.isActive ? '禁用' : '启用';
   try {
-    await ElMessageBox.confirm(
-      `确定要${action}用户 "${user.username}" 吗？`,
-      '确认操作',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    );
+    await ElMessageBox.confirm(`确定要${action}用户 "${user.username}" 吗？`, '确认操作', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    });
 
     await adminApi.updateUserStatus(user.id, !user.isActive);
     ElMessage.success(`用户已${action}`);

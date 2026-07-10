@@ -42,12 +42,7 @@
       <el-empty v-if="!loading && comments.length === 0" description="暂无评论" />
 
       <div v-else class="comment-list">
-        <el-card
-          v-for="comment in comments"
-          :key="comment.id"
-          class="comment-item"
-          shadow="hover"
-        >
+        <el-card v-for="comment in comments" :key="comment.id" class="comment-item" shadow="hover">
           <div class="comment-header">
             <div class="user-info">
               <el-avatar :size="32" :icon="UserFilled" />
@@ -90,20 +85,10 @@
             >
               拒绝
             </el-button>
-            <el-button
-              type="primary"
-              link
-              size="small"
-              @click="viewResource(comment.resourceId)"
-            >
+            <el-button type="primary" link size="small" @click="viewResource(comment.resourceId)">
               查看资源
             </el-button>
-            <el-button
-              type="danger"
-              link
-              size="small"
-              @click="handleDelete(comment)"
-            >
+            <el-button type="danger" link size="small" @click="handleDelete(comment)">
               删除
             </el-button>
           </div>
@@ -153,15 +138,15 @@ const perPage = ref(20);
 const filterStatus = ref('');
 
 // 统计
-const pendingCount = computed(() =>
-  comments.value.filter(c => c.auditStatus === 'pending').length
+const pendingCount = computed(
+  () => comments.value.filter((c) => c.auditStatus === 'pending').length
 );
 
 const getStatusType = (status: string) => {
   const types: Record<string, string> = {
     pending: 'warning',
     approved: 'success',
-    rejected: 'danger'
+    rejected: 'danger',
   };
   return types[status] || 'info';
 };
@@ -170,7 +155,7 @@ const getStatusLabel = (status: string) => {
   const labels: Record<string, string> = {
     pending: '待审核',
     approved: '已通过',
-    rejected: '已拒绝'
+    rejected: '已拒绝',
   };
   return labels[status] || status;
 };
@@ -211,15 +196,11 @@ const viewResource = (resourceId: string) => {
 
 const handleApprove = async (comment: Comment) => {
   try {
-    await ElMessageBox.confirm(
-      '确定要通过这条评论吗？',
-      '确认操作',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'success'
-      }
-    );
+    await ElMessageBox.confirm('确定要通过这条评论吗？', '确认操作', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'success',
+    });
 
     await adminApi.auditComment(comment.id, 'approved');
     ElMessage.success('评论已通过');
@@ -233,15 +214,11 @@ const handleApprove = async (comment: Comment) => {
 
 const handleReject = async (comment: Comment) => {
   try {
-    await ElMessageBox.confirm(
-      '确定要拒绝这条评论吗？',
-      '确认操作',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    );
+    await ElMessageBox.confirm('确定要拒绝这条评论吗？', '确认操作', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    });
 
     await adminApi.auditComment(comment.id, 'rejected');
     ElMessage.success('评论已拒绝');
@@ -255,15 +232,11 @@ const handleReject = async (comment: Comment) => {
 
 const handleDelete = async (comment: Comment) => {
   try {
-    await ElMessageBox.confirm(
-      '确定要删除这条评论吗？删除后无法恢复。',
-      '确认删除',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    );
+    await ElMessageBox.confirm('确定要删除这条评论吗？删除后无法恢复。', '确认删除', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    });
 
     await adminApi.deleteComment(comment.id);
     ElMessage.success('评论已删除');

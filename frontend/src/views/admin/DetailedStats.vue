@@ -142,9 +142,7 @@
             </el-table-column>
             <el-table-column width="100" align="center">
               <template #default="{ row }">
-                <el-button type="primary" link @click="viewResource(row.id)">
-                  查看
-                </el-button>
+                <el-button type="primary" link @click="viewResource(row.id)"> 查看 </el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -186,7 +184,10 @@
         </el-row>
 
         <!-- 评分分布 -->
-        <div class="rating-distribution" v-if="stats.interactionStats.ratingDistribution.length > 0">
+        <div
+          class="rating-distribution"
+          v-if="stats.interactionStats.ratingDistribution.length > 0"
+        >
           <h4 class="subsection-title">评分分布</h4>
           <div class="rating-bars">
             <div
@@ -223,7 +224,7 @@ import {
   ChatDotSquare,
   StarFilled,
   Pointer,
-  Loading
+  Loading,
 } from '@element-plus/icons-vue';
 import { getDetailedStats, type DetailedStats } from '../../api/admin';
 
@@ -256,38 +257,38 @@ const calculatePercentage = (value: number, total: number): number => {
 
 const formatResourceType = (type: string): string => {
   const typeMap: Record<string, string> = {
-    'web_markdown': 'Markdown文档',
-    'pdf': 'PDF文档',
-    'ppt': 'PPT演示',
-    'pptx': 'PPT演示',
-    'doc': 'Word文档',
-    'docx': 'Word文档',
-    'txt': '文本文件',
-    'zip': '压缩文件',
-    'image': '图片',
-    'unknown': '其他类型'
+    web_markdown: 'Markdown文档',
+    pdf: 'PDF文档',
+    ppt: 'PPT演示',
+    pptx: 'PPT演示',
+    doc: 'Word文档',
+    docx: 'Word文档',
+    txt: '文本文件',
+    zip: '压缩文件',
+    image: '图片',
+    unknown: '其他类型',
   };
   return typeMap[type] || type;
 };
 
 const formatRatingRange = (range: string): string => {
   const rangeMap: Record<string, string> = {
-    'excellent': '优秀 (9-10分)',
-    'good': '良好 (7-8分)',
-    'average': '一般 (5-6分)',
-    'poor': '较差 (3-4分)',
-    'bad': '很差 (1-2分)'
+    excellent: '优秀 (9-10分)',
+    good: '良好 (7-8分)',
+    average: '一般 (5-6分)',
+    poor: '较差 (3-4分)',
+    bad: '很差 (1-2分)',
   };
   return rangeMap[range] || range;
 };
 
 const getRatingColor = (range: string): string => {
   const colorMap: Record<string, string> = {
-    'excellent': '#67c23a',
-    'good': '#409eff',
-    'average': '#e6a23c',
-    'poor': '#f56c6c',
-    'bad': '#909399'
+    excellent: '#67c23a',
+    good: '#409eff',
+    average: '#e6a23c',
+    poor: '#f56c6c',
+    bad: '#909399',
   };
   return colorMap[range] || '#409eff';
 };

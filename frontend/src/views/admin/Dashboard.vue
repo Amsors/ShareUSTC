@@ -4,7 +4,12 @@
 
     <!-- 统计卡片 -->
     <div class="stats-grid">
-      <el-card v-for="stat in statsCards" :key="stat.title" class="stat-card" :body-style="{ padding: '20px' }">
+      <el-card
+        v-for="stat in statsCards"
+        :key="stat.title"
+        class="stat-card"
+        :body-style="{ padding: '20px' }"
+      >
         <div class="stat-content">
           <div class="stat-icon" :style="{ backgroundColor: stat.color + '20', color: stat.color }">
             <el-icon :size="28">
@@ -64,7 +69,7 @@
       </template>
       <div class="pending-list">
         <div class="pending-item" @click="$router.push('/admin/resources')">
-          <div class="pending-icon" style="background-color: #f56c6c20; color: #f56c6c;">
+          <div class="pending-icon" style="background-color: #f56c6c20; color: #f56c6c">
             <el-icon :size="20">
               <Document />
             </el-icon>
@@ -77,7 +82,7 @@
         </div>
         <el-divider />
         <div class="pending-item" @click="$router.push('/admin/comments')">
-          <div class="pending-icon" style="background-color: #e6a23c20; color: #e6a23c;">
+          <div class="pending-icon" style="background-color: #e6a23c20; color: #e6a23c">
             <el-icon :size="20">
               <ChatDotSquare />
             </el-icon>
@@ -95,13 +100,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
-import {
-  UserFilled,
-  Document,
-  Download,
-  Warning,
-  ChatDotSquare
-} from '@element-plus/icons-vue';
+import { UserFilled, Document, Download, Warning, ChatDotSquare } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { adminApi } from '../../api/admin';
 
@@ -123,26 +122,26 @@ const statsCards = computed(() => [
     title: '总用户数',
     value: stats.value?.totalUsers || 0,
     icon: UserFilled,
-    color: '#409eff'
+    color: '#409eff',
   },
   {
     title: '总资源数',
     value: stats.value?.totalResources || 0,
     icon: Document,
-    color: '#67c23a'
+    color: '#67c23a',
   },
   {
     title: '总下载量',
     value: stats.value?.totalDownloads || 0,
     icon: Download,
-    color: '#e6a23c'
+    color: '#e6a23c',
   },
   {
     title: '待审核',
     value: (stats.value?.pendingResources || 0) + (stats.value?.pendingComments || 0),
     icon: Warning,
-    color: '#f56c6c'
-  }
+    color: '#f56c6c',
+  },
 ]);
 
 const fetchStats = async () => {

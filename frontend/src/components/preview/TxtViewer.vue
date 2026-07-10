@@ -15,7 +15,11 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { getResourcePreviewInfo, getResourcePreviewContent, type PreviewUrlResponse } from '../../api/resource';
+import {
+  getResourcePreviewInfo,
+  getResourcePreviewContent,
+  type PreviewUrlResponse,
+} from '../../api/resource';
 import logger from '../../utils/logger';
 
 const props = defineProps<{
@@ -34,14 +38,20 @@ const loadContent = async () => {
   try {
     // 获取预览信息
     const previewInfo: PreviewUrlResponse = await getResourcePreviewInfo(props.resourceId);
-    logger.debug('[TxtViewer]', `获取到预览信息 | storageType=${previewInfo.storageType}, directAccess=${previewInfo.directAccess}`);
+    logger.debug(
+      '[TxtViewer]',
+      `获取到预览信息 | storageType=${previewInfo.storageType}, directAccess=${previewInfo.directAccess}`
+    );
 
     // 获取内容（会自动使用缓存）
     const blob = await getResourcePreviewContent(props.resourceId, previewInfo, {
-      resourceDetail: props.resourceTitle && props.resourceType ? {
-        title: props.resourceTitle,
-        resourceType: props.resourceType
-      } : undefined
+      resourceDetail:
+        props.resourceTitle && props.resourceType
+          ? {
+              title: props.resourceTitle,
+              resourceType: props.resourceType,
+            }
+          : undefined,
     });
     const text = await blob.text();
 
@@ -60,9 +70,13 @@ const loadContent = async () => {
   }
 };
 
-watch(() => props.resourceId, () => {
-  loadContent();
-}, { immediate: true });
+watch(
+  () => props.resourceId,
+  () => {
+    loadContent();
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>

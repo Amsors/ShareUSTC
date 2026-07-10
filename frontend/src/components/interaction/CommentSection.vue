@@ -88,7 +88,7 @@ const loadComments = async () => {
   try {
     const result = await getComments(props.resourceId, {
       page: page.value,
-      perPage: perPage.value
+      perPage: perPage.value,
     });
     comments.value = result.comments;
     total.value = result.total;
@@ -112,7 +112,10 @@ const handleSubmit = async () => {
     newComment.value = '';
     loadComments();
   } catch (error: any) {
-    logger.error('[CommentSection]', '评论提交失败', { message: error.message, data: error.response?.data });
+    logger.error('[CommentSection]', '评论提交失败', {
+      message: error.message,
+      data: error.response?.data,
+    });
     if (!error.isHandled) {
       ElMessage.error(error.message || '评论失败');
     }
@@ -139,7 +142,7 @@ const handleDelete = async (comment: Comment) => {
     await ElMessageBox.confirm('确定要删除这条评论吗？', '删除确认', {
       confirmButtonText: '删除',
       cancelButtonText: '取消',
-      type: 'warning'
+      type: 'warning',
     });
 
     deleting.value = true;
@@ -153,7 +156,10 @@ const handleDelete = async (comment: Comment) => {
   } catch (error: any) {
     if (error === 'cancel') return;
 
-    logger.error('[CommentSection]', '删除评论失败', { message: error.message, data: error.response?.data });
+    logger.error('[CommentSection]', '删除评论失败', {
+      message: error.message,
+      data: error.response?.data,
+    });
     if (!error.isHandled) {
       ElMessage.error(error.message || '删除失败');
     }
@@ -166,10 +172,13 @@ onMounted(() => {
   loadComments();
 });
 
-watch(() => props.resourceId, () => {
-  page.value = 1;
-  loadComments();
-});
+watch(
+  () => props.resourceId,
+  () => {
+    page.value = 1;
+    loadComments();
+  }
+);
 </script>
 
 <style scoped>

@@ -22,115 +22,115 @@ const routes = [
     path: '/',
     name: 'Home',
     component: () => import('../views/Home.vue'),
-    meta: { public: true }
+    meta: { public: true },
   },
   {
     path: '/about',
     name: 'About',
     component: () => import('../views/About.vue'),
-    meta: { public: true }
+    meta: { public: true },
   },
   {
     path: '/login',
     name: 'Login',
     component: () => import('../views/auth/Login.vue'),
-    meta: { public: true, guestOnly: true }
+    meta: { public: true, guestOnly: true },
   },
   {
     path: '/register',
     name: 'Register',
     component: () => import('../views/auth/Register.vue'),
-    meta: { public: true, guestOnly: true }
+    meta: { public: true, guestOnly: true },
   },
   {
     path: '/profile',
     name: 'Profile',
     component: () => import('../views/Profile.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   {
     path: '/settings',
     name: 'Settings',
     component: () => import('../views/Settings.vue'),
-    meta: { public: true }
+    meta: { public: true },
   },
   {
     path: '/pdf-preview-challenge',
     name: 'PdfPreviewChallenge',
     component: () => import('../views/PdfPreviewChallenge.vue'),
-    meta: { public: true }
+    meta: { public: true },
   },
   {
     path: '/my-resources',
     name: 'MyResources',
     component: () => import('../views/Profile.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   {
     path: '/verification',
     name: 'Verification',
     component: () => import('../views/Profile.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   {
     path: '/image-host',
     name: 'ImageHost',
     component: () => import('../views/ImageHost.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   {
     path: '/upload',
     name: 'UploadResource',
     component: () => import('../views/upload/UploadResource.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   {
     path: '/resources',
     name: 'ResourceList',
     component: () => import('../views/resource/ResourceList.vue'),
-    meta: { public: true }
+    meta: { public: true },
   },
   {
     path: '/resources/:id',
     name: 'ResourceDetail',
     component: () => import('../views/resource/ResourceDetail.vue'),
-    meta: { public: true }
+    meta: { public: true },
   },
   {
     path: '/resources/:id/edit',
     name: 'EditMarkdownResource',
     component: () => import('../views/resource/EditMarkdownResource.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   {
     path: '/user/:id',
     name: 'UserHomepage',
     component: () => import('../views/user/UserHomepage.vue'),
-    meta: { public: true }
+    meta: { public: true },
   },
   {
     path: '/leaderboard',
     name: 'ContributionLeaderboard',
     component: () => import('../views/user/ContributionLeaderboard.vue'),
-    meta: { public: true }
+    meta: { public: true },
   },
   {
     path: '/notifications',
     name: 'NotificationCenter',
     component: () => import('../views/notification/NotificationCenter.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   {
     path: '/favorites',
     name: 'FavoriteList',
     component: () => import('../views/favorite/FavoriteList.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   {
     path: '/favorites/:id',
     name: 'FavoriteDetail',
     component: () => import('../views/favorite/FavoriteDetail.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   // 管理员路由
   {
@@ -141,72 +141,72 @@ const routes = [
       {
         path: '',
         name: 'AdminDashboard',
-        component: AdminDashboard
+        component: AdminDashboard,
       },
       {
         path: 'users',
         name: 'UserManagement',
-        component: UserManagement
+        component: UserManagement,
       },
       {
         path: 'teachers',
         name: 'TeacherManagement',
-        component: TeacherManagement
+        component: TeacherManagement,
       },
       {
         path: 'courses',
         name: 'CourseManagement',
-        component: CourseManagement
+        component: CourseManagement,
       },
       {
         path: 'resources',
         name: 'ResourceAudit',
-        component: ResourceAudit
+        component: ResourceAudit,
       },
       {
         path: 'resource-management',
         name: 'ResourceManagement',
-        component: ResourceManagement
+        component: ResourceManagement,
       },
       {
         path: 'comments',
         name: 'CommentManagement',
-        component: CommentManagement
+        component: CommentManagement,
       },
       {
         path: 'notifications',
         name: 'SendNotification',
-        component: SendNotification
+        component: SendNotification,
       },
       {
         path: 'stats',
         name: 'DetailedStats',
-        component: DetailedStats
+        component: DetailedStats,
       },
       {
         path: 'logs',
         name: 'AuditLogs',
-        component: AuditLogs
+        component: AuditLogs,
       },
       {
         path: 'duplicate-check',
         name: 'DuplicateResourceCheck',
-        component: DuplicateResourceCheck
-      }
-    ]
+        component: DuplicateResourceCheck,
+      },
+    ],
   },
   // 404 页面
   {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('../views/NotFound.vue'),
-    meta: { public: true }
-  }
+    meta: { public: true },
+  },
 ];
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
+  routes,
 });
 
 // 路由守卫
@@ -234,7 +234,7 @@ router.beforeEach((to, _from, next) => {
     logger.info('[Router]', 'Auth required, redirecting to login');
     return next({
       path: '/login',
-      query: { redirect: to.fullPath }
+      query: { redirect: to.fullPath },
     });
   }
 

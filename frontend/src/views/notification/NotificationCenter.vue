@@ -29,7 +29,10 @@
       </el-tabs>
 
       <!-- 空状态 -->
-      <el-empty v-if="filteredNotifications.length === 0 && !notificationStore.loading" description="暂无通知">
+      <el-empty
+        v-if="filteredNotifications.length === 0 && !notificationStore.loading"
+        description="暂无通知"
+      >
         <template #image>
           <el-icon :size="64" class="empty-icon">
             <Bell />
@@ -86,7 +89,7 @@ async function fetchNotifications() {
   await notificationStore.fetchNotifications({
     page: currentPage.value,
     perPage: pageSize.value,
-    unreadOnly: activeTab.value === 'unread'
+    unreadOnly: activeTab.value === 'unread',
   });
 }
 
@@ -151,9 +154,12 @@ onMounted(() => {
 });
 
 // 监听 store 中的分页变化
-watch(() => notificationStore.page, (newPage) => {
-  currentPage.value = newPage;
-});
+watch(
+  () => notificationStore.page,
+  (newPage) => {
+    currentPage.value = newPage;
+  }
+);
 </script>
 
 <style scoped>

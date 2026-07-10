@@ -20,9 +20,7 @@
       <p class="priority-text">{{ currentNotification.content }}</p>
 
       <div v-if="currentNotification.linkUrl" class="priority-link">
-        <el-link type="primary" @click="handleLinkClick">
-          点击查看详情
-        </el-link>
+        <el-link type="primary" @click="handleLinkClick"> 点击查看详情 </el-link>
       </div>
 
       <div class="priority-meta">
@@ -33,11 +31,7 @@
 
     <template #footer>
       <div class="priority-footer">
-        <el-button
-          v-if="pendingCount > 1"
-          @click="handleDismissAndNext"
-          :loading="dismissing"
-        >
+        <el-button v-if="pendingCount > 1" @click="handleDismissAndNext" :loading="dismissing">
           下一条
         </el-button>
         <el-button type="primary" @click="handleDismiss" :loading="dismissing">
@@ -153,7 +147,7 @@ function formatTime(time: string): string {
 
 // 暴露方法给父组件
 defineExpose({
-  checkAndShowPriorityNotifications
+  checkAndShowPriorityNotifications,
 });
 </script>
 
