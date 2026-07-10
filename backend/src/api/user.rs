@@ -5,9 +5,9 @@ use crate::models::{
 };
 use crate::services::{AuditLogService, UserError, UserService};
 use crate::utils::{
-    bad_request, forbidden, generate_access_token, generate_refresh_token, internal_error,
+    bad_request, build_auth_cookie, forbidden, generate_access_token, generate_refresh_token,
+    internal_error, ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE,
 };
-use actix_web::cookie::{time::Duration as CookieDuration, Cookie, SameSite};
 use actix_web::{get, post, put, web, HttpRequest, HttpResponse, Responder};
 use serde::Serialize;
 use uuid::Uuid;
@@ -22,26 +22,6 @@ pub struct SiteConfigResponse {
     pub allow_username_change: bool,
     /// 是否允许用户修改邮箱
     pub allow_email_change: bool,
-}
-
-/// Cookie 名称常量
-const ACCESS_TOKEN_COOKIE: &str = "access_token";
-const REFRESH_TOKEN_COOKIE: &str = "refresh_token";
-
-/// 构建 HttpOnly Cookie
-fn build_auth_cookie<'a>(
-    name: &'a str,
-    value: &'a str,
-    max_age_days: i64,
-    secure: bool,
-) -> Cookie<'a> {
-    Cookie::build(name, value)
-        .http_only(true)
-        .secure(secure) // 从配置读取，生产环境设为 true (HTTPS)
-        .same_site(SameSite::Lax)
-        .path("/")
-        .max_age(CookieDuration::days(max_age_days))
-        .finish()
 }
 
 /// 获取当前用户信息

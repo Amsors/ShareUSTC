@@ -4,9 +4,9 @@ use uuid::Uuid;
 use crate::db::AppState;
 use crate::models::CurrentUser;
 use crate::services::{ResourceService, StorageBackendType, StorageError};
-use crate::utils::{internal_error, not_found};
+use crate::utils::{build_content_disposition, internal_error, not_found};
 
-use super::{build_content_disposition, record_download_events, sanitize_filename};
+use super::{record_download_events, sanitize_filename};
 
 /// 下载资源
 /// 支持未登录用户（游客）下载

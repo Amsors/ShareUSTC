@@ -1,40 +1,10 @@
 use crate::db::AppState;
 use crate::models::{LoginRequest, RegisterRequest};
 use crate::services::{AuditLogService, AuthError, AuthService};
-use crate::utils::unauthorized;
-use actix_web::cookie::{time::Duration as CookieDuration, Cookie, SameSite};
+use crate::utils::{
+    build_auth_cookie, clear_auth_cookie, unauthorized, ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE,
+};
 use actix_web::{post, web, HttpRequest, HttpResponse, Responder};
-
-/// Cookie 名称常量
-const ACCESS_TOKEN_COOKIE: &str = "access_token";
-const REFRESH_TOKEN_COOKIE: &str = "refresh_token";
-
-/// 构建 HttpOnly Cookie
-fn build_auth_cookie<'a>(
-    name: &'a str,
-    value: &'a str,
-    max_age_days: i64,
-    secure: bool,
-) -> Cookie<'a> {
-    Cookie::build(name, value)
-        .http_only(true)
-        .secure(secure) // 从配置读取，生产环境设为 true (HTTPS)
-        .same_site(SameSite::Lax)
-        .path("/")
-        .max_age(CookieDuration::days(max_age_days))
-        .finish()
-}
-
-/// 清除认证 Cookie
-fn clear_auth_cookie<'a>(name: &'a str, secure: bool) -> Cookie<'a> {
-    Cookie::build(name, "")
-        .http_only(true)
-        .secure(secure)
-        .same_site(SameSite::Lax)
-        .path("/")
-        .max_age(CookieDuration::seconds(0))
-        .finish()
-}
 
 /// 注册
 #[post("/auth/register")]

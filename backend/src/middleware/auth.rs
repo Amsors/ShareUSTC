@@ -13,10 +13,9 @@ use std::{
 };
 
 use crate::models::CurrentUser;
-use crate::utils::{error_response_with_code, extract_current_user, verify_token};
-
-/// Cookie 名称常量
-const ACCESS_TOKEN_COOKIE: &str = "access_token";
+use crate::utils::{
+    error_response_with_code, extract_current_user, verify_token, ACCESS_TOKEN_COOKIE,
+};
 
 /// 构建统一格式（`{error, message}`）的 401 认证错误
 ///

@@ -22,7 +22,7 @@ pub fn encode_rfc5987(filename: &str) -> String {
 
 /// 检查文件名是否只包含 ASCII 字符
 pub fn is_ascii_filename(filename: &str) -> bool {
-    filename.chars().all(|c| c.is_ascii())
+    filename.is_ascii()
 }
 
 /// 构建 Content-Disposition 头部值，支持中文文件名
