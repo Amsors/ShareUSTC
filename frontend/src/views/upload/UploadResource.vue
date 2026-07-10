@@ -166,6 +166,7 @@ import MetadataForm from '../../components/upload/MetadataForm.vue';
 import MarkdownEditor from '../../components/editor/MarkdownEditor.vue';
 import { uploadResource } from '../../api/resource';
 import { getErrorMessage, isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 import {
   formatFileSize,
   getResourceTypeFromFileName,
@@ -329,6 +330,7 @@ const handleUpload = async () => {
 
     ElMessage.success('上传成功！');
   } catch (error) {
+    logger.error('[UploadResource]', '上传资源失败', error);
     auditStatus.value = 'rejected';
     auditMessage.value = getErrorMessage(error, '上传失败，请重试');
     if (!isHandledError(error)) {

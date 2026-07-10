@@ -222,7 +222,8 @@ import {
 } from '@element-plus/icons-vue';
 import { useDefaultFavorite } from '../../composables/useDefaultFavorite';
 import { useFavoriteStore } from '../../stores/favorite';
-import { getErrorMessage } from '@/api/request';
+import { getErrorMessage, isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 import { downloadFavorite } from '../../api/favorite';
 import {
   browserDownloadFavorite,
@@ -324,8 +325,11 @@ const fetchDetail = async () => {
   loading.value = true;
   try {
     await favoriteStore.fetchFavoriteDetail(favoriteId.value);
-  } catch {
-    ElMessage.error('获取收藏夹详情失败');
+  } catch (error) {
+    logger.error('[FavoriteDetail]', '获取收藏夹详情失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error('获取收藏夹详情失败');
+    }
     router.push('/favorites');
   } finally {
     loading.value = false;
@@ -343,7 +347,10 @@ const removeResource = async (resourceId: string) => {
     await favoriteStore.removeResourceFromFavorite(favoriteId.value, resourceId);
     ElMessage.success('移除成功');
   } catch (error) {
-    ElMessage.error(getErrorMessage(error, '移除失败'));
+    logger.error('[FavoriteDetail]', '移除资源失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '移除失败'));
+    }
   }
 };
 
@@ -439,7 +446,10 @@ const handleServerDownload = async () => {
     await downloadFavorite(favoriteId.value, currentFavorite.value?.name);
     ElMessage.success('开始下载');
   } catch (error) {
-    ElMessage.error(getErrorMessage(error, '下载失败'));
+    logger.error('[FavoriteDetail]', '服务器打包下载失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '下载失败'));
+    }
   } finally {
     downloading.value = false;
   }
@@ -478,12 +488,15 @@ const handleBrowserDownload = async () => {
 
     ElMessage.success('浏览器打包下载完成');
   } catch (error) {
+    logger.error('[FavoriteDetail]', '浏览器打包下载失败', error);
     browserDownloadProgress.value = {
       ...browserDownloadProgress.value,
       status: 'error',
       error: getErrorMessage(error, '下载失败'),
     };
-    ElMessage.error(getErrorMessage(error, '浏览器打包下载失败'));
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '浏览器打包下载失败'));
+    }
   } finally {
     isBrowserDownloading.value = false;
   }
@@ -586,7 +599,10 @@ const handleFolderDownload = async () => {
       error: message || '下载失败',
     };
     if (message && !message.includes('取消')) {
-      ElMessage.error(message || '下载到文件夹失败');
+      logger.error('[FavoriteDetail]', '下载到文件夹失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error(message || '下载到文件夹失败');
+      }
     }
   } finally {
     isFolderDownloading.value = false;
@@ -638,7 +654,10 @@ const handleDelete = async () => {
     router.push('/favorites');
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(getErrorMessage(error, '删除失败'));
+      logger.error('[FavoriteDetail]', '删除收藏夹失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error(getErrorMessage(error, '删除失败'));
+      }
     }
   }
 };

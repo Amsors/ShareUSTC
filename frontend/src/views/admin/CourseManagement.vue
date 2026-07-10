@@ -339,7 +339,8 @@ import type {
 import { SemesterOptions } from '@/types/course';
 import type { CourseListItem, CreateCourseRequest, UpdateCourseRequest } from '@/types/course';
 import type { UploadFile } from 'element-plus';
-import { getErrorMessage } from '@/api/request';
+import { getErrorMessage, isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 const loading = ref(false);
 const submitting = ref(false);
@@ -430,7 +431,10 @@ const handleBatchImport = async () => {
         fetchCourses();
       }
     } catch (error) {
-      ElMessage.error(getErrorMessage(error, '导入失败'));
+      logger.error('[CourseManagement]', '批量导入课程失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error(getErrorMessage(error, '导入失败'));
+      }
     } finally {
       batchImportLoading.value = false;
     }
@@ -448,8 +452,11 @@ const handleBatchImport = async () => {
         ElMessage.error('JSON格式错误：必须为数组格式');
         return;
       }
-    } catch {
-      ElMessage.error('JSON解析失败，请检查格式');
+    } catch (error) {
+      logger.error('[CourseManagement]', 'JSON 解析失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error('JSON解析失败，请检查格式');
+      }
       return;
     }
 
@@ -468,7 +475,10 @@ const handleBatchImport = async () => {
         fetchCourses();
       }
     } catch (error) {
-      ElMessage.error(getErrorMessage(error, '导入失败'));
+      logger.error('[CourseManagement]', '批量导入课程失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error(getErrorMessage(error, '导入失败'));
+      }
     } finally {
       batchImportLoading.value = false;
     }
@@ -515,7 +525,10 @@ const handleBatchDelete = async () => {
       fetchCourses();
     }
   } catch (error) {
-    ElMessage.error(getErrorMessage(error, '删除失败'));
+    logger.error('[CourseManagement]', '批量删除课程失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '删除失败'));
+    }
   } finally {
     batchDeleteLoading.value = false;
   }
@@ -533,8 +546,11 @@ const fetchCourses = async () => {
     });
     courses.value = res.courses;
     total.value = res.total;
-  } catch {
-    ElMessage.error('获取课程列表失败');
+  } catch (error) {
+    logger.error('[CourseManagement]', '获取课程列表失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error('获取课程列表失败');
+    }
   } finally {
     loading.value = false;
   }
@@ -583,7 +599,10 @@ const handleSubmit = async () => {
     dialogVisible.value = false;
     fetchCourses();
   } catch (error) {
-    ElMessage.error(getErrorMessage(error, '操作失败'));
+    logger.error('[CourseManagement]', '提交课程信息失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '操作失败'));
+    }
   } finally {
     submitting.value = false;
   }
@@ -594,9 +613,12 @@ const handleStatusChange = async (row: CourseListItem, val: boolean) => {
   try {
     await updateCourseStatus(row.sn, val);
     ElMessage.success(val ? '课程已启用' : '课程已禁用');
-  } catch {
+  } catch (error) {
+    logger.error('[CourseManagement]', '切换课程状态失败', error);
     row.isActive = !val; // 回滚
-    ElMessage.error('操作失败');
+    if (!isHandledError(error)) {
+      ElMessage.error('操作失败');
+    }
   }
 };
 
@@ -611,7 +633,10 @@ const handleDelete = async (row: CourseListItem) => {
     fetchCourses();
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(getErrorMessage(error, '删除失败'));
+      logger.error('[CourseManagement]', '删除课程失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error(getErrorMessage(error, '删除失败'));
+      }
     }
   }
 };

@@ -192,6 +192,7 @@ import { ElMessage } from 'element-plus';
 import { checkDuplicateResources } from '../../api/admin';
 import type { DuplicateResourceCheckResponse } from '../../types/admin';
 import { isHandledError, getErrorMessage } from '@/api/request';
+import logger from '@/utils/logger';
 import { ResourceTypeLabels, type ResourceTypeType, formatFileSize } from '../../types/resource';
 
 const loading = ref(false);
@@ -229,6 +230,7 @@ const handleCheck = async () => {
       ElMessage.success('未发现重复资源');
     }
   } catch (error) {
+    logger.error('[DuplicateResourceCheck]', '检测重复资源失败', error);
     if (!isHandledError(error)) {
       ElMessage.error('检测失败：' + getErrorMessage(error));
     }

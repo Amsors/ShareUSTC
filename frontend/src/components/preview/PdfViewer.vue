@@ -168,7 +168,7 @@ import {
 } from '../../api/resource';
 import logger from '../../utils/logger';
 import { ElMessage } from 'element-plus';
-import { getErrorMessage } from '@/api/request';
+import { getErrorMessage, isHandledError } from '@/api/request';
 
 // 设置 PDF.js worker - 使用 Vite 的 worker 导入
 pdfjsLib.GlobalWorkerOptions.workerPort = new PDFWorker();
@@ -294,7 +294,9 @@ const enableAutoLoad = () => {
     loadPdf();
   } catch (e) {
     logger.error('[PdfViewer]', 'Failed to enable auto load:', e);
-    ElMessage.error('设置保存失败');
+    if (!isHandledError(e)) {
+      ElMessage.error('设置保存失败');
+    }
   }
 };
 
@@ -584,7 +586,9 @@ const downloadPdf = async () => {
     ElMessage.success('已开始下载');
   } catch (err) {
     logger.error('[PdfViewer]', 'PDF下载失败', err);
-    ElMessage.error('下载失败，请稍后重试');
+    if (!isHandledError(err)) {
+      ElMessage.error('下载失败，请稍后重试');
+    }
   }
 };
 

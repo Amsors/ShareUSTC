@@ -94,6 +94,7 @@ const loadComments = async () => {
     comments.value = result.comments;
     total.value = result.total;
   } catch (error) {
+    logger.error('[CommentSection]', '获取评论失败', error);
     if (!isHandledError(error)) {
       ElMessage.error(getErrorMessage(error, '获取评论失败'));
     }

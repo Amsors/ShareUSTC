@@ -118,6 +118,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { Refresh, UserFilled, Document, Clock } from '@element-plus/icons-vue';
 import { getCommentList, auditComment, deleteComment } from '../../api/admin';
 import { isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 interface Comment {
   id: string;
@@ -174,6 +175,7 @@ const fetchComments = async () => {
     comments.value = data.comments;
     total.value = data.total;
   } catch (error) {
+    logger.error('[CommentManagement]', '获取评论列表失败', error);
     if (!isHandledError(error)) {
       ElMessage.error('获取评论列表失败');
     }
@@ -203,8 +205,11 @@ const handleApprove = async (comment: Comment) => {
     ElMessage.success('评论已通过');
     fetchComments();
   } catch (error) {
-    if (error !== 'cancel' && !isHandledError(error)) {
-      ElMessage.error('操作失败');
+    if (error !== 'cancel') {
+      logger.error('[CommentManagement]', '通过评论失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error('操作失败');
+      }
     }
   }
 };
@@ -221,8 +226,11 @@ const handleReject = async (comment: Comment) => {
     ElMessage.success('评论已拒绝');
     fetchComments();
   } catch (error) {
-    if (error !== 'cancel' && !isHandledError(error)) {
-      ElMessage.error('操作失败');
+    if (error !== 'cancel') {
+      logger.error('[CommentManagement]', '拒绝评论失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error('操作失败');
+      }
     }
   }
 };
@@ -239,8 +247,11 @@ const handleDelete = async (comment: Comment) => {
     ElMessage.success('评论已删除');
     fetchComments();
   } catch (error) {
-    if (error !== 'cancel' && !isHandledError(error)) {
-      ElMessage.error('删除失败');
+    if (error !== 'cancel') {
+      logger.error('[CommentManagement]', '删除评论失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error('删除失败');
+      }
     }
   }
 };

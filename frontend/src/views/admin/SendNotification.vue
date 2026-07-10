@@ -115,6 +115,7 @@ import { Bell, Promotion } from '@element-plus/icons-vue';
 import { sendNotification } from '../../api/admin';
 import type { SendNotificationRequest } from '../../types/admin';
 import { isHandledError, getErrorMessage } from '@/api/request';
+import logger from '@/utils/logger';
 
 const formRef = ref<FormInstance>();
 const sending = ref(false);
@@ -212,6 +213,7 @@ const handleSend = async () => {
       ElMessage.success('通知发送成功');
       handleReset();
     } catch (error) {
+      logger.error('[SendNotification]', '发送通知失败', error);
       if (!isHandledError(error)) {
         ElMessage.error(getErrorMessage(error, '发送失败'));
       }

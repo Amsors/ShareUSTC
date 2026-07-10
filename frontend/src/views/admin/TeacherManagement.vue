@@ -299,7 +299,8 @@ import type {
   BatchDeleteTeachersResult,
 } from '@/types/admin';
 import type { UploadFile } from 'element-plus';
-import { getErrorMessage } from '@/api/request';
+import { getErrorMessage, isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 const loading = ref(false);
 const submitting = ref(false);
@@ -389,7 +390,10 @@ const handleBatchImport = async () => {
         fetchTeachers();
       }
     } catch (error) {
-      ElMessage.error(getErrorMessage(error, '导入失败'));
+      logger.error('[TeacherManagement]', '批量导入教师失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error(getErrorMessage(error, '导入失败'));
+      }
     } finally {
       batchImportLoading.value = false;
     }
@@ -407,8 +411,11 @@ const handleBatchImport = async () => {
         ElMessage.error('JSON格式错误：必须为数组格式');
         return;
       }
-    } catch {
-      ElMessage.error('JSON解析失败，请检查格式');
+    } catch (error) {
+      logger.error('[TeacherManagement]', 'JSON 解析失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error('JSON解析失败，请检查格式');
+      }
       return;
     }
 
@@ -427,7 +434,10 @@ const handleBatchImport = async () => {
         fetchTeachers();
       }
     } catch (error) {
-      ElMessage.error(getErrorMessage(error, '导入失败'));
+      logger.error('[TeacherManagement]', '批量导入教师失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error(getErrorMessage(error, '导入失败'));
+      }
     } finally {
       batchImportLoading.value = false;
     }
@@ -474,7 +484,10 @@ const handleBatchDelete = async () => {
       fetchTeachers();
     }
   } catch (error) {
-    ElMessage.error(getErrorMessage(error, '删除失败'));
+    logger.error('[TeacherManagement]', '批量删除教师失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '删除失败'));
+    }
   } finally {
     batchDeleteLoading.value = false;
   }
@@ -503,8 +516,11 @@ const fetchTeachers = async () => {
     });
     teachers.value = res.teachers;
     total.value = res.total;
-  } catch {
-    ElMessage.error('获取教师列表失败');
+  } catch (error) {
+    logger.error('[TeacherManagement]', '获取教师列表失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error('获取教师列表失败');
+    }
   } finally {
     loading.value = false;
   }
@@ -548,7 +564,10 @@ const handleSubmit = async () => {
     dialogVisible.value = false;
     fetchTeachers();
   } catch (error) {
-    ElMessage.error(getErrorMessage(error, '操作失败'));
+    logger.error('[TeacherManagement]', '提交教师信息失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '操作失败'));
+    }
   } finally {
     submitting.value = false;
   }
@@ -559,9 +578,12 @@ const handleStatusChange = async (row: TeacherListItem, val: boolean) => {
   try {
     await updateTeacherStatus(row.sn, val);
     ElMessage.success(val ? '教师已启用' : '教师已禁用');
-  } catch {
+  } catch (error) {
+    logger.error('[TeacherManagement]', '切换教师状态失败', error);
     row.isActive = !val; // 回滚
-    ElMessage.error('操作失败');
+    if (!isHandledError(error)) {
+      ElMessage.error('操作失败');
+    }
   }
 };
 
@@ -576,7 +598,10 @@ const handleDelete = async (row: TeacherListItem) => {
     fetchTeachers();
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(getErrorMessage(error, '删除失败'));
+      logger.error('[TeacherManagement]', '删除教师失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error(getErrorMessage(error, '删除失败'));
+      }
     }
   }
 };

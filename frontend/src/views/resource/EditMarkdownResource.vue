@@ -80,7 +80,8 @@ import {
   updateResourceContent,
 } from '../../api/resource';
 import type { ResourceDetail } from '../../types/resource';
-import { getErrorMessage } from '@/api/request';
+import { getErrorMessage, isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 const route = useRoute();
 const router = useRouter();
@@ -214,7 +215,10 @@ const handleSave = async () => {
       // 用户选择继续编辑
     }
   } catch (err) {
-    ElMessage.error(getErrorMessage(err, '保存失败'));
+    logger.error('[EditMarkdownResource]', '保存资源失败', err);
+    if (!isHandledError(err)) {
+      ElMessage.error(getErrorMessage(err, '保存失败'));
+    }
   } finally {
     saving.value = false;
   }

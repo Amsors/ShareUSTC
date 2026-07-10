@@ -187,6 +187,7 @@ import { Collection, Timer, Delete, Refresh, Setting } from '@element-plus/icons
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { resourceCache, type CacheStats } from '../utils/resourceCache';
 import logger from '../utils/logger';
+import { isHandledError } from '@/api/request';
 
 const router = useRouter();
 
@@ -241,8 +242,11 @@ const refreshStats = async () => {
   loading.value = true;
   try {
     cacheStats.value = await resourceCache.getStats();
-  } catch {
-    ElMessage.error('获取缓存信息失败');
+  } catch (error) {
+    logger.error('[Settings]', '获取缓存信息失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error('获取缓存信息失败');
+    }
   } finally {
     loading.value = false;
   }
@@ -255,8 +259,11 @@ const handleClearExpired = async () => {
     const count = await resourceCache.clearExpired();
     ElMessage.success(`已清理 ${count} 个过期缓存`);
     await refreshStats();
-  } catch {
-    ElMessage.error('清理失败');
+  } catch (error) {
+    logger.error('[Settings]', '清理过期缓存失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error('清理失败');
+    }
   } finally {
     clearingExpired.value = false;
   }
@@ -281,7 +288,10 @@ const handleClearAll = async () => {
     await refreshStats();
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('清空失败');
+      logger.error('[Settings]', '清空缓存失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error('清空失败');
+      }
     }
   } finally {
     clearingAll.value = false;
@@ -375,7 +385,9 @@ const handleAutoLoadPdfPreviewChange = (value: boolean) => {
     }
   } catch (e) {
     logger.error('[Settings]', 'Failed to save PDF preview setting:', e);
-    ElMessage.error('设置保存失败');
+    if (!isHandledError(e)) {
+      ElMessage.error('设置保存失败');
+    }
   }
 };
 
@@ -397,7 +409,9 @@ const handleThresholdChange = (value: number) => {
     ElMessage.success(`已设置自动加载阈值：${value}MB`);
   } catch (e) {
     logger.error('[Settings]', 'Failed to save threshold setting:', e);
-    ElMessage.error('设置保存失败');
+    if (!isHandledError(e)) {
+      ElMessage.error('设置保存失败');
+    }
   }
 };
 
@@ -457,7 +471,9 @@ const handleUserGuideChange = (value: boolean) => {
     }
   } catch (e) {
     logger.error('[Settings]', 'Failed to save user guide modal setting:', e);
-    ElMessage.error('设置保存失败');
+    if (!isHandledError(e)) {
+      ElMessage.error('设置保存失败');
+    }
   }
 };
 
@@ -481,7 +497,9 @@ const handleResourceGuideChange = (value: boolean) => {
     }
   } catch (e) {
     logger.error('[Settings]', 'Failed to save resource guide modal setting:', e);
-    ElMessage.error('设置保存失败');
+    if (!isHandledError(e)) {
+      ElMessage.error('设置保存失败');
+    }
   }
 };
 
@@ -521,7 +539,9 @@ const handleFilterEmptyResourcesChange = (value: boolean) => {
     }
   } catch (e) {
     logger.error('[Settings]', 'Failed to save filter empty resources setting:', e);
-    ElMessage.error('设置保存失败');
+    if (!isHandledError(e)) {
+      ElMessage.error('设置保存失败');
+    }
   }
 };
 </script>

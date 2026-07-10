@@ -131,6 +131,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { Refresh } from '@element-plus/icons-vue';
 import { getPendingResources, auditResource } from '../../api/admin';
 import { isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 interface Resource {
   id: string;
@@ -174,6 +175,7 @@ const fetchResources = async () => {
     total.value = data.total;
     pendingCount.value = data.total;
   } catch (error) {
+    logger.error('[ResourceAudit]', '获取待审核资源失败', error);
     if (!isHandledError(error)) {
       ElMessage.error('获取待审核资源失败');
     }
@@ -198,8 +200,11 @@ const handleApprove = async (resource: Resource) => {
     ElMessage.success('资源审核通过');
     fetchResources();
   } catch (error) {
-    if (error !== 'cancel' && !isHandledError(error)) {
-      ElMessage.error('操作失败');
+    if (error !== 'cancel') {
+      logger.error('[ResourceAudit]', '通过资源失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error('操作失败');
+      }
     }
   }
 };
@@ -224,6 +229,7 @@ const confirmReject = async () => {
     rejectDialogVisible.value = false;
     fetchResources();
   } catch (error) {
+    logger.error('[ResourceAudit]', '拒绝资源失败', error);
     if (!isHandledError(error)) {
       ElMessage.error('操作失败');
     }

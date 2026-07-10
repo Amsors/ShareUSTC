@@ -142,6 +142,7 @@ import { ResourceTypeLabels, getResourceTypeColor as getTypeColor } from '../../
 import { UserFilled, View, Download, Star, Loading } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { getErrorMessage, isApiError, isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 const route = useRoute();
 
@@ -218,6 +219,7 @@ const loadHomepage = async () => {
       perPage: perPage.value,
     });
   } catch (error) {
+    logger.error('[UserHomepage]', '加载用户主页失败', error);
     if (isApiError(error) && error.status === 404) {
       notFound.value = true;
     } else if (!isHandledError(error)) {

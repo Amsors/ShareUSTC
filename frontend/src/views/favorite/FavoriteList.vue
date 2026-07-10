@@ -109,7 +109,8 @@ import { useFavoriteStore } from '../../stores/favorite';
 import type { Favorite } from '../../types/favorite';
 import CreateFavoriteModal from '../../components/favorite/CreateFavoriteModal.vue';
 import { useDefaultFavorite } from '../../composables/useDefaultFavorite';
-import { getErrorMessage } from '@/api/request';
+import { getErrorMessage, isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 const router = useRouter();
 const favoriteStore = useFavoriteStore();
@@ -141,8 +142,11 @@ const fetchFavorites = async () => {
   loading.value = true;
   try {
     await favoriteStore.fetchFavorites();
-  } catch {
-    ElMessage.error('获取收藏夹列表失败');
+  } catch (error) {
+    logger.error('[FavoriteList]', '获取收藏夹列表失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error('获取收藏夹列表失败');
+    }
   } finally {
     loading.value = false;
   }
@@ -182,7 +186,10 @@ const handleDelete = async (favorite: Favorite) => {
     ElMessage.success('删除成功');
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(getErrorMessage(error, '删除失败'));
+      logger.error('[FavoriteList]', '删除收藏夹失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error(getErrorMessage(error, '删除失败'));
+      }
     }
   }
 };

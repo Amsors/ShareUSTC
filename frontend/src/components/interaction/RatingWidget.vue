@@ -214,6 +214,7 @@ const handleSubmitRating = async () => {
     showRatingDialog.value = false;
     await loadRatingInfo();
   } catch (error) {
+    logger.error('[RatingWidget]', '提交评分失败', error);
     if (!isHandledError(error)) {
       ElMessage.error(getErrorMessage(error, '评分提交失败'));
     }
@@ -246,7 +247,10 @@ const handleDeleteRating = async () => {
     await loadRatingInfo();
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(getErrorMessage(error, '删除失败'));
+      logger.error('[RatingWidget]', '删除评分失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error(getErrorMessage(error, '删除失败'));
+      }
     }
   } finally {
     submitting.value = false;

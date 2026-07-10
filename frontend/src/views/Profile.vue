@@ -584,6 +584,7 @@ const handleChangePassword = async () => {
         ElMessage.success('密码修改成功');
         resetPasswordForm();
       } catch (error) {
+        logger.error('[Profile]', '修改密码失败', error);
         // 错误已在 request.ts 中统一处理
         if (isApiError(error) && error.status === 401) {
           ElMessage.error('原密码错误');
@@ -640,6 +641,7 @@ const loadUserImages = async () => {
     userImages.value = result.images;
     imagesTotal.value = result.total;
   } catch (error) {
+    logger.error('[Profile]', '加载图片失败', error);
     if (!isHandledError(error)) {
       ElMessage.error(getErrorMessage(error, '加载图片失败'));
     }
@@ -687,8 +689,11 @@ const deleteUserImage = async (image: Image) => {
 
     await loadUserImages();
   } catch (error) {
-    if (error !== 'cancel' && !isHandledError(error)) {
-      ElMessage.error(getErrorMessage(error, '删除失败'));
+    if (error !== 'cancel') {
+      logger.error('[Profile]', '删除图片失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error(getErrorMessage(error, '删除失败'));
+      }
     }
   }
 };
@@ -707,6 +712,7 @@ const loadUserResources = async () => {
     userResources.value = result.resources;
     resourcesTotal.value = result.total;
   } catch (error) {
+    logger.error('[Profile]', '加载资源失败', error);
     if (!isHandledError(error)) {
       ElMessage.error(getErrorMessage(error, '加载资源失败'));
     }
@@ -734,8 +740,11 @@ const deleteUserResource = async (resource: ResourceListItem) => {
 
     await loadUserResources();
   } catch (error) {
-    if (error !== 'cancel' && !isHandledError(error)) {
-      ElMessage.error(getErrorMessage(error, '删除失败'));
+    if (error !== 'cancel') {
+      logger.error('[Profile]', '删除资源失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error(getErrorMessage(error, '删除失败'));
+      }
     }
   }
 };
@@ -831,6 +840,7 @@ const saveProfile = async () => {
     authStore.updateUserInfo(updatedUser);
     ElMessage.success('资料更新成功');
   } catch (error) {
+    logger.error('[Profile]', '更新资料失败', error);
     if (!isHandledError(error)) {
       ElMessage.error(getErrorMessage(error, '更新失败'));
     }
@@ -851,6 +861,7 @@ const submitVerification = async () => {
     // 切换到概览页面，让用户看到已认证状态
     activeMenu.value = 'overview';
   } catch (error) {
+    logger.error('[Profile]', '实名认证失败', error);
     if (!isHandledError(error)) {
       ElMessage.error(getErrorMessage(error, '认证失败'));
     }

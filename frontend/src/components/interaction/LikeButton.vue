@@ -62,6 +62,7 @@ const handleToggleLike = async () => {
     ElMessage.success(result.message);
     emit('update', isLiked.value, likeCount.value);
   } catch (error) {
+    logger.error('[LikeButton]', '切换点赞失败', error);
     if (!isHandledError(error)) {
       ElMessage.error(getErrorMessage(error, '操作失败'));
     }

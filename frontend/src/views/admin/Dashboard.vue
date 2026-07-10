@@ -104,6 +104,7 @@ import { UserFilled, Document, Download, Warning, ChatDotSquare } from '@element
 import { ElMessage } from 'element-plus';
 import { getDashboardStats } from '../../api/admin';
 import { isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 interface DashboardStats {
   totalUsers: number;
@@ -151,6 +152,7 @@ const fetchStats = async () => {
     const data = await getDashboardStats();
     stats.value = data;
   } catch (error) {
+    logger.error('[Dashboard]', '获取统计数据失败', error);
     if (!isHandledError(error)) {
       ElMessage.error('获取统计数据失败');
     }

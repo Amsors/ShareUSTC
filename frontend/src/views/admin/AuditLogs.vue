@@ -167,6 +167,7 @@ import { Search, User, Loading } from '@element-plus/icons-vue';
 import { getAuditLogs } from '../../api/admin';
 import type { AuditLogItem, AuditLogQuery } from '../../types/admin';
 import { isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 const logs = ref<AuditLogItem[]>([]);
 const total = ref(0);
@@ -210,6 +211,7 @@ const fetchLogs = async () => {
     logs.value = response.logs;
     total.value = response.total;
   } catch (error) {
+    logger.error('[AuditLogs]', '获取操作日志失败', error);
     if (!isHandledError(error)) {
       ElMessage.error('获取操作日志失败');
     }

@@ -229,6 +229,7 @@ import {
 import { getDetailedStats } from '../../api/admin';
 import type { DetailedStats } from '../../types/admin';
 import { isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 const router = useRouter();
 const stats = ref<DetailedStats | null>(null);
@@ -240,6 +241,7 @@ const fetchStats = async () => {
     const data = await getDetailedStats();
     stats.value = data;
   } catch (error) {
+    logger.error('[DetailedStats]', '获取统计数据失败', error);
     if (!isHandledError(error)) {
       ElMessage.error('获取统计数据失败');
     }

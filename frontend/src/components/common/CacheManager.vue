@@ -74,6 +74,8 @@ import { ref, onMounted, computed } from 'vue';
 import { Timer, Delete, Refresh } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { resourceCache, type CacheStats } from '../../utils/resourceCache';
+import { isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 const loading = ref(false);
 const clearingExpired = ref(false);
@@ -116,8 +118,11 @@ const refreshStats = async () => {
   loading.value = true;
   try {
     stats.value = await resourceCache.getStats();
-  } catch {
-    ElMessage.error('获取缓存信息失败');
+  } catch (error) {
+    logger.error('[CacheManager]', '获取缓存信息失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error('获取缓存信息失败');
+    }
   } finally {
     loading.value = false;
   }
@@ -130,8 +135,11 @@ const handleClearExpired = async () => {
     const count = await resourceCache.clearExpired();
     ElMessage.success(`已清理 ${count} 个过期缓存`);
     await refreshStats();
-  } catch {
-    ElMessage.error('清理失败');
+  } catch (error) {
+    logger.error('[CacheManager]', '清理过期缓存失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error('清理失败');
+    }
   } finally {
     clearingExpired.value = false;
   }
@@ -156,7 +164,10 @@ const handleClearAll = async () => {
     await refreshStats();
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('清空失败');
+      logger.error('[CacheManager]', '清空缓存失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error('清空失败');
+      }
     }
   } finally {
     clearingAll.value = false;

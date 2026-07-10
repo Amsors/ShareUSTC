@@ -75,7 +75,8 @@ import { Plus, Folder, Check } from '@element-plus/icons-vue';
 import { useFavoriteStore } from '../../stores/favorite';
 import { storeToRefs } from 'pinia';
 import * as favoriteApi from '../../api/favorite';
-import { getErrorMessage } from '@/api/request';
+import { getErrorMessage, isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -135,8 +136,11 @@ const fetchData = async () => {
 
     // 设置已选中的收藏夹
     selectedFavorites.value = new Set(statusRes.inFavorites);
-  } catch {
-    ElMessage.error('获取数据失败');
+  } catch (error) {
+    logger.error('[AddToFavoriteModal]', '获取收藏夹数据失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error('获取数据失败');
+    }
   } finally {
     loading.value = false;
   }
@@ -169,8 +173,11 @@ const toggleFavorite = async (favoriteId: string) => {
     }
     emit('success');
   } catch (error) {
-    const errorMessage = getErrorMessage(error, '操作失败');
-    ElMessage.error(errorMessage);
+    logger.error('[AddToFavoriteModal]', '切换收藏夹失败', error);
+    if (!isHandledError(error)) {
+      const errorMessage = getErrorMessage(error, '操作失败');
+      ElMessage.error(errorMessage);
+    }
   }
 };
 
@@ -204,7 +211,10 @@ const handleCreateNew = async () => {
       ElMessage.success('创建成功');
     }
   } catch (error) {
-    ElMessage.error(getErrorMessage(error, '创建失败'));
+    logger.error('[AddToFavoriteModal]', '创建收藏夹失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '创建失败'));
+    }
   } finally {
     creating.value = false;
   }

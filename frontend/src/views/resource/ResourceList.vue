@@ -418,8 +418,10 @@ const handleAddAllCurrentPage = async () => {
       ElMessage.error(`添加失败，${failCount} 份资源未能加入收藏夹`);
     }
   } catch (error) {
-    ElMessage.error('批量添加失败，请稍后重试');
     logger.error('[ResourceList]', '批量添加所有资源失败:', error);
+    if (!isHandledError(error)) {
+      ElMessage.error('批量添加失败，请稍后重试');
+    }
   } finally {
     batchAddingAll.value = false;
   }
@@ -452,9 +454,12 @@ const handleResourceCardClick = async (resource: ResourceListItem) => {
       ElMessage.warning('该资源已在收藏夹中');
     }
   } catch (error) {
+    logger.error('[ResourceList]', '添加资源到收藏夹失败', error);
     // 只有非业务错误才显示错误弹窗
-    const errorMessage = getErrorMessage(error, '添加失败');
-    ElMessage.error(errorMessage);
+    if (!isHandledError(error)) {
+      const errorMessage = getErrorMessage(error, '添加失败');
+      ElMessage.error(errorMessage);
+    }
   } finally {
     addingResourceId.value = null;
   }
@@ -592,6 +597,7 @@ const loadResources = async () => {
     resources.value = response.resources;
     total.value = response.total;
   } catch (error) {
+    logger.error('[ResourceList]', '加载资源列表失败', error);
     if (!isHandledError(error)) {
       ElMessage.error(getErrorMessage(error, '加载资源列表失败'));
     }

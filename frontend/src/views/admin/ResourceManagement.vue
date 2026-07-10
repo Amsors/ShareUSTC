@@ -211,7 +211,8 @@ import {
   deleteAllFavoriteResources,
 } from '../../api/admin';
 import type { AdminResource, AdminFavorite } from '../../types/admin';
-import { getErrorMessage } from '@/api/request';
+import { getErrorMessage, isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 const authStore = useAuthStore();
 
@@ -246,7 +247,10 @@ const fetchResources = async () => {
     resources.value = response.resources;
     total.value = response.total;
   } catch (error) {
-    ElMessage.error(getErrorMessage(error, '获取资源列表失败'));
+    logger.error('[ResourceManagement]', '获取资源列表失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '获取资源列表失败'));
+    }
   } finally {
     loading.value = false;
   }
@@ -259,7 +263,10 @@ const fetchFavorites = async () => {
     const response = await getAdminFavorites();
     favorites.value = response.favorites;
   } catch (error) {
-    ElMessage.error(getErrorMessage(error, '获取收藏夹列表失败'));
+    logger.error('[ResourceManagement]', '获取收藏夹列表失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '获取收藏夹列表失败'));
+    }
   } finally {
     favoritesLoading.value = false;
   }
@@ -303,7 +310,10 @@ const handleDeleteResource = async (resource: AdminResource) => {
     fetchResources();
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(getErrorMessage(error, '删除失败'));
+      logger.error('[ResourceManagement]', '删除资源失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error(getErrorMessage(error, '删除失败'));
+      }
     }
   } finally {
     loading.value = false;
@@ -331,7 +341,10 @@ const handleDeleteFavoriteResources = async (favorite: AdminFavorite) => {
     fetchResources();
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(getErrorMessage(error, '删除失败'));
+      logger.error('[ResourceManagement]', '删除收藏夹资源失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error(getErrorMessage(error, '删除失败'));
+      }
     }
   } finally {
     favoritesLoading.value = false;
@@ -373,7 +386,10 @@ const handleRecalculateHash = async (resource: AdminResource) => {
     fetchResources();
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(getErrorMessage(error, '重新计算Hash失败'));
+      logger.error('[ResourceManagement]', '重新计算 Hash 失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error(getErrorMessage(error, '重新计算Hash失败'));
+      }
     }
   } finally {
     recalculatingId.value = null;

@@ -179,6 +179,7 @@ import { UserFilled, Search } from '@element-plus/icons-vue';
 import { getUserList, updateUserStatus, getUserRealInfo } from '../../api/admin';
 import type { UserRealInfo } from '../../types/admin';
 import { isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 interface User {
   id: string;
@@ -246,6 +247,7 @@ const fetchUsers = async () => {
     users.value = data.users;
     total.value = data.total;
   } catch (error) {
+    logger.error('[UserManagement]', '获取用户列表失败', error);
     if (!isHandledError(error)) {
       ElMessage.error('获取用户列表失败');
     }
@@ -267,8 +269,11 @@ const toggleUserStatus = async (user: User) => {
     ElMessage.success(`用户已${action}`);
     fetchUsers();
   } catch (error) {
-    if (error !== 'cancel' && !isHandledError(error)) {
-      ElMessage.error('操作失败');
+    if (error !== 'cancel') {
+      logger.error('[UserManagement]', '切换用户状态失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error('操作失败');
+      }
     }
   }
 };
@@ -283,6 +288,7 @@ const showUserRealInfo = async (user: User) => {
     const data = await getUserRealInfo(user.id);
     currentRealInfo.value = data;
   } catch (error) {
+    logger.error('[UserManagement]', '获取实名信息失败', error);
     if (!isHandledError(error)) {
       ElMessage.error('获取实名信息失败');
     }

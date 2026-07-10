@@ -237,6 +237,7 @@ import type { HotResourceItem } from '../types/resource';
 import { ResourceTypeLabels } from '../types/resource';
 import UserGuideModal from '../components/common/UserGuideModal.vue';
 import logger from '../utils/logger';
+import { isHandledError } from '@/api/request';
 import { homeConfig } from '../config/site.config';
 import {
   Search,
@@ -330,7 +331,9 @@ const fetchHotResources = async () => {
     }
   } catch (error) {
     logger.error('[Home]', '获取热门资源失败:', error);
-    ElMessage.error('获取热门资源失败');
+    if (!isHandledError(error)) {
+      ElMessage.error('获取热门资源失败');
+    }
   } finally {
     loadingHot.value = false;
   }

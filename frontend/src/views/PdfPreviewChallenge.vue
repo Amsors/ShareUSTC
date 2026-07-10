@@ -101,6 +101,7 @@ import {
   type PdfPreviewChallengeConfig,
 } from '../api/resource';
 import logger from '../utils/logger';
+import { isHandledError } from '@/api/request';
 
 const router = useRouter();
 const loading = ref(true);
@@ -143,7 +144,9 @@ const loadConfig = async () => {
     logger.info('[PdfPreviewChallenge]', 'Config loaded:', data);
   } catch (error) {
     logger.error('[PdfPreviewChallenge]', 'Failed to load config:', error);
-    ElMessage.error('加载配置失败');
+    if (!isHandledError(error)) {
+      ElMessage.error('加载配置失败');
+    }
   } finally {
     loading.value = false;
   }
@@ -193,7 +196,9 @@ const handleSubmit = async () => {
     }
   } catch (error) {
     logger.error('[PdfPreviewChallenge]', 'Verification failed:', error);
-    ElMessage.error('验证失败，请稍后重试');
+    if (!isHandledError(error)) {
+      ElMessage.error('验证失败，请稍后重试');
+    }
   } finally {
     verifying.value = false;
   }

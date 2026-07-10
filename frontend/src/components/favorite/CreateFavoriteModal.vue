@@ -41,7 +41,8 @@ import type { FormInstance, FormRules, InputInstance } from 'element-plus';
 import { ElMessage } from 'element-plus';
 import { useFavoriteStore } from '../../stores/favorite';
 import type { Favorite } from '../../types/favorite';
-import { getErrorMessage } from '@/api/request';
+import { getErrorMessage, isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -130,7 +131,10 @@ const handleSubmit = async () => {
       form.value.name = '';
       emit('success');
     } catch (error) {
-      ElMessage.error(getErrorMessage(error, props.isEdit ? '更新失败' : '创建失败'));
+      logger.error('[CreateFavoriteModal]', '保存收藏夹失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error(getErrorMessage(error, props.isEdit ? '更新失败' : '创建失败'));
+      }
     } finally {
       loading.value = false;
     }

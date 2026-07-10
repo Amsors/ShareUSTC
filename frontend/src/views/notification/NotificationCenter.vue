@@ -65,6 +65,7 @@ import type { Notification } from '../../types/notification';
 import NotificationList from '../../components/notification/NotificationList.vue';
 import { ElMessage } from 'element-plus';
 import { isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 const router = useRouter();
 const notificationStore = useNotificationStore();
@@ -106,6 +107,7 @@ async function handleMarkAsRead(notification: Notification) {
     await notificationStore.markNotificationAsRead(notification.id);
     ElMessage.success('已标记为已读');
   } catch (error) {
+    logger.error('[NotificationCenter]', '标记已读失败', error);
     if (!isHandledError(error)) {
       ElMessage.error('操作失败');
     }
@@ -118,6 +120,7 @@ async function handleMarkAllRead() {
     await notificationStore.markAllNotificationsAsRead();
     ElMessage.success('已全部标记为已读');
   } catch (error) {
+    logger.error('[NotificationCenter]', '标记全部已读失败', error);
     if (!isHandledError(error)) {
       ElMessage.error('操作失败');
     }

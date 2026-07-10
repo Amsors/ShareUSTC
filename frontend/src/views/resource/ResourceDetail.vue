@@ -425,6 +425,7 @@ import {
 } from '../../types/resource';
 import type { ResourceRatingInfo } from '../../types/rating';
 import { getErrorMessage, isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 const route = useRoute();
 const router = useRouter();
@@ -594,8 +595,11 @@ const copyResourceId = async (id: string) => {
     try {
       document.execCommand('copy');
       ElMessage.success('资源ID已复制到剪贴板');
-    } catch {
-      ElMessage.error('复制失败，请手动复制');
+    } catch (error) {
+      logger.error('[ResourceDetail]', '复制资源ID失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error('复制失败，请手动复制');
+      }
     }
     document.body.removeChild(textArea);
   }
@@ -620,6 +624,7 @@ const loadResourceDetail = async () => {
       await checkDefaultFavoriteStatus();
     }
   } catch (error) {
+    logger.error('[ResourceDetail]', '加载资源详情失败', error);
     if (!isHandledError(error)) {
       ElMessage.error(getErrorMessage(error, '加载资源详情失败'));
     }
@@ -646,6 +651,7 @@ const handleDownload = async () => {
     // 更新下载次数
     resource.value.stats.downloads++;
   } catch (error) {
+    logger.error('[ResourceDetail]', '下载资源失败', error);
     if (!isHandledError(error)) {
       ElMessage.error(getErrorMessage(error, '下载失败'));
     }
@@ -669,8 +675,11 @@ const handleDelete = async () => {
     ElMessage.success('删除成功');
     router.push('/resources');
   } catch (error) {
-    if (error !== 'cancel' && !isHandledError(error)) {
-      ElMessage.error(getErrorMessage(error, '删除失败'));
+    if (error !== 'cancel') {
+      logger.error('[ResourceDetail]', '删除资源失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error(getErrorMessage(error, '删除失败'));
+      }
     }
   }
 };
@@ -720,9 +729,12 @@ const addToDefaultFavorite = async () => {
       ElMessage.warning('该资源已在默认收藏夹中');
     }
   } catch (error) {
+    logger.error('[ResourceDetail]', '添加到默认收藏夹失败', error);
     // 只有非业务错误才显示错误弹窗
-    const errorMessage = getErrorMessage(error, '添加到默认收藏夹失败');
-    ElMessage.error(errorMessage);
+    if (!isHandledError(error)) {
+      const errorMessage = getErrorMessage(error, '添加到默认收藏夹失败');
+      ElMessage.error(errorMessage);
+    }
   } finally {
     addingToDefault.value = false;
   }
@@ -747,8 +759,11 @@ const saveDescription = async () => {
     resource.value.description = description ?? undefined;
     showEditDescription.value = false;
   } catch (error) {
-    const errorMessage = getErrorMessage(error, '更新失败');
-    ElMessage.error(errorMessage);
+    logger.error('[ResourceDetail]', '更新资源描述失败', error);
+    if (!isHandledError(error)) {
+      const errorMessage = getErrorMessage(error, '更新失败');
+      ElMessage.error(errorMessage);
+    }
   } finally {
     savingDescription.value = false;
   }
