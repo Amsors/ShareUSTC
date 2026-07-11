@@ -11,11 +11,7 @@
           </el-tag>
         </div>
 
-        <el-menu
-          :default-active="activeMenu"
-          class="profile-menu"
-          @select="handleMenuSelect"
-        >
+        <el-menu :default-active="activeMenu" class="profile-menu" @select="handleMenuSelect">
           <el-menu-item index="overview">
             <el-icon><User /></el-icon>
             <span>概览</span>
@@ -36,7 +32,7 @@
             <el-icon><Lock /></el-icon>
             <span>修改密码</span>
           </el-menu-item>
-          <el-menu-item index="verification" v-if="!authStore.isVerified">
+          <el-menu-item v-if="!authStore.isVerified" index="verification">
             <el-icon><CircleCheck /></el-icon>
             <span>实名认证</span>
           </el-menu-item>
@@ -73,15 +69,21 @@
           <el-card class="info-card">
             <template #header>
               <span>基本信息</span>
-              <el-button link type="primary" @click="activeMenu = 'settings'">
-                编辑资料
-              </el-button>
+              <el-button link type="primary" @click="activeMenu = 'settings'"> 编辑资料 </el-button>
             </template>
             <el-descriptions :column="2">
-              <el-descriptions-item label="用户编号">#{{ authStore.user?.sn ?? '-' }}</el-descriptions-item>
-              <el-descriptions-item label="用户名">{{ authStore.user?.username ?? '未知用户' }}</el-descriptions-item>
-              <el-descriptions-item label="邮箱">{{ authStore.user?.email || '未设置' }}</el-descriptions-item>
-              <el-descriptions-item label="注册时间">{{ formatDate(authStore.user?.createdAt) || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="用户编号"
+                >#{{ authStore.user?.sn ?? '-' }}</el-descriptions-item
+              >
+              <el-descriptions-item label="用户名">{{
+                authStore.user?.username ?? '未知用户'
+              }}</el-descriptions-item>
+              <el-descriptions-item label="邮箱">{{
+                authStore.user?.email || '未设置'
+              }}</el-descriptions-item>
+              <el-descriptions-item label="注册时间">{{
+                formatDate(authStore.user?.createdAt) || '-'
+              }}</el-descriptions-item>
               <el-descriptions-item label="认证状态">
                 <el-tag :type="authStore.isVerified ? 'success' : 'info'">
                   {{ authStore.isVerified ? '已认证' : '未认证' }}
@@ -92,10 +94,16 @@
             <!-- 个人简介 Markdown 渲染 -->
             <div class="bio-section">
               <h4>个人简介</h4>
-              <div v-if="authStore.user?.bio" class="bio-content markdown-body" v-html="renderedBio"></div>
+              <!-- eslint-disable vue/no-v-html 内容经 markdown-it（html:false）渲染，原始 HTML 已转义 -->
+              <div
+                v-if="authStore.user?.bio"
+                class="bio-content markdown-body"
+                v-html="renderedBio"
+              ></div>
               <el-empty v-else description="这个人很懒，还没有写简介...">
                 <el-button type="primary" @click="activeMenu = 'settings'">去编辑</el-button>
               </el-empty>
+              <!-- eslint-enable vue/no-v-html -->
             </div>
           </el-card>
         </div>
@@ -136,19 +144,18 @@
                   >
                     <el-icon><CopyDocument /></el-icon>
                   </el-button>
-                  <el-button
-                    type="danger"
-                    circle
-                    size="small"
-                    @click.stop="deleteUserImage(image)"
-                  >
+                  <el-button type="danger" circle size="small" @click.stop="deleteUserImage(image)">
                     <el-icon><Delete /></el-icon>
                   </el-button>
                 </div>
               </div>
               <div class="user-image-info">
-                <p class="user-image-name" :title="image.originalName">{{ image.originalName || '未命名' }}</p>
-                <p class="user-image-meta">{{ formatFileSize(image.fileSize) }} · {{ formatDate(image.createdAt) }}</p>
+                <p class="user-image-name" :title="image.originalName">
+                  {{ image.originalName || '未命名' }}
+                </p>
+                <p class="user-image-meta">
+                  {{ formatFileSize(image.fileSize) }} · {{ formatDate(image.createdAt) }}
+                </p>
               </div>
             </div>
           </div>
@@ -194,22 +201,35 @@
               </div>
 
               <div class="resource-meta">
-                <span v-if="resource.courseName" class="course-name">{{ resource.courseName }}</span>
+                <span v-if="resource.courseName" class="course-name">{{
+                  resource.courseName
+                }}</span>
                 <span class="resource-type">{{ resource.resourceType }}</span>
                 <span class="resource-category">{{ resource.category }}</span>
               </div>
 
-              <div class="resource-tags" v-if="resource.tags && resource.tags.length > 0">
-                <el-tag v-for="tag in resource.tags.slice(0, 3)" :key="tag" size="small" effect="plain">
+              <div v-if="resource.tags && resource.tags.length > 0" class="resource-tags">
+                <el-tag
+                  v-for="tag in resource.tags.slice(0, 3)"
+                  :key="tag"
+                  size="small"
+                  effect="plain"
+                >
                   {{ tag }}
                 </el-tag>
               </div>
 
               <div class="resource-footer">
                 <div class="resource-stats">
-                  <span><el-icon><View /></el-icon> {{ resource.stats.views }}</span>
-                  <span><el-icon><Download /></el-icon> {{ resource.stats.downloads }}</span>
-                  <span><el-icon><Star /></el-icon> {{ resource.stats.likes }}</span>
+                  <span
+                    ><el-icon><View /></el-icon> {{ resource.stats.views }}</span
+                  >
+                  <span
+                    ><el-icon><Download /></el-icon> {{ resource.stats.downloads }}</span
+                  >
+                  <span
+                    ><el-icon><Star /></el-icon> {{ resource.stats.likes }}</span
+                  >
                 </div>
                 <div class="resource-actions">
                   <el-button
@@ -229,12 +249,7 @@
                   >
                     编辑
                   </el-button>
-                  <el-button
-                    type="danger"
-                    link
-                    size="small"
-                    @click="deleteUserResource(resource)"
-                  >
+                  <el-button type="danger" link size="small" @click="deleteUserResource(resource)">
                     删除
                   </el-button>
                 </div>
@@ -263,7 +278,11 @@
                   v-model="profileForm.username"
                   :disabled="!siteConfigStore.allowUsernameChange"
                 />
-                <p v-if="!siteConfigStore.allowUsernameChange" class="form-hint" style="color: #909399;">
+                <p
+                  v-if="!siteConfigStore.allowUsernameChange"
+                  class="form-hint"
+                  style="color: #909399"
+                >
                   不允许修改用户名
                 </p>
               </el-form-item>
@@ -272,7 +291,11 @@
                   v-model="profileForm.email"
                   :disabled="!siteConfigStore.allowEmailChange"
                 />
-                <p v-if="!siteConfigStore.allowEmailChange" class="form-hint" style="color: #909399;">
+                <p
+                  v-if="!siteConfigStore.allowEmailChange"
+                  class="form-hint"
+                  style="color: #909399"
+                >
                   不允许修改邮箱
                 </p>
               </el-form-item>
@@ -289,27 +312,34 @@
                       <li>使用 Markdown 格式编写</li>
                       <li>在个人主页展示您的简介</li>
                     </ul>
-                    <el-button type="primary" size="small" @click="activeMenu = 'verification'">前往实名认证</el-button>
+                    <el-button type="primary" size="small" @click="activeMenu = 'verification'"
+                      >前往实名认证</el-button
+                    >
                   </el-alert>
                 </div>
                 <!-- 已实名用户显示编辑器 -->
                 <div v-else class="bio-editor-wrapper-wide">
                   <MarkdownEditor
                     :model-value="profileForm.bio || ''"
-                    @update:model-value="(val: string) => profileForm.bio = val"
                     :auto-save-key="`user_bio_${authStore.user?.id}`"
-                    style="height: 600px;"
+                    style="height: 600px"
+                    @update:model-value="(val: string) => (profileForm.bio = val)"
                   />
                 </div>
-                <p v-if="authStore.isVerified" class="form-hint">支持 Markdown 语法，可以使用图床插入图片</p>
+                <p v-if="authStore.isVerified" class="form-hint">
+                  支持 Markdown 语法，可以使用图床插入图片
+                </p>
               </el-form-item>
               <el-form-item>
-                <el-button type="primary" @click="saveProfile" :loading="saving">保存修改</el-button>
-                <el-button v-if="authStore.isVerified" @click="previewVisible = true">预览</el-button>
+                <el-button type="primary" :loading="saving" @click="saveProfile"
+                  >保存修改</el-button
+                >
+                <el-button v-if="authStore.isVerified" @click="previewVisible = true"
+                  >预览</el-button
+                >
               </el-form-item>
             </el-form>
           </el-card>
-
         </div>
 
         <!-- 修改密码页面 -->
@@ -386,7 +416,7 @@
                   <el-input v-model="verifyForm.grade" placeholder="例如：2023级" />
                 </el-form-item>
                 <el-form-item>
-                  <el-button type="primary" @click="submitVerification" :loading="verifying">
+                  <el-button type="primary" :loading="verifying" @click="submitVerification">
                     立即认证
                   </el-button>
                 </el-form-item>
@@ -406,13 +436,9 @@
     </div>
 
     <!-- Bio 预览对话框 -->
-    <el-dialog
-      v-model="previewVisible"
-      title="个人简介预览"
-      width="700px"
-      destroy-on-close
-    >
-      <div class="bio-preview markdown-body" v-html="renderedBio || '<p style=\'color: #999;\'>暂无内容</p>'"></div>
+    <el-dialog v-model="previewVisible" title="个人简介预览" width="700px" destroy-on-close>
+      <!-- eslint-disable-next-line vue/no-v-html 内容经 markdown-it（html:false）渲染，兜底为静态字符串 -->
+      <div class="bio-preview markdown-body" v-html="renderedBioPreview"></div>
     </el-dialog>
   </div>
 </template>
@@ -421,22 +447,28 @@
 import { ref, reactive, onMounted, watch, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import MarkdownIt from 'markdown-it';
-import { useAuthStore } from '../stores/auth';
-import { useSiteConfigStore } from '../stores/siteConfig';
-import logger from '../utils/logger';
-import { getCurrentUser, updateProfile, verifyUser, getUserProfile, changePassword } from '../api/user';
-import MarkdownEditor from '../components/editor/MarkdownEditor.vue';
-import type { UpdateProfileRequest, VerificationRequest } from '../api/user';
-import type { FormInstance, FormRules } from 'element-plus';
-import { getMyResources, deleteResource } from '../api/resource';
-import type { ResourceListItem } from '../types/resource';
+import { useAuthStore } from '@/stores/auth';
+import { useSiteConfigStore } from '@/stores/siteConfig';
+import logger from '@/utils/logger';
+import {
+  getCurrentUser,
+  updateProfile,
+  verifyUser,
+  getUserProfile,
+  changePassword,
+} from '@/api/user';
+import MarkdownEditor from '@/components/editor/MarkdownEditor.vue';
+import type { UpdateProfileRequest, VerificationRequest } from '@/types/user';
+import type { FormInstance, FormRules, FormItemRule } from 'element-plus';
+import { getMyResources, deleteResource } from '@/api/resource';
+import type { ResourceListItem } from '@/types/resource';
 import {
   getMyImages,
   deleteImage,
   copyToClipboard,
-  formatFileSize as formatImageFileSize
-} from '../api/imageHost';
-import type { Image } from '../types/image';
+  formatFileSize as formatImageFileSize,
+} from '@/api/imageHost';
+import type { Image } from '@/types/image';
 import {
   UserFilled,
   User,
@@ -451,9 +483,10 @@ import {
   Star,
   Loading,
   Link,
-  Lock
+  Lock,
 } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import { getErrorMessage, isHandledError, isApiError } from '@/api/request';
 
 const authStore = useAuthStore();
 const siteConfigStore = useSiteConfigStore();
@@ -477,7 +510,7 @@ const md = new MarkdownIt({
   html: false,
   breaks: true,
   linkify: true,
-  typographer: true
+  typographer: true,
 });
 
 // 计算渲染后的 Bio
@@ -485,6 +518,11 @@ const renderedBio = computed(() => {
   if (!authStore.user?.bio) return '';
   return md.render(authStore.user.bio);
 });
+
+// 预览对话框中的 Bio（无内容时给出静态兜底提示）
+const renderedBioPreview = computed(
+  () => renderedBio.value || '<p style="color: #999;">暂无内容</p>'
+);
 
 // 预览对话框
 const previewVisible = ref(false);
@@ -499,11 +537,11 @@ const passwordFormRef = ref<FormInstance>();
 const passwordForm = reactive({
   oldPassword: '',
   newPassword: '',
-  confirmPassword: ''
+  confirmPassword: '',
 });
 
 // 验证确认密码
-const validateConfirmPassword = (_rule: any, value: string, callback: any) => {
+const validateConfirmPassword: FormItemRule['validator'] = (_rule, value, callback) => {
   if (value === '') {
     callback(new Error('请再次输入新密码'));
   } else if (value !== passwordForm.newPassword) {
@@ -518,11 +556,9 @@ const passwordRules: FormRules = {
   oldPassword: [{ required: true, message: '请输入原密码', trigger: 'blur' }],
   newPassword: [
     { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 6, message: '新密码长度至少为6位', trigger: 'blur' }
+    { min: 6, message: '新密码长度至少为6位', trigger: 'blur' },
   ],
-  confirmPassword: [
-    { required: true, validator: validateConfirmPassword, trigger: 'blur' }
-  ]
+  confirmPassword: [{ required: true, validator: validateConfirmPassword, trigger: 'blur' }],
 };
 
 // 重置密码表单
@@ -543,13 +579,14 @@ const handleChangePassword = async () => {
       try {
         await changePassword({
           oldPassword: passwordForm.oldPassword,
-          newPassword: passwordForm.newPassword
+          newPassword: passwordForm.newPassword,
         });
         ElMessage.success('密码修改成功');
         resetPasswordForm();
-      } catch (error: any) {
+      } catch (error) {
+        logger.error('[Profile]', '修改密码失败', error);
         // 错误已在 request.ts 中统一处理
-        if (error.response?.status === 401) {
+        if (isApiError(error) && error.status === 401) {
           ElMessage.error('原密码错误');
         }
       } finally {
@@ -562,20 +599,20 @@ const handleChangePassword = async () => {
 const userStats = reactive({
   uploadsCount: 0,
   totalLikes: 0,
-  totalDownloads: 0
+  totalDownloads: 0,
 });
 
 const profileForm = reactive<UpdateProfileRequest>({
   username: authStore.user?.username || '',
   email: authStore.user?.email || '',
-  bio: authStore.user?.bio || ''
+  bio: authStore.user?.bio || '',
 });
 
 const verifyForm = reactive<VerificationRequest>({
   realName: '',
   studentId: '',
   major: '',
-  grade: ''
+  grade: '',
 });
 
 // 图片相关状态
@@ -599,13 +636,14 @@ const loadUserImages = async () => {
   try {
     const result = await getMyImages({
       page: imagesPage.value,
-      perPage: pageSize.value
+      perPage: pageSize.value,
     });
     userImages.value = result.images;
     imagesTotal.value = result.total;
-  } catch (error: any) {
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '加载图片失败');
+  } catch (error) {
+    logger.error('[Profile]', '加载图片失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '加载图片失败'));
     }
   } finally {
     imagesLoading.value = false;
@@ -637,7 +675,7 @@ const deleteUserImage = async (image: Image) => {
       {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
-        type: 'warning'
+        type: 'warning',
       }
     );
 
@@ -650,9 +688,12 @@ const deleteUserImage = async (image: Image) => {
     }
 
     await loadUserImages();
-  } catch (error: any) {
-    if (error !== 'cancel' && !error.isHandled) {
-      ElMessage.error(error.message || '删除失败');
+  } catch (error) {
+    if (error !== 'cancel') {
+      logger.error('[Profile]', '删除图片失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error(getErrorMessage(error, '删除失败'));
+      }
     }
   }
 };
@@ -666,13 +707,14 @@ const loadUserResources = async () => {
   try {
     const result = await getMyResources({
       page: resourcesPage.value,
-      perPage: pageSize.value
+      perPage: pageSize.value,
     });
     userResources.value = result.resources;
     resourcesTotal.value = result.total;
-  } catch (error: any) {
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '加载资源失败');
+  } catch (error) {
+    logger.error('[Profile]', '加载资源失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '加载资源失败'));
     }
   } finally {
     resourcesLoading.value = false;
@@ -682,15 +724,11 @@ const loadUserResources = async () => {
 // 删除用户资源
 const deleteUserResource = async (resource: ResourceListItem) => {
   try {
-    await ElMessageBox.confirm(
-      `确定要删除资源 "${resource.title}" 吗？`,
-      '确认删除',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    );
+    await ElMessageBox.confirm(`确定要删除资源 "${resource.title}" 吗？`, '确认删除', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    });
 
     await deleteResource(resource.id);
     ElMessage.success('删除成功');
@@ -701,9 +739,12 @@ const deleteUserResource = async (resource: ResourceListItem) => {
     }
 
     await loadUserResources();
-  } catch (error: any) {
-    if (error !== 'cancel' && !error.isHandled) {
-      ElMessage.error(error.message || '删除失败');
+  } catch (error) {
+    if (error !== 'cancel') {
+      logger.error('[Profile]', '删除资源失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error(getErrorMessage(error, '删除失败'));
+      }
     }
   }
 };
@@ -711,9 +752,9 @@ const deleteUserResource = async (resource: ResourceListItem) => {
 // 获取审核状态文本
 const getAuditStatusText = (status: string) => {
   const statusMap: Record<string, string> = {
-    'pending': '待审核',
-    'approved': '已通过',
-    'rejected': '已拒绝'
+    pending: '待审核',
+    approved: '已通过',
+    rejected: '已拒绝',
   };
   return statusMap[status] || status;
 };
@@ -721,9 +762,9 @@ const getAuditStatusText = (status: string) => {
 // 获取审核状态类型
 const getAuditStatusType = (status: string) => {
   const typeMap: Record<string, 'info' | 'success' | 'danger'> = {
-    'pending': 'info',
-    'approved': 'success',
-    'rejected': 'danger'
+    pending: 'info',
+    approved: 'success',
+    rejected: 'danger',
   };
   return typeMap[status] || 'info';
 };
@@ -772,7 +813,6 @@ const handleMenuSelect = (index: string) => {
   }
 };
 
-
 // 保存资料
 const saveProfile = async () => {
   saving.value = true;
@@ -799,9 +839,10 @@ const saveProfile = async () => {
     // 使用 store 的方法更新用户信息，确保全局状态同步
     authStore.updateUserInfo(updatedUser);
     ElMessage.success('资料更新成功');
-  } catch (error: any) {
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '更新失败');
+  } catch (error) {
+    logger.error('[Profile]', '更新资料失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '更新失败'));
     }
   } finally {
     saving.value = false;
@@ -819,9 +860,10 @@ const submitVerification = async () => {
     ElMessage.success('实名认证成功');
     // 切换到概览页面，让用户看到已认证状态
     activeMenu.value = 'overview';
-  } catch (error: any) {
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '认证失败');
+  } catch (error) {
+    logger.error('[Profile]', '实名认证失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '认证失败'));
     }
   } finally {
     verifying.value = false;
@@ -858,7 +900,7 @@ const refreshUserInfo = async () => {
 <style scoped>
 .profile-page {
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
 }
 
 .profile-container {
@@ -889,7 +931,7 @@ const refreshUserInfo = async () => {
 .username {
   margin: 0 0 8px;
   font-size: 18px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .profile-menu {
@@ -903,7 +945,7 @@ const refreshUserInfo = async () => {
 
 .content-section h2 {
   margin: 0 0 24px;
-  color: #303133;
+  color: var(--el-text-color-primary);
   font-size: 20px;
 }
 
@@ -921,12 +963,12 @@ const refreshUserInfo = async () => {
 .stat-value {
   font-size: 32px;
   font-weight: bold;
-  color: #409eff;
+  color: var(--el-color-primary);
   margin-bottom: 8px;
 }
 
 .stat-label {
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 14px;
 }
 
@@ -973,12 +1015,12 @@ const refreshUserInfo = async () => {
 }
 
 .verification-desc {
-  color: #606266;
+  color: var(--el-text-color-regular);
   margin-bottom: 12px;
 }
 
 .verification-benefits {
-  color: #67c23a;
+  color: var(--el-color-success);
   padding-left: 20px;
   margin-bottom: 24px;
 }
@@ -1009,7 +1051,7 @@ const refreshUserInfo = async () => {
 }
 
 .loading-icon {
-  color: #409eff;
+  color: var(--el-color-primary);
   animation: rotating 2s linear infinite;
 }
 
@@ -1033,7 +1075,7 @@ const refreshUserInfo = async () => {
   border-radius: 8px;
   overflow: hidden;
   background-color: #fff;
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--el-border-color-lighter);
   transition: box-shadow 0.3s;
 }
 
@@ -1045,7 +1087,7 @@ const refreshUserInfo = async () => {
   position: relative;
   width: 100%;
   height: 140px;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   overflow: hidden;
 }
 
@@ -1081,7 +1123,7 @@ const refreshUserInfo = async () => {
 .user-image-name {
   margin: 0 0 4px;
   font-size: 13px;
-  color: #303133;
+  color: var(--el-text-color-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1090,7 +1132,7 @@ const refreshUserInfo = async () => {
 .user-image-meta {
   margin: 0;
   font-size: 11px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 .pagination-wrapper {
@@ -1124,12 +1166,12 @@ const refreshUserInfo = async () => {
 .resource-title {
   margin: 0;
   font-size: 16px;
-  color: #303133;
+  color: var(--el-text-color-primary);
   cursor: pointer;
 }
 
 .resource-title:hover {
-  color: #409eff;
+  color: var(--el-color-primary);
 }
 
 .resource-meta {
@@ -1137,11 +1179,11 @@ const refreshUserInfo = async () => {
   gap: 12px;
   margin-bottom: 12px;
   font-size: 13px;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .course-name {
-  color: #409eff;
+  color: var(--el-color-primary);
   font-weight: 500;
 }
 
@@ -1156,14 +1198,14 @@ const refreshUserInfo = async () => {
   justify-content: space-between;
   align-items: center;
   padding-top: 12px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--el-border-color-lighter);
 }
 
 .resource-stats {
   display: flex;
   gap: 16px;
   font-size: 13px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 .resource-stats span {
@@ -1183,7 +1225,7 @@ const refreshUserInfo = async () => {
 
 .form-hint {
   font-size: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin: 0;
 }
 
@@ -1191,17 +1233,17 @@ const refreshUserInfo = async () => {
 .bio-section {
   margin-top: 24px;
   padding-top: 24px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--el-border-color-lighter);
 }
 
 .bio-section h4 {
   margin: 0 0 16px;
-  color: #303133;
+  color: var(--el-text-color-primary);
   font-size: 16px;
 }
 
 .bio-content {
-  background: #f5f7fa;
+  background: var(--el-fill-color-light);
   border-radius: 8px;
   padding: 20px;
 }
@@ -1218,12 +1260,12 @@ const refreshUserInfo = async () => {
 .markdown-body :deep(h5),
 .markdown-body :deep(h6) {
   margin: 16px 0 12px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .markdown-body :deep(h1) {
   font-size: 1.5em;
-  border-bottom: 1px solid #e4e7ed;
+  border-bottom: 1px solid var(--el-border-color-light);
   padding-bottom: 8px;
 }
 
@@ -1234,7 +1276,7 @@ const refreshUserInfo = async () => {
 .markdown-body :deep(p) {
   margin: 12px 0;
   line-height: 1.8;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .markdown-body :deep(img) {
@@ -1245,7 +1287,7 @@ const refreshUserInfo = async () => {
 }
 
 .markdown-body :deep(a) {
-  color: #409eff;
+  color: var(--el-color-primary);
   text-decoration: none;
 }
 
@@ -1254,7 +1296,7 @@ const refreshUserInfo = async () => {
 }
 
 .markdown-body :deep(code) {
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   padding: 2px 6px;
   border-radius: 3px;
   font-family: 'Consolas', 'Monaco', monospace;
@@ -1277,10 +1319,10 @@ const refreshUserInfo = async () => {
 }
 
 .markdown-body :deep(blockquote) {
-  border-left: 4px solid #409eff;
+  border-left: 4px solid var(--el-color-primary);
   padding-left: 16px;
   margin: 12px 0;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .markdown-body :deep(ul),
@@ -1301,19 +1343,19 @@ const refreshUserInfo = async () => {
 
 .markdown-body :deep(th),
 .markdown-body :deep(td) {
-  border: 1px solid #dcdfe6;
+  border: 1px solid var(--el-border-color);
   padding: 8px 12px;
   text-align: left;
 }
 
 .markdown-body :deep(th) {
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   font-weight: 600;
 }
 
 .markdown-body :deep(hr) {
   border: none;
-  border-top: 1px solid #e4e7ed;
+  border-top: 1px solid var(--el-border-color-light);
   margin: 16px 0;
 }
 </style>

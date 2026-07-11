@@ -1,22 +1,24 @@
 import JSZip from 'jszip';
-import logger from './logger';
-import { resourceCache } from './resourceCache';
-import { trackResourceDownload } from '../api/resource';
-import type { PreviewUrlResponse } from '../api/resource';
-import type { FavoriteResourceItem } from '../types/favorite';
+import logger from '@/utils/logger';
+import { resourceCache } from '@/utils/resourceCache';
+import { getServerOrigin } from '@/utils/apiUrl';
+import { trackResourceDownload } from '@/api/resource';
+import { getErrorMessage } from '@/api/request';
+import type { PreviewUrlResponse } from '@/api/resource';
+import type { FavoriteResourceItem } from '@/types/favorite';
 
 // 下载进度信息
 export interface DownloadProgress {
-  currentFile: string;      // 当前正在下载的文件名
-  currentIndex: number;     // 当前文件索引
-  totalFiles: number;       // 总文件数
-  percent: number;          // 总体进度百分比 (0-100)
+  currentFile: string; // 当前正在下载的文件名
+  currentIndex: number; // 当前文件索引
+  totalFiles: number; // 总文件数
+  percent: number; // 总体进度百分比 (0-100)
   status: 'downloading' | 'packaging' | 'completed' | 'error';
-  error?: string;           // 错误信息
+  error?: string; // 错误信息
   // 缓存统计
-  cachedCount: number;      // 来自缓存的文件数
-  downloadedCount: number;  // 实时下载的文件数
-  failedCount: number;      // 下载失败的文件数
+  cachedCount: number; // 来自缓存的文件数
+  downloadedCount: number; // 实时下载的文件数
+  failedCount: number; // 下载失败的文件数
   currentFileSource?: 'cache' | 'download' | 'error'; // 当前文件来源
 }
 
@@ -26,17 +28,17 @@ export type ProgressCallback = (progress: DownloadProgress) => void;
 // 文件扩展名映射
 const getExtensionByType = (resourceType: string): string => {
   const typeMap: Record<string, string> = {
-    'web_markdown': 'md',
-    'ppt': 'ppt',
-    'pptx': 'pptx',
-    'doc': 'doc',
-    'docx': 'docx',
-    'pdf': 'pdf',
-    'txt': 'txt',
-    'jpeg': 'jpg',
-    'jpg': 'jpg',
-    'png': 'png',
-    'zip': 'zip',
+    web_markdown: 'md',
+    ppt: 'ppt',
+    pptx: 'pptx',
+    doc: 'doc',
+    docx: 'docx',
+    pdf: 'pdf',
+    txt: 'txt',
+    jpeg: 'jpg',
+    jpg: 'jpg',
+    png: 'png',
+    zip: 'zip',
   };
   return typeMap[resourceType.toLowerCase()] || 'bin';
 };
@@ -46,23 +48,20 @@ const buildSafeFileName = (title: string, resourceType: string): string => {
   const extension = getExtensionByType(resourceType);
   // 清理文件名中的非法字符，但保留中文字符
   const sanitizedTitle = title
-    .replace(/[<>:"\\|?*]/g, '_')  // Windows 非法字符
-    .replace(/\//g, '_')            // 正斜杠
-    .replace(/\\/g, '_')            // 反斜杠
+    .replace(/[<>:"\\|?*]/g, '_') // Windows 非法字符
+    .replace(/\//g, '_') // 正斜杠
+    .replace(/\\/g, '_') // 反斜杠
     .trim();
   return `${sanitizedTitle}.${extension}`;
 };
 
 // 获取资源预览信息
+// 批量打包流程：需按单个资源独立处理失败（不弹全局提示），并读取原始 Response，故保留 fetch。
 const getResourcePreviewInfo = async (resourceId: string): Promise<PreviewUrlResponse> => {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
-  const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
-  const response = await fetch(
-    `${cleanBaseUrl}/api/resources/${resourceId}/preview-url`,
-    {
-      credentials: 'include',
-    }
-  );
+  // eslint-disable-next-line no-restricted-globals
+  const response = await fetch(`${getServerOrigin()}/api/resources/${resourceId}/preview-url`, {
+    credentials: 'include',
+  });
 
   if (!response.ok) {
     throw new Error(`获取预览链接失败: ${response.status}`);
@@ -71,8 +70,9 @@ const getResourcePreviewInfo = async (resourceId: string): Promise<PreviewUrlRes
   return response.json();
 };
 
-// 从 OSS 直链下载文件
+// 从 OSS 直链下载文件（外部预签名 URL，非本站 API）
 const downloadFromOss = async (url: string): Promise<Blob> => {
+  // eslint-disable-next-line no-restricted-globals
   const response = await fetch(url, { method: 'GET' });
   if (!response.ok) {
     throw new Error(`OSS下载失败: ${response.status}`);
@@ -81,15 +81,12 @@ const downloadFromOss = async (url: string): Promise<Blob> => {
 };
 
 // 从本地存储下载文件
+// 本站接口，但需读取二进制 Blob 且用于批量打包（逐个容错），保留 fetch。
 const downloadFromLocal = async (resourceId: string): Promise<Blob> => {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
-  const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
-  const response = await fetch(
-    `${cleanBaseUrl}/api/resources/${resourceId}/content`,
-    {
-      credentials: 'include',
-    }
-  );
+  // eslint-disable-next-line no-restricted-globals
+  const response = await fetch(`${getServerOrigin()}/api/resources/${resourceId}/content`, {
+    credentials: 'include',
+  });
 
   if (!response.ok) {
     throw new Error(`本地下载失败: ${response.status}`);
@@ -98,10 +95,7 @@ const downloadFromLocal = async (resourceId: string): Promise<Blob> => {
 };
 
 // 处理文件名冲突
-const resolveFileNameConflict = (
-  fileName: string,
-  existingNames: Set<string>
-): string => {
+const resolveFileNameConflict = (fileName: string, existingNames: Set<string>): string => {
   if (!existingNames.has(fileName)) {
     return fileName;
   }
@@ -132,13 +126,16 @@ export const browserDownloadFavorite = async (
   const totalFiles = resources.length;
   const existingNames = new Set<string>();
   const zip = new JSZip();
-  
+
   // 缓存统计
   let cachedCount = 0;
   let downloadedCount = 0;
   let failedCount = 0;
 
-  logger.info('[BrowserZip]', `开始浏览器打包下载 | 收藏夹: ${favoriteName}, 文件数: ${totalFiles}`);
+  logger.info(
+    '[BrowserZip]',
+    `开始浏览器打包下载 | 收藏夹: ${favoriteName}, 文件数: ${totalFiles}`
+  );
 
   // 报告初始进度
   onProgress?.({
@@ -156,7 +153,7 @@ export const browserDownloadFavorite = async (
   for (let i = 0; i < resources.length; i++) {
     const resource = resources[i]!; // 非空断言，因为 i < resources.length
     if (!resource) continue;
-    
+
     const safeFileName = buildSafeFileName(resource.title, resource.resourceType);
     const finalFileName = resolveFileNameConflict(safeFileName, existingNames);
     existingNames.add(finalFileName);
@@ -191,7 +188,7 @@ export const browserDownloadFavorite = async (
           '[BrowserZip]',
           `缓存命中 | resourceId=${resource.id}, title=${resource.title}, size=${blob.size}`
         );
-        
+
         // 报告从缓存获取
         onProgress?.({
           currentFile: resource.title,
@@ -206,13 +203,16 @@ export const browserDownloadFavorite = async (
         });
       } else {
         // 缓存未命中，从网络下载
-        logger.debug('[BrowserZip]', `缓存未命中，从网络下载 | resourceId=${resource.id}, title=${resource.title}`);
-        
+        logger.debug(
+          '[BrowserZip]',
+          `缓存未命中，从网络下载 | resourceId=${resource.id}, title=${resource.title}`
+        );
+
         // 判断存储类型并选择下载方式
         if (resource.storageType === 'oss') {
           // OSS 资源：先获取预览信息，再直接下载
           const previewInfo = await getResourcePreviewInfo(resource.id);
-          
+
           if (previewInfo.directAccess && previewInfo.storageType === 'oss') {
             // OSS 直链下载
             blob = await downloadFromOss(previewInfo.previewUrl);
@@ -220,17 +220,17 @@ export const browserDownloadFavorite = async (
             // 回退到本地方式
             blob = await downloadFromLocal(resource.id);
           }
-          
+
           // 获取 Content-Type
           contentType = previewInfo.resourceType === 'pdf' ? 'application/pdf' : contentType;
         } else {
           // 本地资源：通过 content 接口下载
           blob = await downloadFromLocal(resource.id);
         }
-        
+
         fromCache = false;
         downloadedCount++;
-        
+
         logger.info(
           '[BrowserZip]',
           `网络下载完成 | resourceId=${resource.id}, title=${resource.title}, size=${blob.size}`
@@ -271,7 +271,7 @@ export const browserDownloadFavorite = async (
     } catch (error) {
       failedCount++;
       logger.error('[BrowserZip]', `文件下载失败 | ${resource.title}`, error);
-      
+
       // 报告错误但继续处理其他文件
       onProgress?.({
         currentFile: resource.title,
@@ -364,7 +364,7 @@ export const browserDownloadFavorite = async (
     );
 
     // 记录每个成功下载的资源的下载计数（排除失败的）
-    const successfulResourceIds = resources.map(r => r.id);
+    const successfulResourceIds = resources.map((r) => r.id);
 
     // 批量记录下载（异步执行，不阻塞完成状态）
     logger.info('[BrowserZip]', `开始记录 ${successfulResourceIds.length} 个资源的下载计数`);
@@ -394,6 +394,7 @@ export const browserDownloadFavorite = async (
     });
   } catch (error) {
     logger.error('[BrowserZip]', 'ZIP 生成失败', error);
+    // eslint-disable-next-line preserve-caught-error -- Error cause 需 ES2022 lib，随阶段4.2 统一处理
     throw new Error('ZIP 文件生成失败');
   }
 };
@@ -449,14 +450,14 @@ export const estimateDownloadTime = (totalFiles: number, totalSize?: number): st
 
 // 下载到文件夹的进度信息
 export interface FolderDownloadProgress {
-  currentFile: string;      // 当前正在下载的文件名
-  currentIndex: number;     // 当前文件索引
-  totalFiles: number;       // 总文件数
-  percent: number;          // 总体进度百分比 (0-100)
+  currentFile: string; // 当前正在下载的文件名
+  currentIndex: number; // 当前文件索引
+  totalFiles: number; // 总文件数
+  percent: number; // 总体进度百分比 (0-100)
   status: 'selecting' | 'downloading' | 'completed' | 'error' | 'cancelled';
-  error?: string;           // 错误信息
-  savedCount: number;       // 成功保存的文件数
-  failedCount: number;      // 下载失败的文件数
+  error?: string; // 错误信息
+  savedCount: number; // 成功保存的文件数
+  failedCount: number; // 下载失败的文件数
   currentFileSource?: 'cache' | 'download' | 'error'; // 当前文件来源
 }
 
@@ -468,7 +469,8 @@ export const checkFileSystemAccessSupport = (): { supported: boolean; reason?: s
   if (!('showDirectoryPicker' in window)) {
     return {
       supported: false,
-      reason: '您的浏览器不支持文件夹选择功能，请使用 Chrome、Edge 或其他基于 Chromium 的现代浏览器'
+      reason:
+        '您的浏览器不支持文件夹选择功能，请使用 Chrome、Edge 或其他基于 Chromium 的现代浏览器',
     };
   }
   return { supported: true };
@@ -492,13 +494,13 @@ export const downloadToFolder = async (
   // 请求用户选择文件夹
   let directoryHandle: FileSystemDirectoryHandle;
   try {
-    // @ts-ignore - showDirectoryPicker 可能不在 TypeScript 类型定义中
+    // @ts-expect-error showDirectoryPicker 可能不在 TypeScript 类型定义中
     directoryHandle = await window.showDirectoryPicker({
       mode: 'readwrite',
-      startIn: 'downloads'
+      startIn: 'downloads',
     });
-  } catch (error: any) {
-    if (error.name === 'AbortError') {
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
       // 用户取消了选择
       onProgress?.({
         currentFile: '',
@@ -511,6 +513,7 @@ export const downloadToFolder = async (
       });
       return;
     }
+    // eslint-disable-next-line preserve-caught-error -- Error cause 需 ES2022 lib，随阶段4.2 统一处理
     throw new Error('无法访问所选文件夹，请检查权限设置');
   }
 
@@ -624,17 +627,16 @@ export const downloadToFolder = async (
 
       // 写入文件到所选文件夹
       try {
-        // @ts-ignore - File System Access API 类型可能不完整
         const fileHandle = await directoryHandle.getFileHandle(finalFileName, { create: true });
-        // @ts-ignore
         const writable = await fileHandle.createWritable();
         await writable.write(blob);
         await writable.close();
 
         savedCount++;
         logger.debug('[BrowserZip]', `文件已保存 | ${finalFileName}`);
-      } catch (writeError: any) {
-        throw new Error(`写入文件失败: ${writeError.message || '未知错误'}`);
+      } catch (writeError) {
+        // eslint-disable-next-line preserve-caught-error -- Error cause 需 ES2022 lib，随阶段4.2 统一处理
+        throw new Error(`写入文件失败: ${getErrorMessage(writeError, '未知错误')}`);
       }
 
       // 记录下载
@@ -643,7 +645,7 @@ export const downloadToFolder = async (
       } catch (e) {
         logger.warn('[BrowserZip]', `记录下载失败 | resourceId=${resource.id}`, e);
       }
-    } catch (error: any) {
+    } catch (error) {
       failedCount++;
       logger.error('[BrowserZip]', `文件下载失败 | ${resource.title}`, error);
 
@@ -686,8 +688,5 @@ export const downloadToFolder = async (
     failedCount,
   });
 
-  logger.info(
-    '[BrowserZip]',
-    `下载到文件夹完成 | 成功: ${savedCount}, 失败: ${failedCount}`
-  );
+  logger.info('[BrowserZip]', `下载到文件夹完成 | 成功: ${savedCount}, 失败: ${failedCount}`);
 };

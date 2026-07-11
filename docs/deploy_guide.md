@@ -1,8 +1,9 @@
 # 部署指南
 
-version 1.4
-
-2026/2/18
+> 状态：生效
+> 创建日期：2026-02-06
+> 最后更新：2026-02-18
+> 适用范围：部署与运维
 
 以 Ubuntu 为例。
 
@@ -64,11 +65,33 @@ GRANT ALL PRIVILEGES ON DATABASE shareustc TO shareustc_app;
 \q
 ```
 
-在项目根目录初始化表结构：
+### 3.1 初始化表结构
+
+表结构统一由 sqlx 迁移管理（`backend/migrations/`）。**后端进程启动时会自动应用迁移**，
+全新数据库无需额外操作——直接进入下文启动后端即可。
+
+若需在启动后端之前先建好表（如 CI、批量导入前置），可显式应用迁移，两种方式任选其一：
 
 ```bash
+# 方式一：脚本（内部调用 sqlx migrate run，需已安装 sqlx-cli）
 ./scripts/database/db_init_tables.sh
+
+# 方式二：直接用 sqlx-cli
+cd backend
+export DATABASE_URL="postgres://shareustc_app:ShareUSTC_default_pwd@localhost:5432/shareustc"
+sqlx migrate run
 ```
+
+sqlx-cli 安装：`cargo install sqlx-cli --no-default-features --features native-tls,postgres`。
+
+> **存量库（由旧初始化脚本创建、已有表但无迁移记录）**：首次接入迁移前需标记基线，
+> 避免在已存在的表上重复建表：
+> ```bash
+> cd backend
+> export DATABASE_URL="postgres://shareustc_app:ShareUSTC_default_pwd@localhost:5432/shareustc"
+> sqlx migrate resolve --version 1
+> ```
+> 标记后再启动后端或运行 `sqlx migrate run` 即可。
 
 ## 4. 存储后端选择
 

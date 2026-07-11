@@ -53,9 +53,9 @@ import {
   User,
   Reading,
   Folder,
-  DocumentCopy
+  DocumentCopy,
 } from '@element-plus/icons-vue';
-import { brandConfig } from '../config/site.config';
+import { brandConfig } from '@/config/site.config';
 
 const isCollapsed = ref(false);
 
@@ -82,7 +82,7 @@ const toggleCollapse = () => {
 .admin-layout {
   display: flex;
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
 }
 
 /* 侧边栏 */

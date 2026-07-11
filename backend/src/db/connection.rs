@@ -52,6 +52,8 @@ pub struct AppState {
 }
 
 impl AppState {
+    // 应用全局状态聚合，参数即各项配置；此处显式允许参数较多的构造函数
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         pool: PgPool,
         jwt_secret: String,
@@ -102,46 +104,16 @@ mod tests {
         let _cloned = pool_options.clone();
     }
 
-    /// 测试 AppState 的签名
+    /// 测试 AppState::new 的类型签名
     ///
-    /// 验证 AppState::new 函数的签名和类型正确性
+    /// 由于无法在没有真实数据库的情况下创建 PgPool，这里仅做编译期类型检查：
+    /// 将 AppState::new 绑定为对应签名的函数指针，若签名变动则本测试编译失败。
     #[test]
     fn test_app_state_signature() {
-        // 这个测试主要验证代码结构和类型正确性
-        // 由于无法在没有真实数据库的情况下创建 PgPool，
-        // 我们只进行类型检查
-
         use crate::config::BrandConfig;
 
-        // 验证 AppState::new 的参数类型
-        fn _check_app_state_new_signature(
-            pool: PgPool,
-            jwt_secret: String,
-            cookie_secure: bool,
-            storage: Arc<dyn StorageBackend>,
-            require_email_on_register: bool,
-            allow_username_change: bool,
-            allow_email_change: bool,
-            brand: BrandConfig,
-            pdf_preview_challenge_uuid: Option<String>,
-            pdf_preview_challenge_code: Option<String>,
-        ) -> AppState {
-            AppState::new(
-                pool,
-                jwt_secret,
-                cookie_secure,
-                storage,
-                require_email_on_register,
-                allow_username_change,
-                allow_email_change,
-                brand,
-                pdf_preview_challenge_uuid,
-                pdf_preview_challenge_code,
-            )
-        }
-
-        // 验证函数指针类型
-        let _: fn(
+        #[allow(clippy::type_complexity)]
+        let _new: fn(
             PgPool,
             String,
             bool,
@@ -152,10 +124,7 @@ mod tests {
             BrandConfig,
             Option<String>,
             Option<String>,
-        ) -> AppState = _check_app_state_new_signature;
-
-        // 测试通过，类型检查完成
-        assert!(true);
+        ) -> AppState = AppState::new;
     }
 
     /// 测试无效的数据库 URL 返回错误

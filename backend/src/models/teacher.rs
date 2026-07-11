@@ -93,7 +93,7 @@ impl TeacherListQuery {
     }
 
     pub fn get_per_page(&self) -> i32 {
-        self.per_page.unwrap_or(20).min(100).max(1)
+        self.per_page.unwrap_or(20).clamp(1, 100)
     }
 }
 

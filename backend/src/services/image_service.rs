@@ -8,28 +8,39 @@ use std::path::Path;
 use std::sync::Arc;
 use uuid::Uuid;
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum ImageError {
-    DatabaseError(String),
+    #[error("文件错误: {0}")]
     FileError(String),
+    #[error("未找到: {0}")]
     NotFound(String),
+    #[error("验证错误: {0}")]
     ValidationError(String),
+    #[error("未授权: {0}")]
     Unauthorized(String),
+    #[error("数据库错误: {0}")]
+    Database(#[from] sqlx::Error),
 }
 
-impl std::fmt::Display for ImageError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl actix_web::ResponseError for ImageError {
+    fn error_response(&self) -> actix_web::HttpResponse {
+        use crate::utils::{bad_request, forbidden, internal_error, not_found};
         match self {
-            ImageError::DatabaseError(msg) => write!(f, "数据库错误: {}", msg),
-            ImageError::FileError(msg) => write!(f, "文件错误: {}", msg),
-            ImageError::NotFound(msg) => write!(f, "未找到: {}", msg),
-            ImageError::ValidationError(msg) => write!(f, "验证错误: {}", msg),
-            ImageError::Unauthorized(msg) => write!(f, "未授权: {}", msg),
+            ImageError::NotFound(msg) => not_found(msg),
+            ImageError::ValidationError(msg) => bad_request(msg),
+            ImageError::Unauthorized(msg) => forbidden(msg),
+            // 文件错误按历史行为回传信息（非 SQL 细节）
+            ImageError::FileError(msg) => {
+                log::error!("[Image] 文件错误 | error={}", msg);
+                internal_error(msg)
+            }
+            ImageError::Database(e) => {
+                log::error!("[Image] 数据库错误 | error={}", e);
+                internal_error("服务器内部错误")
+            }
         }
     }
 }
-
-impl std::error::Error for ImageError {}
 
 impl From<super::storage_service::StorageError> for ImageError {
     fn from(err: super::storage_service::StorageError) -> Self {
@@ -123,7 +134,7 @@ impl ImageService {
                         cleanup_err
                     );
                 }
-                return Err(ImageError::DatabaseError(e.to_string()));
+                return Err(ImageError::Database(e));
             }
         };
 
@@ -131,8 +142,8 @@ impl ImageService {
         let fallback_name = original_name.unwrap_or("image");
         Ok(UploadImageResponse {
             id: image.id,
-            url: image.get_public_url(&base_url),
-            markdown_link: image.get_markdown_link(&base_url, fallback_name),
+            url: image.get_public_url(base_url),
+            markdown_link: image.get_markdown_link(base_url, fallback_name),
             original_name: image.original_name,
             file_size: image.file_size,
             created_at: image.created_at,
@@ -237,7 +248,7 @@ impl ImageService {
                         cleanup_err
                     );
                 }
-                return Err(ImageError::DatabaseError(e.to_string()));
+                return Err(ImageError::Database(e));
             }
         };
 
@@ -267,8 +278,7 @@ impl ImageService {
             sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM images WHERE uploader_id = $1")
                 .bind(user_id)
                 .fetch_one(pool)
-                .await
-                .map_err(|e| ImageError::DatabaseError(e.to_string()))?;
+                .await?;
 
         let images: Vec<Image> = sqlx::query_as::<_, Image>(
             r#"
@@ -282,8 +292,7 @@ impl ImageService {
         .bind(per_page as i64)
         .bind(offset as i64)
         .fetch_all(pool)
-        .await
-        .map_err(|e| ImageError::DatabaseError(e.to_string()))?;
+        .await?;
 
         let image_responses: Vec<ImageInfoResponse> =
             images.into_iter().map(ImageInfoResponse::from).collect();
@@ -303,8 +312,7 @@ impl ImageService {
         let image: Image = sqlx::query_as::<_, Image>("SELECT * FROM images WHERE id = $1")
             .bind(image_id)
             .fetch_optional(pool)
-            .await
-            .map_err(|e| ImageError::DatabaseError(e.to_string()))?
+            .await?
             .ok_or_else(|| ImageError::NotFound(format!("图片 {} 不存在", image_id)))?;
 
         Ok(ImageInfoResponse::from(image))
@@ -319,8 +327,7 @@ impl ImageService {
         let image: Image = sqlx::query_as::<_, Image>("SELECT * FROM images WHERE id = $1")
             .bind(image_id)
             .fetch_optional(pool)
-            .await
-            .map_err(|e| ImageError::DatabaseError(e.to_string()))?
+            .await?
             .ok_or_else(|| ImageError::NotFound(format!("图片 {} 不存在", image_id)))?;
 
         if image.uploader_id != user.id && user.role != crate::models::UserRole::Admin {
@@ -332,8 +339,7 @@ impl ImageService {
         sqlx::query("DELETE FROM images WHERE id = $1")
             .bind(image_id)
             .execute(pool)
-            .await
-            .map_err(|e| ImageError::DatabaseError(e.to_string()))?;
+            .await?;
 
         Ok(())
     }
@@ -346,8 +352,7 @@ impl ImageService {
             sqlx::query_as("SELECT file_path, mime_type, storage_type FROM images WHERE id = $1")
                 .bind(image_id)
                 .fetch_optional(pool)
-                .await
-                .map_err(|e| ImageError::DatabaseError(e.to_string()))?
+                .await?
                 .ok_or_else(|| ImageError::NotFound(format!("图片 {} 不存在", image_id)))?;
 
         Ok(row)

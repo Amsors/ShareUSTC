@@ -1,5 +1,5 @@
 use actix_multipart::Multipart;
-use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
+use actix_web::{delete, get, post, put, web, HttpResponse};
 use calamine::Reader;
 use futures_util::StreamExt;
 
@@ -11,10 +11,7 @@ use crate::models::{
 use crate::services::CourseService;
 use crate::utils::bad_request;
 
-use super::{
-    check_admin,
-    utils::{handle_admin_error, handle_course_error},
-};
+use super::check_admin;
 
 /// 获取课程列表（管理员）
 #[get("/admin/courses")]
@@ -22,18 +19,14 @@ async fn get_course_list(
     data: web::Data<AppState>,
     current_user: actix_web::web::ReqData<CurrentUser>,
     query: web::Query<CourseListQuery>,
-) -> impl Responder {
+) -> Result<actix_web::HttpResponse, actix_web::Error> {
     let user = current_user.into_inner();
     log::info!("[Admin] 获取课程列表 | admin_id={}", user.id);
 
-    if let Err(e) = check_admin(&user) {
-        return handle_admin_error(e);
-    }
+    check_admin(&user)?;
 
-    match CourseService::get_course_list(&data.pool, query.into_inner()).await {
-        Ok(response) => HttpResponse::Ok().json(response),
-        Err(e) => handle_course_error(e),
-    }
+    let response = CourseService::get_course_list(&data.pool, query.into_inner()).await?;
+    Ok(HttpResponse::Ok().json(response))
 }
 
 /// 添加课程
@@ -42,18 +35,14 @@ async fn create_course(
     data: web::Data<AppState>,
     current_user: actix_web::web::ReqData<CurrentUser>,
     req: web::Json<CreateCourseRequest>,
-) -> impl Responder {
+) -> Result<actix_web::HttpResponse, actix_web::Error> {
     let user = current_user.into_inner();
     log::info!("[Admin] 添加课程 | admin_id={}", user.id);
 
-    if let Err(e) = check_admin(&user) {
-        return handle_admin_error(e);
-    }
+    check_admin(&user)?;
 
-    match CourseService::create_course(&data.pool, req.into_inner()).await {
-        Ok(course) => HttpResponse::Created().json(course),
-        Err(e) => handle_course_error(e),
-    }
+    let course = CourseService::create_course(&data.pool, req.into_inner()).await?;
+    Ok(HttpResponse::Created().json(course))
 }
 
 /// 更新课程信息
@@ -63,7 +52,7 @@ async fn update_course(
     current_user: actix_web::web::ReqData<CurrentUser>,
     path: web::Path<i64>,
     req: web::Json<UpdateCourseRequest>,
-) -> impl Responder {
+) -> Result<actix_web::HttpResponse, actix_web::Error> {
     let user = current_user.into_inner();
     let sn = path.into_inner();
     log::info!(
@@ -72,14 +61,10 @@ async fn update_course(
         sn
     );
 
-    if let Err(e) = check_admin(&user) {
-        return handle_admin_error(e);
-    }
+    check_admin(&user)?;
 
-    match CourseService::update_course(&data.pool, sn, req.into_inner()).await {
-        Ok(course) => HttpResponse::Ok().json(course),
-        Err(e) => handle_course_error(e),
-    }
+    let course = CourseService::update_course(&data.pool, sn, req.into_inner()).await?;
+    Ok(HttpResponse::Ok().json(course))
 }
 
 /// 更新课程状态
@@ -89,7 +74,7 @@ async fn update_course_status(
     current_user: actix_web::web::ReqData<CurrentUser>,
     path: web::Path<i64>,
     req: web::Json<UpdateCourseStatusRequest>,
-) -> impl Responder {
+) -> Result<actix_web::HttpResponse, actix_web::Error> {
     let user = current_user.into_inner();
     let sn = path.into_inner();
     log::info!(
@@ -99,14 +84,10 @@ async fn update_course_status(
         req.is_active
     );
 
-    if let Err(e) = check_admin(&user) {
-        return handle_admin_error(e);
-    }
+    check_admin(&user)?;
 
-    match CourseService::update_course_status(&data.pool, sn, req.into_inner()).await {
-        Ok(course) => HttpResponse::Ok().json(course),
-        Err(e) => handle_course_error(e),
-    }
+    let course = CourseService::update_course_status(&data.pool, sn, req.into_inner()).await?;
+    Ok(HttpResponse::Ok().json(course))
 }
 
 /// 删除课程
@@ -115,19 +96,15 @@ async fn delete_course(
     data: web::Data<AppState>,
     current_user: actix_web::web::ReqData<CurrentUser>,
     path: web::Path<i64>,
-) -> impl Responder {
+) -> Result<actix_web::HttpResponse, actix_web::Error> {
     let user = current_user.into_inner();
     let sn = path.into_inner();
     log::info!("[Admin] 删除课程 | admin_id={}, course_sn={}", user.id, sn);
 
-    if let Err(e) = check_admin(&user) {
-        return handle_admin_error(e);
-    }
+    check_admin(&user)?;
 
-    match CourseService::delete_course(&data.pool, sn).await {
-        Ok(_) => HttpResponse::NoContent().finish(),
-        Err(e) => handle_course_error(e),
-    }
+    CourseService::delete_course(&data.pool, sn).await?;
+    Ok(HttpResponse::NoContent().finish())
 }
 
 /// 批量导入课程
@@ -136,7 +113,7 @@ async fn batch_import_courses(
     data: web::Data<AppState>,
     current_user: actix_web::web::ReqData<CurrentUser>,
     req: web::Json<BatchImportCoursesRequest>,
-) -> impl Responder {
+) -> Result<actix_web::HttpResponse, actix_web::Error> {
     let user = current_user.into_inner();
     log::info!(
         "[Admin] 批量导入课程 | admin_id={}, count={}",
@@ -144,26 +121,20 @@ async fn batch_import_courses(
         req.courses.len()
     );
 
-    if let Err(e) = check_admin(&user) {
-        return handle_admin_error(e);
-    }
+    check_admin(&user)?;
 
     if req.courses.is_empty() {
-        return bad_request("导入数据不能为空");
+        return Ok(bad_request("导入数据不能为空"));
     }
 
-    match CourseService::batch_import_courses(&data.pool, req.courses.clone()).await {
-        Ok(result) => {
-            log::info!(
-                "[Admin] 批量导入课程完成 | admin_id={}, success={}, fail={}",
-                user.id,
-                result.success_count,
-                result.fail_count
-            );
-            HttpResponse::Ok().json(result)
-        }
-        Err(e) => handle_course_error(e),
-    }
+    let result = CourseService::batch_import_courses(&data.pool, req.courses.clone()).await?;
+    log::info!(
+        "[Admin] 批量导入课程完成 | admin_id={}, success={}, fail={}",
+        user.id,
+        result.success_count,
+        result.fail_count
+    );
+    Ok(HttpResponse::Ok().json(result))
 }
 
 /// 从文件批量导入课程
@@ -172,13 +143,11 @@ async fn batch_import_courses_from_file(
     data: web::Data<AppState>,
     current_user: actix_web::web::ReqData<CurrentUser>,
     mut payload: Multipart,
-) -> impl Responder {
+) -> Result<actix_web::HttpResponse, actix_web::Error> {
     let user = current_user.into_inner();
     log::info!("[Admin] 开始从文件批量导入课程 | admin_id={}", user.id);
 
-    if let Err(e) = check_admin(&user) {
-        return handle_admin_error(e);
-    }
+    check_admin(&user)?;
 
     let mut file_data: Vec<u8> = Vec::new();
     let mut file_type: String = String::new();
@@ -201,7 +170,9 @@ async fn batch_import_courses_from_file(
                 } else if filename.ends_with(".xlsx") {
                     "xlsx".to_string()
                 } else {
-                    return bad_request("不支持的文件格式，请上传 .json, .csv 或 .xlsx 文件");
+                    return Ok(bad_request(
+                        "不支持的文件格式，请上传 .json, .csv 或 .xlsx 文件",
+                    ));
                 };
             }
 
@@ -211,7 +182,7 @@ async fn batch_import_courses_from_file(
                     Ok(bytes) => file_data.extend_from_slice(&bytes),
                     Err(e) => {
                         log::error!("[Admin] 读取文件失败 | error={}", e);
-                        return bad_request("文件读取失败");
+                        return Ok(bad_request("文件读取失败"));
                     }
                 }
             }
@@ -219,23 +190,23 @@ async fn batch_import_courses_from_file(
     }
 
     if file_data.is_empty() {
-        return bad_request("未上传文件或文件为空");
+        return Ok(bad_request("未上传文件或文件为空"));
     }
 
     if file_type.is_empty() {
-        return bad_request("无法识别文件类型");
+        return Ok(bad_request("无法识别文件类型"));
     }
 
     // 解析文件内容
     let courses = match parse_courses_from_bytes(&file_data, &file_type) {
         Ok(courses) => courses,
         Err(e) => {
-            return bad_request(&e);
+            return Ok(bad_request(&e));
         }
     };
 
     if courses.is_empty() {
-        return bad_request("文件中没有有效的课程数据");
+        return Ok(bad_request("文件中没有有效的课程数据"));
     }
 
     log::info!(
@@ -245,18 +216,14 @@ async fn batch_import_courses_from_file(
     );
 
     // 调用批量导入服务
-    match CourseService::batch_import_courses(&data.pool, courses).await {
-        Ok(result) => {
-            log::info!(
-                "[Admin] 批量导入课程完成 | admin_id={}, success={}, fail={}",
-                user.id,
-                result.success_count,
-                result.fail_count
-            );
-            HttpResponse::Ok().json(result)
-        }
-        Err(e) => handle_course_error(e),
-    }
+    let result = CourseService::batch_import_courses(&data.pool, courses).await?;
+    log::info!(
+        "[Admin] 批量导入课程完成 | admin_id={}, success={}, fail={}",
+        user.id,
+        result.success_count,
+        result.fail_count
+    );
+    Ok(HttpResponse::Ok().json(result))
 }
 
 /// 批量删除课程
@@ -265,7 +232,7 @@ async fn batch_delete_courses(
     data: web::Data<AppState>,
     current_user: actix_web::web::ReqData<CurrentUser>,
     req: web::Json<BatchDeleteCoursesRequest>,
-) -> impl Responder {
+) -> Result<actix_web::HttpResponse, actix_web::Error> {
     let user = current_user.into_inner();
     log::info!(
         "[Admin] 批量删除课程 | admin_id={}, sns={}",
@@ -273,27 +240,21 @@ async fn batch_delete_courses(
         req.sns
     );
 
-    if let Err(e) = check_admin(&user) {
-        return handle_admin_error(e);
-    }
+    check_admin(&user)?;
 
     if req.sns.trim().is_empty() {
-        return bad_request("编号列表不能为空");
+        return Ok(bad_request("编号列表不能为空"));
     }
 
-    match CourseService::batch_delete_courses(&data.pool, &req.sns).await {
-        Ok(result) => {
-            log::info!(
-                "[Admin] 批量删除课程完成 | admin_id={}, success={}, not_found={}, fail={}",
-                user.id,
-                result.success_count,
-                result.not_found_count,
-                result.fail_count
-            );
-            HttpResponse::Ok().json(result)
-        }
-        Err(e) => handle_course_error(e),
-    }
+    let result = CourseService::batch_delete_courses(&data.pool, &req.sns).await?;
+    log::info!(
+        "[Admin] 批量删除课程完成 | admin_id={}, success={}, not_found={}, fail={}",
+        user.id,
+        result.success_count,
+        result.not_found_count,
+        result.fail_count
+    );
+    Ok(HttpResponse::Ok().json(result))
 }
 
 /// 解析文件内容为课程数据
@@ -348,7 +309,7 @@ fn parse_courses_from_bytes(
             for (idx, row) in range.rows().enumerate().skip(1) {
                 // 跳过标题行
                 let name_cell = row
-                    .get(0)
+                    .first()
                     .ok_or_else(|| format!("Excel第{}行: 缺少课程名称", idx + 1))?;
                 let name = name_cell.to_string().trim().to_string();
                 let semester: Option<String> = row.get(1).map(|c| c.to_string().trim().to_string());

@@ -1,5 +1,5 @@
 use actix_multipart::Multipart;
-use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
+use actix_web::{delete, get, post, put, web, HttpResponse};
 use calamine::Reader;
 use futures_util::StreamExt;
 
@@ -12,10 +12,7 @@ use crate::models::{
 use crate::services::TeacherService;
 use crate::utils::bad_request;
 
-use super::{
-    check_admin,
-    utils::{handle_admin_error, handle_teacher_error},
-};
+use super::check_admin;
 
 /// 获取教师列表（管理员）
 #[get("/admin/teachers")]
@@ -23,18 +20,14 @@ async fn get_teacher_list(
     data: web::Data<AppState>,
     current_user: actix_web::web::ReqData<CurrentUser>,
     query: web::Query<TeacherListQuery>,
-) -> impl Responder {
+) -> Result<actix_web::HttpResponse, actix_web::Error> {
     let user = current_user.into_inner();
     log::info!("[Admin] 获取教师列表 | admin_id={}", user.id);
 
-    if let Err(e) = check_admin(&user) {
-        return handle_admin_error(e);
-    }
+    check_admin(&user)?;
 
-    match TeacherService::get_teacher_list(&data.pool, query.into_inner()).await {
-        Ok(response) => HttpResponse::Ok().json(response),
-        Err(e) => handle_teacher_error(e),
-    }
+    let response = TeacherService::get_teacher_list(&data.pool, query.into_inner()).await?;
+    Ok(HttpResponse::Ok().json(response))
 }
 
 /// 添加教师
@@ -43,18 +36,14 @@ async fn create_teacher(
     data: web::Data<AppState>,
     current_user: actix_web::web::ReqData<CurrentUser>,
     req: web::Json<CreateTeacherRequest>,
-) -> impl Responder {
+) -> Result<actix_web::HttpResponse, actix_web::Error> {
     let user = current_user.into_inner();
     log::info!("[Admin] 添加教师 | admin_id={}", user.id);
 
-    if let Err(e) = check_admin(&user) {
-        return handle_admin_error(e);
-    }
+    check_admin(&user)?;
 
-    match TeacherService::create_teacher(&data.pool, req.into_inner()).await {
-        Ok(teacher) => HttpResponse::Created().json(teacher),
-        Err(e) => handle_teacher_error(e),
-    }
+    let teacher = TeacherService::create_teacher(&data.pool, req.into_inner()).await?;
+    Ok(HttpResponse::Created().json(teacher))
 }
 
 /// 更新教师信息
@@ -64,7 +53,7 @@ async fn update_teacher(
     current_user: actix_web::web::ReqData<CurrentUser>,
     path: web::Path<i64>,
     req: web::Json<UpdateTeacherRequest>,
-) -> impl Responder {
+) -> Result<actix_web::HttpResponse, actix_web::Error> {
     let user = current_user.into_inner();
     let sn = path.into_inner();
     log::info!(
@@ -73,14 +62,10 @@ async fn update_teacher(
         sn
     );
 
-    if let Err(e) = check_admin(&user) {
-        return handle_admin_error(e);
-    }
+    check_admin(&user)?;
 
-    match TeacherService::update_teacher(&data.pool, sn, req.into_inner()).await {
-        Ok(teacher) => HttpResponse::Ok().json(teacher),
-        Err(e) => handle_teacher_error(e),
-    }
+    let teacher = TeacherService::update_teacher(&data.pool, sn, req.into_inner()).await?;
+    Ok(HttpResponse::Ok().json(teacher))
 }
 
 /// 更新教师状态
@@ -90,7 +75,7 @@ async fn update_teacher_status(
     current_user: actix_web::web::ReqData<CurrentUser>,
     path: web::Path<i64>,
     req: web::Json<UpdateTeacherStatusRequest>,
-) -> impl Responder {
+) -> Result<actix_web::HttpResponse, actix_web::Error> {
     let user = current_user.into_inner();
     let sn = path.into_inner();
     log::info!(
@@ -100,14 +85,10 @@ async fn update_teacher_status(
         req.is_active
     );
 
-    if let Err(e) = check_admin(&user) {
-        return handle_admin_error(e);
-    }
+    check_admin(&user)?;
 
-    match TeacherService::update_teacher_status(&data.pool, sn, req.into_inner()).await {
-        Ok(teacher) => HttpResponse::Ok().json(teacher),
-        Err(e) => handle_teacher_error(e),
-    }
+    let teacher = TeacherService::update_teacher_status(&data.pool, sn, req.into_inner()).await?;
+    Ok(HttpResponse::Ok().json(teacher))
 }
 
 /// 删除教师
@@ -116,19 +97,15 @@ async fn delete_teacher(
     data: web::Data<AppState>,
     current_user: actix_web::web::ReqData<CurrentUser>,
     path: web::Path<i64>,
-) -> impl Responder {
+) -> Result<actix_web::HttpResponse, actix_web::Error> {
     let user = current_user.into_inner();
     let sn = path.into_inner();
     log::info!("[Admin] 删除教师 | admin_id={}, teacher_sn={}", user.id, sn);
 
-    if let Err(e) = check_admin(&user) {
-        return handle_admin_error(e);
-    }
+    check_admin(&user)?;
 
-    match TeacherService::delete_teacher(&data.pool, sn).await {
-        Ok(_) => HttpResponse::NoContent().finish(),
-        Err(e) => handle_teacher_error(e),
-    }
+    TeacherService::delete_teacher(&data.pool, sn).await?;
+    Ok(HttpResponse::NoContent().finish())
 }
 
 /// 批量导入教师
@@ -137,7 +114,7 @@ async fn batch_import_teachers(
     data: web::Data<AppState>,
     current_user: actix_web::web::ReqData<CurrentUser>,
     req: web::Json<BatchImportTeachersRequest>,
-) -> impl Responder {
+) -> Result<actix_web::HttpResponse, actix_web::Error> {
     let user = current_user.into_inner();
     log::info!(
         "[Admin] 批量导入教师 | admin_id={}, count={}",
@@ -145,26 +122,20 @@ async fn batch_import_teachers(
         req.teachers.len()
     );
 
-    if let Err(e) = check_admin(&user) {
-        return handle_admin_error(e);
-    }
+    check_admin(&user)?;
 
     if req.teachers.is_empty() {
-        return bad_request("导入数据不能为空");
+        return Ok(bad_request("导入数据不能为空"));
     }
 
-    match TeacherService::batch_import_teachers(&data.pool, req.teachers.clone()).await {
-        Ok(result) => {
-            log::info!(
-                "[Admin] 批量导入教师完成 | admin_id={}, success={}, fail={}",
-                user.id,
-                result.success_count,
-                result.fail_count
-            );
-            HttpResponse::Ok().json(result)
-        }
-        Err(e) => handle_teacher_error(e),
-    }
+    let result = TeacherService::batch_import_teachers(&data.pool, req.teachers.clone()).await?;
+    log::info!(
+        "[Admin] 批量导入教师完成 | admin_id={}, success={}, fail={}",
+        user.id,
+        result.success_count,
+        result.fail_count
+    );
+    Ok(HttpResponse::Ok().json(result))
 }
 
 /// 从文件批量导入教师
@@ -173,13 +144,11 @@ async fn batch_import_teachers_from_file(
     data: web::Data<AppState>,
     current_user: actix_web::web::ReqData<CurrentUser>,
     mut payload: Multipart,
-) -> impl Responder {
+) -> Result<actix_web::HttpResponse, actix_web::Error> {
     let user = current_user.into_inner();
     log::info!("[Admin] 开始从文件批量导入教师 | admin_id={}", user.id);
 
-    if let Err(e) = check_admin(&user) {
-        return handle_admin_error(e);
-    }
+    check_admin(&user)?;
 
     let mut file_data: Vec<u8> = Vec::new();
     let mut file_type: String = String::new();
@@ -202,7 +171,9 @@ async fn batch_import_teachers_from_file(
                 } else if filename.ends_with(".xlsx") {
                     "xlsx".to_string()
                 } else {
-                    return bad_request("不支持的文件格式，请上传 .json, .csv 或 .xlsx 文件");
+                    return Ok(bad_request(
+                        "不支持的文件格式，请上传 .json, .csv 或 .xlsx 文件",
+                    ));
                 };
             }
 
@@ -212,7 +183,7 @@ async fn batch_import_teachers_from_file(
                     Ok(bytes) => file_data.extend_from_slice(&bytes),
                     Err(e) => {
                         log::error!("[Admin] 读取文件失败 | error={}", e);
-                        return bad_request("文件读取失败");
+                        return Ok(bad_request("文件读取失败"));
                     }
                 }
             }
@@ -220,23 +191,23 @@ async fn batch_import_teachers_from_file(
     }
 
     if file_data.is_empty() {
-        return bad_request("未上传文件或文件为空");
+        return Ok(bad_request("未上传文件或文件为空"));
     }
 
     if file_type.is_empty() {
-        return bad_request("无法识别文件类型");
+        return Ok(bad_request("无法识别文件类型"));
     }
 
     // 解析文件内容
     let teachers = match parse_teachers_from_bytes(&file_data, &file_type) {
         Ok(teachers) => teachers,
         Err(e) => {
-            return bad_request(&e);
+            return Ok(bad_request(&e));
         }
     };
 
     if teachers.is_empty() {
-        return bad_request("文件中没有有效的教师数据");
+        return Ok(bad_request("文件中没有有效的教师数据"));
     }
 
     log::info!(
@@ -246,18 +217,14 @@ async fn batch_import_teachers_from_file(
     );
 
     // 调用批量导入服务
-    match TeacherService::batch_import_teachers(&data.pool, teachers).await {
-        Ok(result) => {
-            log::info!(
-                "[Admin] 批量导入教师完成 | admin_id={}, success={}, fail={}",
-                user.id,
-                result.success_count,
-                result.fail_count
-            );
-            HttpResponse::Ok().json(result)
-        }
-        Err(e) => handle_teacher_error(e),
-    }
+    let result = TeacherService::batch_import_teachers(&data.pool, teachers).await?;
+    log::info!(
+        "[Admin] 批量导入教师完成 | admin_id={}, success={}, fail={}",
+        user.id,
+        result.success_count,
+        result.fail_count
+    );
+    Ok(HttpResponse::Ok().json(result))
 }
 
 /// 批量删除教师
@@ -266,7 +233,7 @@ async fn batch_delete_teachers(
     data: web::Data<AppState>,
     current_user: actix_web::web::ReqData<CurrentUser>,
     req: web::Json<BatchDeleteTeachersRequest>,
-) -> impl Responder {
+) -> Result<actix_web::HttpResponse, actix_web::Error> {
     let user = current_user.into_inner();
     log::info!(
         "[Admin] 批量删除教师 | admin_id={}, sns={}",
@@ -274,27 +241,21 @@ async fn batch_delete_teachers(
         req.sns
     );
 
-    if let Err(e) = check_admin(&user) {
-        return handle_admin_error(e);
-    }
+    check_admin(&user)?;
 
     if req.sns.trim().is_empty() {
-        return bad_request("编号列表不能为空");
+        return Ok(bad_request("编号列表不能为空"));
     }
 
-    match TeacherService::batch_delete_teachers(&data.pool, &req.sns).await {
-        Ok(result) => {
-            log::info!(
-                "[Admin] 批量删除教师完成 | admin_id={}, success={}, not_found={}, fail={}",
-                user.id,
-                result.success_count,
-                result.not_found_count,
-                result.fail_count
-            );
-            HttpResponse::Ok().json(result)
-        }
-        Err(e) => handle_teacher_error(e),
-    }
+    let result = TeacherService::batch_delete_teachers(&data.pool, &req.sns).await?;
+    log::info!(
+        "[Admin] 批量删除教师完成 | admin_id={}, success={}, not_found={}, fail={}",
+        user.id,
+        result.success_count,
+        result.not_found_count,
+        result.fail_count
+    );
+    Ok(HttpResponse::Ok().json(result))
 }
 
 /// 解析文件内容为教师数据
@@ -341,7 +302,7 @@ fn parse_teachers_from_bytes(
             for (idx, row) in range.rows().enumerate().skip(1) {
                 // 跳过标题行
                 let name_cell = row
-                    .get(0)
+                    .first()
                     .ok_or_else(|| format!("Excel第{}行: 缺少姓名", idx + 1))?;
                 let name = name_cell.to_string().trim().to_string();
                 let department: Option<String> =

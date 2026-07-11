@@ -4,20 +4,19 @@ use std::io;
 use std::path::Path;
 use tokio::io::{AsyncRead, AsyncReadExt};
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum FileError {
+    #[error("验证错误: {0}")]
     ValidationError(String),
 }
 
-impl std::fmt::Display for FileError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl actix_web::ResponseError for FileError {
+    fn error_response(&self) -> actix_web::HttpResponse {
         match self {
-            FileError::ValidationError(msg) => write!(f, "验证错误: {}", msg),
+            FileError::ValidationError(msg) => crate::utils::bad_request(msg),
         }
     }
 }
-
-impl std::error::Error for FileError {}
 
 pub struct FileService;
 

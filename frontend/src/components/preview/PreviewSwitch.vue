@@ -29,9 +29,7 @@
     <div v-else class="unsupported-preview">
       <el-icon class="unsupported-icon"><Document /></el-icon>
       <p>该类型文件暂不支持预览</p>
-      <el-button type="primary" @click="handleDownload">
-        下载查看
-      </el-button>
+      <el-button type="primary" @click="handleDownload"> 下载查看 </el-button>
     </div>
   </div>
 </template>
@@ -39,11 +37,11 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { Document } from '@element-plus/icons-vue';
-import ImageViewer from './ImageViewer.vue';
-import PdfViewer from './PdfViewer.vue';
-import MarkdownViewer from './MarkdownViewer.vue';
-import TxtViewer from './TxtViewer.vue';
-import { downloadResource } from '../../api/resource';
+import ImageViewer from '@/components/preview/ImageViewer.vue';
+import PdfViewer from '@/components/preview/PdfViewer.vue';
+import MarkdownViewer from '@/components/preview/MarkdownViewer.vue';
+import TxtViewer from '@/components/preview/TxtViewer.vue';
+import { downloadResource } from '@/api/resource';
 
 const props = defineProps<{
   resourceId: string;
@@ -85,10 +83,10 @@ const handleDownload = async () => {
       useCache: true,
       resourceDetail: {
         title: props.resourceTitle,
-        resourceType: props.resourceType
-      }
+        resourceType: props.resourceType,
+      },
     });
-  } catch (error: any) {
+  } catch {
     // 错误已在API中处理
   }
 };

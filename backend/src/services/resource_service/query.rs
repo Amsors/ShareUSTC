@@ -15,8 +15,7 @@ pub async fn get_resource_detail(
     let resource: Resource = sqlx::query_as::<_, Resource>("SELECT * FROM resources WHERE id = $1")
         .bind(resource_id)
         .fetch_optional(pool)
-        .await
-        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?
+        .await?
         .ok_or_else(|| ResourceError::NotFound(format!("资源 {} 不存在", resource_id)))?;
 
     // 获取统计信息
@@ -24,16 +23,14 @@ pub async fn get_resource_detail(
         sqlx::query_as::<_, ResourceStats>("SELECT * FROM resource_stats WHERE resource_id = $1")
             .bind(resource_id)
             .fetch_one(pool)
-            .await
-            .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+            .await?;
 
     // 获取上传者名称
     let uploader_name: Option<String> =
         sqlx::query_scalar("SELECT username FROM users WHERE id = $1")
             .bind(resource.uploader_id)
             .fetch_optional(pool)
-            .await
-            .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+            .await?;
 
     // 转换标签
     let tags: Option<Vec<String>> = resource
@@ -202,11 +199,7 @@ pub async fn get_resource_list(
         count_builder.push_bind(category);
     }
 
-    let total: i64 = count_builder
-        .build_query_scalar()
-        .fetch_one(pool)
-        .await
-        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+    let total: i64 = count_builder.build_query_scalar().fetch_one(pool).await?;
 
     // 使用 QueryBuilder 构建列表查询
     let mut list_builder = sqlx::QueryBuilder::new(
@@ -254,11 +247,7 @@ pub async fn get_resource_list(
     list_builder.push(" OFFSET ");
     list_builder.push_bind(offset as i64);
 
-    let rows = list_builder
-        .build()
-        .fetch_all(pool)
-        .await
-        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+    let rows = list_builder.build().fetch_all(pool).await?;
 
     let resources = map_rows_to_resources(rows)?;
 
@@ -317,11 +306,7 @@ pub async fn search_resources(
         count_builder.push_bind(category);
     }
 
-    let total: i64 = count_builder
-        .build_query_scalar()
-        .fetch_one(pool)
-        .await
-        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+    let total: i64 = count_builder.build_query_scalar().fetch_one(pool).await?;
 
     // 使用 QueryBuilder 构建搜索查询
     let mut search_builder = sqlx::QueryBuilder::new(
@@ -372,11 +357,7 @@ pub async fn search_resources(
     search_builder.push(" OFFSET ");
     search_builder.push_bind(offset as i64);
 
-    let rows = search_builder
-        .build()
-        .fetch_all(pool)
-        .await
-        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+    let rows = search_builder.build().fetch_all(pool).await?;
 
     let resources = map_rows_to_resources(rows)?;
 
@@ -401,8 +382,7 @@ pub async fn get_user_resources(
     let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM resources WHERE uploader_id = $1")
         .bind(user_id)
         .fetch_one(pool)
-        .await
-        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+        .await?;
 
     // 获取资源列表
     let rows = sqlx::query(
@@ -426,8 +406,7 @@ pub async fn get_user_resources(
     .bind(per_page as i64)
     .bind(offset as i64)
     .fetch_all(pool)
-    .await
-    .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+    .await?;
 
     let resources = map_rows_to_resources(rows)?;
 
@@ -446,7 +425,7 @@ pub async fn get_hot_resources(
     pool: &PgPool,
     limit: i32,
 ) -> Result<Vec<HotResourceItem>, ResourceError> {
-    let limit = limit.max(1).min(20);
+    let limit = limit.clamp(1, 20);
 
     log::info!("获取热门资源，限制数量: {}", limit);
 
@@ -479,7 +458,7 @@ pub async fn get_hot_resources(
     .await
     .map_err(|e| {
         log::error!("获取热门资源查询失败: {}", e);
-        ResourceError::DatabaseError(e.to_string())
+        ResourceError::Database(e)
     })?;
 
     log::info!("获取到 {} 条热门资源", rows.len());
@@ -487,16 +466,10 @@ pub async fn get_hot_resources(
     let mut resources = Vec::new();
     for row in rows {
         resources.push(HotResourceItem {
-            id: row
-                .try_get("id")
-                .map_err(|e| ResourceError::DatabaseError(e.to_string()))?,
-            title: row
-                .try_get("title")
-                .map_err(|e| ResourceError::DatabaseError(e.to_string()))?,
+            id: row.try_get("id")?,
+            title: row.try_get("title")?,
             course_name: row.try_get("course_name").ok(),
-            resource_type: row
-                .try_get("resource_type")
-                .map_err(|e| ResourceError::DatabaseError(e.to_string()))?,
+            resource_type: row.try_get("resource_type")?,
             downloads: row.try_get::<i32, _>("downloads").unwrap_or(0),
             views: row.try_get::<i32, _>("views").unwrap_or(0),
             likes: row.try_get::<i32, _>("likes").unwrap_or(0),
@@ -510,8 +483,7 @@ pub async fn get_hot_resources(
 pub async fn get_resource_count(pool: &PgPool) -> Result<i64, ResourceError> {
     let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM resources")
         .fetch_one(pool)
-        .await
-        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+        .await?;
 
     Ok(count)
 }
@@ -564,7 +536,7 @@ pub async fn find_by_file_hash(
     .await
     .map_err(|e| {
         log::error!("[ResourceService] 根据哈希查询资源失败 | error={}", e);
-        ResourceError::DatabaseError(e.to_string())
+        ResourceError::Database(e)
     })?;
 
     let items = records
@@ -585,13 +557,7 @@ pub async fn find_by_file_hash(
                 uploader_name,
             )| {
                 // 解析标签
-                let tags_vec = tags.and_then(|v| {
-                    if let Ok(arr) = serde_json::from_value::<Vec<String>>(v) {
-                        Some(arr)
-                    } else {
-                        None
-                    }
-                });
+                let tags_vec = tags.and_then(|v| serde_json::from_value::<Vec<String>>(v).ok());
 
                 ResourceListItem {
                     id,
@@ -669,26 +635,14 @@ fn map_rows_to_resources(
         .unwrap_or(0);
 
         resources.push(ResourceListItem {
-            id: row
-                .try_get("id")
-                .map_err(|e| ResourceError::DatabaseError(e.to_string()))?,
-            title: row
-                .try_get("title")
-                .map_err(|e| ResourceError::DatabaseError(e.to_string()))?,
+            id: row.try_get("id")?,
+            title: row.try_get("title")?,
             course_name: row.try_get("course_name").ok(),
-            resource_type: row
-                .try_get("resource_type")
-                .map_err(|e| ResourceError::DatabaseError(e.to_string()))?,
-            category: row
-                .try_get("category")
-                .map_err(|e| ResourceError::DatabaseError(e.to_string()))?,
+            resource_type: row.try_get("resource_type")?,
+            category: row.try_get("category")?,
             tags,
-            audit_status: row
-                .try_get("audit_status")
-                .map_err(|e| ResourceError::DatabaseError(e.to_string()))?,
-            created_at: row
-                .try_get("created_at")
-                .map_err(|e| ResourceError::DatabaseError(e.to_string()))?,
+            audit_status: row.try_get("audit_status")?,
+            created_at: row.try_get("created_at")?,
             stats: ResourceStatsResponse {
                 views: row.try_get::<i32, _>("views").unwrap_or(0),
                 downloads: row.try_get::<i32, _>("downloads").unwrap_or(0),

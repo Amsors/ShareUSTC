@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO resource_stats (resource_id, likes)\n            VALUES ($1, $2)\n            ON CONFLICT (resource_id)\n            DO UPDATE SET likes = EXCLUDED.likes\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c6afc7d4eee398d547601111736f135514121059c07f48bfffd25de938802627"
+}

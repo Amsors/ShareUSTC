@@ -7,10 +7,12 @@ use uuid::Uuid;
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
 #[sqlx(type_name = "VARCHAR", rename_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum UserRole {
     /// 游客（未登录）
     Guest,
     /// 注册用户
+    #[default]
     User,
     /// 实名用户
     Verified,
@@ -18,20 +20,15 @@ pub enum UserRole {
     Admin,
 }
 
-impl Default for UserRole {
-    fn default() -> Self {
-        UserRole::User
-    }
-}
-
-impl ToString for UserRole {
-    fn to_string(&self) -> String {
-        match self {
-            UserRole::Guest => "guest".to_string(),
-            UserRole::User => "user".to_string(),
-            UserRole::Verified => "verified".to_string(),
-            UserRole::Admin => "admin".to_string(),
-        }
+impl std::fmt::Display for UserRole {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            UserRole::Guest => "guest",
+            UserRole::User => "user",
+            UserRole::Verified => "verified",
+            UserRole::Admin => "admin",
+        };
+        f.write_str(s)
     }
 }
 
@@ -282,7 +279,7 @@ impl UserHomepageQuery {
     }
 
     pub fn get_per_page(&self) -> i32 {
-        self.per_page.unwrap_or(10).min(50).max(1)
+        self.per_page.unwrap_or(10).clamp(1, 50)
     }
 }
 
@@ -295,7 +292,7 @@ pub struct LeaderboardQuery {
 
 impl LeaderboardQuery {
     pub fn get_limit(&self) -> i32 {
-        self.limit.unwrap_or(50).min(100).max(1)
+        self.limit.unwrap_or(50).clamp(1, 100)
     }
 }
 

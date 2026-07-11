@@ -51,12 +51,7 @@
         </div>
       </template>
 
-      <el-table
-        :data="filteredUsers"
-        v-loading="loading"
-        style="width: 100%"
-        stripe
-      >
+      <el-table v-loading="loading" :data="filteredUsers" style="width: 100%" stripe>
         <el-table-column prop="sn" label="编号" width="80">
           <template #default="{ row }">
             <span class="user-sn">#{{ row.sn ?? '-' }}</span>
@@ -102,12 +97,7 @@
         </el-table-column>
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button
-              type="primary"
-              link
-              size="small"
-              @click="showUserRealInfo(row)"
-            >
+            <el-button type="primary" link size="small" @click="showUserRealInfo(row)">
               实名信息
             </el-button>
             <el-button
@@ -137,12 +127,7 @@
     </el-card>
 
     <!-- 实名信息对话框 -->
-    <el-dialog
-      v-model="realInfoDialogVisible"
-      title="用户实名信息"
-      width="500px"
-      destroy-on-close
-    >
+    <el-dialog v-model="realInfoDialogVisible" title="用户实名信息" width="500px" destroy-on-close>
       <div v-loading="realInfoLoading" class="real-info-content">
         <!-- 未实名提示 -->
         <el-alert
@@ -191,8 +176,10 @@
 import { ref, onMounted, computed } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { UserFilled, Search } from '@element-plus/icons-vue';
-import { adminApi } from '../../api/admin';
-import type { UserRealInfo } from '../../api/admin';
+import { getUserList, updateUserStatus, getUserRealInfo } from '@/api/admin';
+import type { UserRealInfo } from '@/types/admin';
+import { isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 interface User {
   id: string;
@@ -219,23 +206,21 @@ const searchQuery = ref('');
 
 // 统计
 const totalUsers = computed(() => total.value);
-const verifiedUsers = computed(() => users.value.filter(u => u.isVerified).length);
-const disabledUsers = computed(() => users.value.filter(u => !u.isActive).length);
+const verifiedUsers = computed(() => users.value.filter((u) => u.isVerified).length);
+const disabledUsers = computed(() => users.value.filter((u) => !u.isActive).length);
 
 // 过滤后的用户列表
 const filteredUsers = computed(() => {
   if (!searchQuery.value) return users.value;
   const query = searchQuery.value.toLowerCase();
-  return users.value.filter(user =>
-    user.username.toLowerCase().includes(query)
-  );
+  return users.value.filter((user) => user.username.toLowerCase().includes(query));
 });
 
 const getRoleType = (role: string) => {
   const types: Record<string, string> = {
     admin: 'danger',
     verified: 'success',
-    user: 'info'
+    user: 'info',
   };
   return types[role] || 'info';
 };
@@ -244,7 +229,7 @@ const getRoleLabel = (role: string) => {
   const labels: Record<string, string> = {
     admin: '管理员',
     verified: '实名用户',
-    user: '普通用户'
+    user: '普通用户',
   };
   return labels[role] || role;
 };
@@ -258,11 +243,12 @@ const formatDate = (date: string) => {
 const fetchUsers = async () => {
   loading.value = true;
   try {
-    const data = await adminApi.getUserList(page.value, perPage.value);
+    const data = await getUserList(page.value, perPage.value);
     users.value = data.users;
     total.value = data.total;
-  } catch (error: any) {
-    if (!error.isHandled) {
+  } catch (error) {
+    logger.error('[UserManagement]', '获取用户列表失败', error);
+    if (!isHandledError(error)) {
       ElMessage.error('获取用户列表失败');
     }
   } finally {
@@ -273,22 +259,21 @@ const fetchUsers = async () => {
 const toggleUserStatus = async (user: User) => {
   const action = user.isActive ? '禁用' : '启用';
   try {
-    await ElMessageBox.confirm(
-      `确定要${action}用户 "${user.username}" 吗？`,
-      '确认操作',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    );
+    await ElMessageBox.confirm(`确定要${action}用户 "${user.username}" 吗？`, '确认操作', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    });
 
-    await adminApi.updateUserStatus(user.id, !user.isActive);
+    await updateUserStatus(user.id, !user.isActive);
     ElMessage.success(`用户已${action}`);
     fetchUsers();
-  } catch (error: any) {
-    if (error !== 'cancel' && !error.isHandled) {
-      ElMessage.error('操作失败');
+  } catch (error) {
+    if (error !== 'cancel') {
+      logger.error('[UserManagement]', '切换用户状态失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error('操作失败');
+      }
     }
   }
 };
@@ -300,10 +285,11 @@ const showUserRealInfo = async (user: User) => {
   currentRealInfo.value = null;
 
   try {
-    const data = await adminApi.getUserRealInfo(user.id);
+    const data = await getUserRealInfo(user.id);
     currentRealInfo.value = data;
-  } catch (error: any) {
-    if (!error.isHandled) {
+  } catch (error) {
+    logger.error('[UserManagement]', '获取实名信息失败', error);
+    if (!isHandledError(error)) {
       ElMessage.error('获取实名信息失败');
     }
     realInfoDialogVisible.value = false;
@@ -343,7 +329,7 @@ onMounted(() => {
 .page-title {
   font-size: 24px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .mb-4 {
@@ -356,22 +342,22 @@ onMounted(() => {
 
 .stat-label {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-bottom: 8px;
 }
 
 .stat-value {
   font-size: 28px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .text-success {
-  color: #67c23a;
+  color: var(--el-color-success);
 }
 
 .text-danger {
-  color: #f56c6c;
+  color: var(--el-color-danger);
 }
 
 .card-header {
@@ -388,7 +374,7 @@ onMounted(() => {
 }
 
 .user-sn {
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-family: 'Consolas', 'Monaco', monospace;
 }
 
@@ -397,7 +383,7 @@ onMounted(() => {
   justify-content: flex-end;
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--el-border-color-lighter);
 }
 
 .real-info-content {

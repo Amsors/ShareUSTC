@@ -14,7 +14,12 @@
         <el-icon v-if="progress.status === 'selecting'" :size="48" color="#909399">
           <FolderOpened />
         </el-icon>
-        <el-icon v-else-if="progress.status === 'downloading'" class="icon-spin" :size="48" color="#409EFF">
+        <el-icon
+          v-else-if="progress.status === 'downloading'"
+          class="icon-spin"
+          :size="48"
+          color="#409EFF"
+        >
           <Download />
         </el-icon>
         <el-icon v-else-if="progress.status === 'completed'" :size="48" color="#67C23A">
@@ -36,7 +41,7 @@
         </template>
         <template v-else-if="progress.status === 'downloading'">
           <p class="main-text">正在下载文件...</p>
-          <p class="sub-text" v-if="progress.currentFile">
+          <p v-if="progress.currentFile" class="sub-text">
             当前: {{ progress.currentFile }}
             <el-tag
               v-if="progress.currentFileSource === 'cache'"
@@ -69,9 +74,7 @@
               失败
             </el-tag>
           </p>
-          <p class="sub-text">
-            {{ progress.currentIndex }} / {{ progress.totalFiles }} 个文件
-          </p>
+          <p class="sub-text">{{ progress.currentIndex }} / {{ progress.totalFiles }} 个文件</p>
         </template>
         <template v-else-if="progress.status === 'completed'">
           <p class="main-text">下载完成!</p>
@@ -88,7 +91,10 @@
       </div>
 
       <!-- 进度条 -->
-      <div v-if="progress.status !== 'selecting' && progress.status !== 'cancelled'" class="progress-bar-section">
+      <div
+        v-if="progress.status !== 'selecting' && progress.status !== 'cancelled'"
+        class="progress-bar-section"
+      >
         <el-progress
           :percentage="progress.percent"
           :status="progressStatus"
@@ -98,10 +104,8 @@
       </div>
 
       <!-- 统计信息 -->
-      <div class="stats-info" v-if="progress.totalFiles > 0 && progress.status !== 'selecting'">
-        <el-tag size="small" type="info">
-          共 {{ progress.totalFiles }} 个文件
-        </el-tag>
+      <div v-if="progress.totalFiles > 0 && progress.status !== 'selecting'" class="stats-info">
+        <el-tag size="small" type="info"> 共 {{ progress.totalFiles }} 个文件 </el-tag>
         <el-tag v-if="progress.savedCount > 0" size="small" type="success">
           <el-icon><Check /></el-icon>
           成功 {{ progress.savedCount }} 个
@@ -141,18 +145,8 @@
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button
-          v-if="isProcessing"
-          type="danger"
-          @click="handleCancel"
-        >
-          取消下载
-        </el-button>
-        <el-button
-          v-else-if="progress.status === 'completed'"
-          type="primary"
-          @click="handleClose"
-        >
+        <el-button v-if="isProcessing" type="danger" @click="handleCancel"> 取消下载 </el-button>
+        <el-button v-else-if="progress.status === 'completed'" type="primary" @click="handleClose">
           完成
         </el-button>
         <el-button
@@ -162,12 +156,7 @@
         >
           重试
         </el-button>
-        <el-button
-          v-else
-          @click="handleClose"
-        >
-          关闭
-        </el-button>
+        <el-button v-else @click="handleClose"> 关闭 </el-button>
       </div>
     </template>
   </el-dialog>
@@ -181,12 +170,12 @@ import {
   CircleCheck,
   CircleClose,
   Check,
-  Close
+  Close,
 } from '@element-plus/icons-vue';
-import type { FolderDownloadProgress } from '../../utils/browserZip';
+import type { FolderDownloadProgress } from '@/utils/browserZip';
 
 interface Props {
-  modelValue: boolean;
+  modelValue?: boolean;
   progress: FolderDownloadProgress;
 }
 
@@ -196,9 +185,9 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean];
-  'cancel': [];
-  'retry': [];
-  'close': [];
+  cancel: [];
+  retry: [];
+  close: [];
 }>();
 
 const visible = computed({
@@ -266,13 +255,13 @@ const handleClose = () => {
   .main-text {
     font-size: 18px;
     font-weight: 600;
-    color: #303133;
+    color: var(--el-text-color-primary);
     margin: 0 0 8px;
   }
 
   .sub-text {
     font-size: 14px;
-    color: #606266;
+    color: var(--el-text-color-regular);
     margin: 0;
     display: flex;
     align-items: center;
@@ -280,7 +269,7 @@ const handleClose = () => {
     gap: 8px;
 
     &.error-text {
-      color: #F56C6C;
+      color: var(--el-color-danger);
     }
 
     .source-tag {

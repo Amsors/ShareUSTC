@@ -29,8 +29,8 @@
         <el-button
           type="primary"
           :disabled="stats.totalEntries === 0"
-          @click="handleClearExpired"
           :loading="clearingExpired"
+          @click="handleClearExpired"
         >
           <el-icon><Timer /></el-icon>
           清理过期缓存
@@ -40,14 +40,14 @@
           type="danger"
           plain
           :disabled="stats.totalEntries === 0"
-          @click="handleClearAll"
           :loading="clearingAll"
+          @click="handleClearAll"
         >
           <el-icon><Delete /></el-icon>
           清空所有缓存
         </el-button>
 
-        <el-button @click="refreshStats" :loading="loading">
+        <el-button :loading="loading" @click="refreshStats">
           <el-icon><Refresh /></el-icon>
           刷新
         </el-button>
@@ -73,7 +73,9 @@
 import { ref, onMounted, computed } from 'vue';
 import { Timer, Delete, Refresh } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { resourceCache, type CacheStats } from '../../utils/resourceCache';
+import { resourceCache, type CacheStats } from '@/utils/resourceCache';
+import { isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 const loading = ref(false);
 const clearingExpired = ref(false);
@@ -117,7 +119,10 @@ const refreshStats = async () => {
   try {
     stats.value = await resourceCache.getStats();
   } catch (error) {
-    ElMessage.error('获取缓存信息失败');
+    logger.error('[CacheManager]', '获取缓存信息失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error('获取缓存信息失败');
+    }
   } finally {
     loading.value = false;
   }
@@ -131,7 +136,10 @@ const handleClearExpired = async () => {
     ElMessage.success(`已清理 ${count} 个过期缓存`);
     await refreshStats();
   } catch (error) {
-    ElMessage.error('清理失败');
+    logger.error('[CacheManager]', '清理过期缓存失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error('清理失败');
+    }
   } finally {
     clearingExpired.value = false;
   }
@@ -154,9 +162,12 @@ const handleClearAll = async () => {
     await resourceCache.clearAll();
     ElMessage.success('已清空所有缓存');
     await refreshStats();
-  } catch (error: any) {
+  } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('清空失败');
+      logger.error('[CacheManager]', '清空缓存失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error('清空失败');
+      }
     }
   } finally {
     clearingAll.value = false;

@@ -140,7 +140,7 @@ const formatOssDate = (): { shortDate: string; fullDate: string } => {
   const shortDate = `${year}${month}${day}`;
   return {
     shortDate,
-    fullDate: `${shortDate}T${hours}${minutes}${seconds}Z`
+    fullDate: `${shortDate}T${hours}${minutes}${seconds}Z`,
   };
 };
 
@@ -168,12 +168,14 @@ export const uploadToOssWithSts = async (options: StsUploadOptions): Promise<voi
     accessKeySecret,
     securityToken,
     file,
-    onProgress
+    onProgress,
   } = options;
 
   const normalizedKey = uploadKey.replace(/^\/+/, '');
   const { scheme, host: endpointHost } = normalizeEndpoint(endpoint);
-  const objectHost = endpointHost.startsWith(`${bucket}.`) ? endpointHost : `${bucket}.${endpointHost}`;
+  const objectHost = endpointHost.startsWith(`${bucket}.`)
+    ? endpointHost
+    : `${bucket}.${endpointHost}`;
   const canonicalUri = `/${percentEncode(bucket, false)}/${percentEncode(normalizedKey, false)}`;
   const objectUrl = `${scheme}://${objectHost}/${percentEncode(normalizedKey, false)}`;
 
@@ -184,7 +186,7 @@ export const uploadToOssWithSts = async (options: StsUploadOptions): Promise<voi
     ['host', objectHost],
     ['x-oss-content-sha256', payloadHash],
     ['x-oss-date', fullDate],
-    ['x-oss-security-token', securityToken]
+    ['x-oss-security-token', securityToken],
   ];
   signedHeaders.sort(([a], [b]) => a.localeCompare(b));
   const canonicalHeaders = `${signedHeaders.map(([k, v]) => `${k}:${v.trim()}`).join('\n')}\n`;

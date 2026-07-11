@@ -296,12 +296,12 @@ async fn try_calculate_hash(
                 match FileService::calculate_hash_streaming(&mut cursor, Some(STREAM_BUFFER_SIZE))
                     .await
                 {
-                    Ok(hash) => return Ok(hash),
-                    Err(e) => return Err(format!("流式计算hash失败: {}", e)),
+                    Ok(hash) => Ok(hash),
+                    Err(e) => Err(format!("流式计算hash失败: {}", e)),
                 }
             } else {
                 let hash = FileService::calculate_hash(&data);
-                return Ok(hash);
+                Ok(hash)
             }
         }
         Err(e) => {

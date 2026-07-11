@@ -1,0 +1,82 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO ratings (\n                resource_id, user_id,\n                difficulty, overall_quality, answer_quality, format_quality, detail_level\n            )\n            VALUES ($1, $2, $3, $4, $5, $6, $7)\n            ON CONFLICT (resource_id, user_id)\n            DO UPDATE SET\n                difficulty = EXCLUDED.difficulty,\n                overall_quality = EXCLUDED.overall_quality,\n                answer_quality = EXCLUDED.answer_quality,\n                format_quality = EXCLUDED.format_quality,\n                detail_level = EXCLUDED.detail_level,\n                updated_at = CURRENT_TIMESTAMP\n            RETURNING id, resource_id, user_id,\n                      difficulty AS \"difficulty!\", overall_quality AS \"overall_quality!\",\n                      answer_quality AS \"answer_quality!\", format_quality AS \"format_quality!\",\n                      detail_level AS \"detail_level!\",\n                      created_at AS \"created_at!\", updated_at AS \"updated_at!\"\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "resource_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "difficulty!",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "overall_quality!",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 5,
+        "name": "answer_quality!",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "format_quality!",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
+        "name": "detail_level!",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "created_at!",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 9,
+        "name": "updated_at!",
+        "type_info": "Timestamp"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "bb931163d81a9771beb822a0354ad739ae82f69af2ddec456b6b806a8dc99dc8"
+}

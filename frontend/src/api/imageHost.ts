@@ -1,8 +1,8 @@
-import request from './request';
-import logger from '../utils/logger';
-import { getOssStatus, getStsToken, imageUploadCallback } from './oss';
-import { uploadToOssWithSts, uploadToSignedUrl } from '../utils/oss-upload';
-import type { Image, ImageUploadResponse, ImageListResponse, ImageListQuery } from '../types/image';
+import request from '@/api/request';
+import logger from '@/utils/logger';
+import { getOssStatus, getStsToken, imageUploadCallback } from '@/api/oss';
+import { uploadToOssWithSts, uploadToSignedUrl } from '@/utils/oss-upload';
+import type { Image, ImageUploadResponse, ImageListResponse, ImageListQuery } from '@/types/image';
 
 /**
  * 上传图片
@@ -20,7 +20,7 @@ export const uploadImage = async (
       fileType: 'image',
       fileName: file.name,
       fileSize: file.size,
-      contentType: file.type || undefined
+      contentType: file.type || undefined,
     });
 
     if (token.uploadMode === 'sts') {
@@ -33,20 +33,20 @@ export const uploadImage = async (
         accessKeySecret: token.accessKeySecret,
         securityToken: token.securityToken,
         file,
-        onProgress
+        onProgress,
       });
     } else {
       await uploadToSignedUrl({
         uploadUrl: token.uploadUrl,
         file,
         contentType: file.type || undefined,
-        onProgress
+        onProgress,
       });
     }
 
     return imageUploadCallback({
       ossKey: token.uploadKey,
-      originalName: file.name
+      originalName: file.name,
     });
   }
 
@@ -58,14 +58,14 @@ export const uploadImage = async (
     method: 'post',
     data: formData,
     headers: {
-      'Content-Type': 'multipart/form-data'
+      'Content-Type': 'multipart/form-data',
     },
     onUploadProgress: (progressEvent) => {
       if (onProgress && progressEvent.total) {
         const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
         onProgress(percent);
       }
-    }
+    },
   }) as Promise<ImageUploadResponse>;
 };
 
@@ -78,7 +78,7 @@ export const getMyImages = async (params?: ImageListQuery): Promise<ImageListRes
   return request({
     url: '/images',
     method: 'get',
-    params
+    params,
   }) as Promise<ImageListResponse>;
 };
 
@@ -90,7 +90,7 @@ export const getMyImages = async (params?: ImageListQuery): Promise<ImageListRes
 export const getImageInfo = async (imageId: string): Promise<Image> => {
   return request({
     url: `/images/${imageId}`,
-    method: 'get'
+    method: 'get',
   }) as Promise<Image>;
 };
 
@@ -101,7 +101,7 @@ export const getImageInfo = async (imageId: string): Promise<Image> => {
 export const deleteImage = async (imageId: string): Promise<void> => {
   return request({
     url: `/images/${imageId}`,
-    method: 'delete'
+    method: 'delete',
   }) as Promise<void>;
 };
 

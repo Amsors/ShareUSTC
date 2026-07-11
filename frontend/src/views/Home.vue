@@ -9,19 +9,23 @@
         <!-- 顶部栏：欢迎信息 + 日历（占满一行） -->
         <div class="top-bar">
           <!-- 欢迎区域（左侧小长方形） -->
-          <div class="welcome-box" v-if="authStore.isAuthenticated">
+          <div v-if="authStore.isAuthenticated" class="welcome-box">
             <el-avatar :size="40" class="user-avatar">
               {{ authStore.user?.username?.charAt(0).toUpperCase() }}
             </el-avatar>
             <div class="welcome-info">
               <span class="welcome-name">欢迎回来，{{ authStore.user?.username }}</span>
-              <el-tag :type="authStore.isAdmin ? 'danger' : (authStore.isVerified ? 'success' : 'info')" size="small" effect="plain">
-                {{ authStore.isAdmin ? '管理员' : (authStore.isVerified ? '已认证' : '普通用户') }}
+              <el-tag
+                :type="authStore.isAdmin ? 'danger' : authStore.isVerified ? 'success' : 'info'"
+                size="small"
+                effect="plain"
+              >
+                {{ authStore.isAdmin ? '管理员' : authStore.isVerified ? '已认证' : '普通用户' }}
               </el-tag>
             </div>
           </div>
 
-          <div class="welcome-box guest" v-else @click="$router.push('/login')">
+          <div v-else class="welcome-box guest" @click="$router.push('/login')">
             <el-icon :size="22" class="guest-icon"><User /></el-icon>
             <span class="guest-text">点击登录</span>
           </div>
@@ -47,7 +51,7 @@
           <p class="subtitle">{{ homeConfig.heroSubtitle }}</p>
           <p class="description">{{ homeConfig.heroDescription }}</p>
 
-          <div class="hero-actions" v-if="!authStore.isAuthenticated">
+          <div v-if="!authStore.isAuthenticated" class="hero-actions">
             <el-button type="primary" size="large" @click="$router.push('/register')">
               <el-icon class="btn-icon"><User /></el-icon>
               注册 / 登录
@@ -75,7 +79,9 @@
             <template v-else>
               <div class="guide-item">
                 <el-icon class="guide-icon" color="#409eff"><Collection /></el-icon>
-                <span>可创建并自主命名收藏夹（如 线性代数 力学），将资源一键加入收藏夹后打包下载</span>
+                <span
+                  >可创建并自主命名收藏夹（如 线性代数 力学），将资源一键加入收藏夹后打包下载</span
+                >
               </div>
               <div class="guide-item">
                 <el-icon class="guide-icon" color="#409eff"><Collection /></el-icon>
@@ -102,7 +108,11 @@
             <el-icon class="link-arrow"><ArrowRight /></el-icon>
           </div>
 
-          <div class="quick-link-card" @click="$router.push('/upload')" v-if="authStore.isAuthenticated">
+          <div
+            v-if="authStore.isAuthenticated"
+            class="quick-link-card"
+            @click="$router.push('/upload')"
+          >
             <div class="link-icon green">
               <el-icon :size="32"><Upload /></el-icon>
             </div>
@@ -113,7 +123,7 @@
             <el-icon class="link-arrow"><ArrowRight /></el-icon>
           </div>
 
-          <div class="quick-link-card" @click="$router.push('/register')" v-else>
+          <div v-else class="quick-link-card" @click="$router.push('/register')">
             <div class="link-icon green">
               <el-icon :size="32"><Plus /></el-icon>
             </div>
@@ -168,25 +178,32 @@
             <el-icon><Trophy /></el-icon>
             热门资源
           </h3>
-          <div class="hot-resources-list" v-loading="loadingHot">
+          <div v-loading="loadingHot" class="hot-resources-list">
             <div
               v-for="(item, index) in hotResources"
               :key="item.id"
               class="hot-resource-item"
               @click="goToResource(item.id)"
             >
-              <div class="rank-badge" :class="{ 'rank-1': index === 0, 'rank-2': index === 1, 'rank-3': index === 2 }">
+              <div
+                class="rank-badge"
+                :class="{ 'rank-1': index === 0, 'rank-2': index === 1, 'rank-3': index === 2 }"
+              >
                 {{ index + 1 }}
               </div>
               <div class="resource-content">
                 <div class="resource-title-row">
                   <span class="resource-title" :title="item.title">{{ item.title }}</span>
-                  <el-tag size="small" :type="getResourceTypeTagType(item.resourceType)" effect="plain">
+                  <el-tag
+                    size="small"
+                    :type="getResourceTypeTagType(item.resourceType)"
+                    effect="plain"
+                  >
                     {{ getResourceTypeLabel(item.resourceType) }}
                   </el-tag>
                 </div>
                 <div class="resource-meta">
-                  <span class="course-tag" v-if="item.courseName">{{ item.courseName }}</span>
+                  <span v-if="item.courseName" class="course-tag">{{ item.courseName }}</span>
                   <span class="view-count">
                     <el-icon><View /></el-icon>
                     {{ formatNumber(item.views) }} 浏览
@@ -194,7 +211,11 @@
                 </div>
               </div>
             </div>
-            <el-empty v-if="!loadingHot && hotResources.length === 0" description="暂无数据" :image-size="60" />
+            <el-empty
+              v-if="!loadingHot && hotResources.length === 0"
+              description="暂无数据"
+              :image-size="60"
+            />
           </div>
           <div class="view-more">
             <el-link type="primary" @click="$router.push('/resources')">
@@ -210,13 +231,14 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAuthStore } from '../stores/auth';
-import { getHotResources, getResourceCount } from '../api/resource';
-import type { HotResourceItem } from '../types/resource';
-import { ResourceTypeLabels } from '../types/resource';
-import UserGuideModal from '../components/common/UserGuideModal.vue';
-import logger from '../utils/logger';
-import { homeConfig } from '../config/site.config';
+import { useAuthStore } from '@/stores/auth';
+import { getHotResources, getResourceCount } from '@/api/resource';
+import type { HotResourceItem } from '@/types/resource';
+import { ResourceTypeLabels } from '@/types/resource';
+import UserGuideModal from '@/components/common/UserGuideModal.vue';
+import logger from '@/utils/logger';
+import { isHandledError } from '@/api/request';
+import { homeConfig } from '@/config/site.config';
 import {
   Search,
   Trophy,
@@ -229,7 +251,7 @@ import {
   Calendar,
   CircleCheck,
   Collection,
-  Document
+  Document,
 } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 
@@ -257,20 +279,23 @@ const getResourceTypeLabel = (type: string): string => {
   return ResourceTypeLabels[type as keyof typeof ResourceTypeLabels] || type;
 };
 
+// Element Plus el-tag 的 type 取值
+type ElTagType = 'primary' | 'success' | 'warning' | 'info' | 'danger' | '';
+
 // 获取资源类型标签样式
-const getResourceTypeTagType = (type: string): any => {
-  const typeMap: Record<string, any> = {
-    'pdf': 'danger',
-    'ppt': 'warning',
-    'pptx': 'warning',
-    'doc': 'primary',
-    'docx': 'primary',
-    'web_markdown': 'success',
-    'txt': 'info',
-    'jpeg': 'success',
-    'jpg': 'success',
-    'png': 'success',
-    'zip': 'info'
+const getResourceTypeTagType = (type: string): ElTagType => {
+  const typeMap: Record<string, ElTagType> = {
+    pdf: 'danger',
+    ppt: 'warning',
+    pptx: 'warning',
+    doc: 'primary',
+    docx: 'primary',
+    web_markdown: 'success',
+    txt: 'info',
+    jpeg: 'success',
+    jpg: 'success',
+    png: 'success',
+    zip: 'info',
   };
   return typeMap[type] || 'info';
 };
@@ -304,9 +329,11 @@ const fetchHotResources = async () => {
     } else {
       logger.warn('[Home]', '返回数据不是数组:', result);
     }
-  } catch (error: any) {
+  } catch (error) {
     logger.error('[Home]', '获取热门资源失败:', error);
-    ElMessage.error('获取热门资源失败');
+    if (!isHandledError(error)) {
+      ElMessage.error('获取热门资源失败');
+    }
   } finally {
     loadingHot.value = false;
   }
@@ -320,7 +347,7 @@ const handleSearch = () => {
   }
   router.push({
     path: '/resources',
-    query: { q: searchKeyword.value.trim() }
+    query: { q: searchKeyword.value.trim() },
   });
 };
 
@@ -348,7 +375,7 @@ onMounted(() => {
 <style scoped>
 .home {
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
 }
 
 .page-container {
@@ -385,7 +412,7 @@ onMounted(() => {
   padding: 16px 20px;
   background: #fff;
   border-radius: 12px;
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--el-border-color-lighter);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   flex-shrink: 0;
   height: 72px;
@@ -395,17 +422,17 @@ onMounted(() => {
 
 .welcome-box.guest {
   cursor: pointer;
-  color: #606266;
+  color: var(--el-text-color-regular);
   transition: all 0.3s;
 }
 
 .welcome-box.guest:hover {
-  border-color: #409eff;
-  color: #409eff;
+  border-color: var(--el-color-primary);
+  color: var(--el-color-primary);
 }
 
 .user-avatar {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--su-brand-gradient);
   color: #fff;
   font-weight: 600;
   font-size: 14px;
@@ -420,7 +447,7 @@ onMounted(() => {
 .welcome-name {
   font-size: 15px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .welcome-info .el-tag {
@@ -428,7 +455,7 @@ onMounted(() => {
 }
 
 .guest-icon {
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 .guest-text {
@@ -446,7 +473,7 @@ onMounted(() => {
   padding: 16px 24px;
   background: #fff;
   border-radius: 12px;
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--el-border-color-lighter);
   min-height: 72px;
   box-sizing: border-box;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
@@ -468,7 +495,7 @@ onMounted(() => {
 
 .info-label {
   font-size: 18px;
-  color: #606266;
+  color: var(--el-text-color-regular);
   line-height: 1;
 }
 
@@ -479,20 +506,20 @@ onMounted(() => {
 }
 
 .info-value.resource-count {
-  color: #67c23a;
+  color: var(--el-color-success);
 }
 
 .calendar-date {
   font-size: 18px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .calendar-weekday {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   padding: 4px 12px;
-  background: #f5f7fa;
+  background: var(--el-fill-color-light);
   border-radius: 6px;
 }
 
@@ -558,7 +585,7 @@ onMounted(() => {
 .guide-section {
   background: #fff;
   border-radius: 16px;
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--el-border-color-lighter);
   padding: 28px 22px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
@@ -574,7 +601,7 @@ onMounted(() => {
   align-items: flex-start;
   gap: 10px;
   font-size: 18px;
-  color: #606266;
+  color: var(--el-text-color-regular);
   line-height: 1.2;
 }
 
@@ -600,7 +627,7 @@ onMounted(() => {
   padding: 50px 24px;
   background: #fff;
   border-radius: 14px;
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--el-border-color-lighter);
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -622,18 +649,18 @@ onMounted(() => {
 }
 
 .link-icon.blue {
-  background-color: #ecf5ff;
-  color: #409eff;
+  background-color: var(--el-color-primary-light-9);
+  color: var(--el-color-primary);
 }
 
 .link-icon.green {
-  background-color: #f0f9eb;
-  color: #67c23a;
+  background-color: var(--el-color-success-light-9);
+  color: var(--el-color-success);
 }
 
 .link-icon.orange {
-  background-color: #fdf6ec;
-  color: #e6a23c;
+  background-color: var(--el-color-warning-light-9);
+  color: var(--el-color-warning);
 }
 
 .link-text {
@@ -644,23 +671,23 @@ onMounted(() => {
 .link-text h3 {
   margin: 0 0 8px 0;
   font-size: 20px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .link-text p {
   margin: 0;
   font-size: 15px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   line-height: 1.5;
 }
 
 .link-arrow {
-  color: #c0c4cc;
+  color: var(--el-text-color-disabled);
   transition: all 0.3s;
 }
 
 .quick-link-card:hover .link-arrow {
-  color: #409eff;
+  color: var(--el-color-primary);
   transform: translateX(4px);
 }
 
@@ -677,7 +704,7 @@ onMounted(() => {
 .sidebar-section {
   background: #fff;
   border-radius: 14px;
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--el-border-color-lighter);
   padding: 20px;
 }
 
@@ -688,11 +715,11 @@ onMounted(() => {
   margin: 0 0 16px 0;
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .sidebar-title .el-icon {
-  color: #409eff;
+  color: var(--el-color-primary);
 }
 
 /* 搜索区域 */
@@ -706,8 +733,8 @@ onMounted(() => {
 
 .search-box :deep(.el-input-group__append) {
   border-radius: 0 8px 8px 0;
-  background-color: #409eff;
-  border-color: #409eff;
+  background-color: var(--el-color-primary);
+  border-color: var(--el-color-primary);
   padding: 0 16px;
 }
 
@@ -739,7 +766,7 @@ onMounted(() => {
 }
 
 .hot-resource-item:hover {
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
 }
 
 .rank-badge {
@@ -749,7 +776,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   background-color: #f0f2f5;
-  color: #606266;
+  color: var(--el-text-color-regular);
   font-size: 12px;
   font-weight: 700;
   border-radius: 6px;
@@ -758,17 +785,17 @@ onMounted(() => {
 }
 
 .rank-badge.rank-1 {
-  background: linear-gradient(135deg, #ffd700 0%, #ffb800 100%);
+  background: var(--su-medal-gold);
   color: #fff;
 }
 
 .rank-badge.rank-2 {
-  background: linear-gradient(135deg, #c0c0c0 0%, #a0a0a0 100%);
+  background: var(--su-medal-silver);
   color: #fff;
 }
 
 .rank-badge.rank-3 {
-  background: linear-gradient(135deg, #cd7f32 0%, #b87333 100%);
+  background: var(--su-medal-bronze);
   color: #fff;
 }
 
@@ -787,7 +814,7 @@ onMounted(() => {
 .resource-title {
   font-size: 14px;
   font-weight: 500;
-  color: #303133;
+  color: var(--el-text-color-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -810,7 +837,7 @@ onMounted(() => {
 
 .course-tag {
   background-color: #f0f2f5;
-  color: #606266;
+  color: var(--el-text-color-regular);
   padding: 2px 8px;
   border-radius: 4px;
   white-space: nowrap;
@@ -823,7 +850,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 4px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 .view-count .el-icon {
@@ -834,7 +861,7 @@ onMounted(() => {
   margin-top: 16px;
   text-align: center;
   padding-top: 16px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--el-border-color-lighter);
 }
 
 .view-more .el-link {
@@ -950,5 +977,4 @@ onMounted(() => {
     font-size: 28px;
   }
 }
-
 </style>

@@ -19,7 +19,7 @@ pub use pdf_challenge::*;
 pub use rating::*;
 pub use relation::*;
 
-/// 记录下载事件
+/// 记录下载事件（Web 层适配：提取 IP 后委托给 service 层编排）
 async fn record_download_events(
     state: &web::Data<AppState>,
     resource_id: Uuid,
@@ -27,23 +27,17 @@ async fn record_download_events(
     title: &str,
     req: &actix_web::HttpRequest,
 ) {
-    use crate::services::{AuditLogService, ResourceService};
-
-    let _ = ResourceService::increment_downloads(&state.pool, resource_id).await;
-
     let ip_address = req
         .peer_addr()
         .map(|addr| addr.ip().to_string())
         .unwrap_or_else(|| "0.0.0.0".to_string());
 
-    let _ = ResourceService::record_download(&state.pool, resource_id, user_id, &ip_address).await;
-
-    let _ = AuditLogService::log_download_resource(
+    crate::services::ResourceService::record_download_event(
         &state.pool,
-        user_id,
         resource_id,
+        user_id,
         title,
-        Some(&ip_address),
+        &ip_address,
     )
     .await;
 }
@@ -58,54 +52,6 @@ fn sanitize_filename(filename: &str) -> String {
             c => c,
         })
         .collect()
-}
-
-/// 对文件名进行 RFC 5987 编码，用于支持中文等非 ASCII 字符
-/// 参考: https://datatracker.ietf.org/doc/html/rfc5987
-fn encode_rfc5987(filename: &str) -> String {
-    let mut result = String::new();
-    for c in filename.chars() {
-        if c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_' {
-            // ASCII 字母数字和常用符号直接保留
-            result.push(c);
-        } else {
-            // 非 ASCII 字符进行 percent-encoding
-            for byte in c.encode_utf8(&mut [0; 4]).bytes() {
-                result.push_str(&format!("%{:02X}", byte));
-            }
-        }
-    }
-    result
-}
-
-/// 检查文件名是否只包含 ASCII 字符
-fn is_ascii_filename(filename: &str) -> bool {
-    filename.is_ascii()
-}
-
-/// 构建 Content-Disposition 头部值
-///
-/// 策略：
-/// 1. 对于纯 ASCII 文件名：直接使用 filename="xxx"
-/// 2. 对于含中文的文件名：同时提供 filename 和 filename*
-///    - filename：包含原始中文，HTTP 库会自动处理编码
-///    - filename*：RFC 5987 编码，现代浏览器优先使用
-fn build_content_disposition(filename: &str) -> String {
-    if is_ascii_filename(filename) {
-        // 纯 ASCII 文件名，直接使用
-        format!("attachment; filename=\"{}\"", filename)
-    } else {
-        // 包含中文等非 ASCII 字符
-        // RFC 5987 编码用于 filename*
-        let encoded = encode_rfc5987(filename);
-
-        // 同时提供 filename 和 filename*
-        // filename* 优先被现代浏览器使用，能正确显示中文
-        format!(
-            "attachment; filename*=UTF-8''{}; filename=\"{}\"",
-            encoded, filename
-        )
-    }
 }
 
 /// 配置公开资源路由（不需要认证）

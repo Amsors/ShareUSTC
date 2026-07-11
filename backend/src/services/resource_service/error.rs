@@ -1,33 +1,26 @@
 //! 资源服务错误类型定义
 
 use crate::services::{file_service::FileError, storage_service::StorageError};
+use crate::utils::{bad_request, conflict, forbidden, internal_error, not_found};
+use actix_web::{HttpResponse, ResponseError};
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum ResourceError {
-    DatabaseError(String),
-    FileError(String),
+    #[error("未找到: {0}")]
     NotFound(String),
+    #[error("验证错误: {0}")]
     ValidationError(String),
+    #[error("未授权: {0}")]
     Unauthorized(String),
-    AiError(String),
+    #[error("资源冲突: {0}")]
     Conflict(String), // 资源冲突（如：资源已存在）
+    #[error("文件错误: {0}")]
+    FileError(String),
+    #[error("AI 错误: {0}")]
+    AiError(String),
+    #[error("数据库错误: {0}")]
+    Database(#[from] sqlx::Error),
 }
-
-impl std::fmt::Display for ResourceError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ResourceError::DatabaseError(msg) => write!(f, "数据库错误: {}", msg),
-            ResourceError::FileError(msg) => write!(f, "文件错误: {}", msg),
-            ResourceError::NotFound(msg) => write!(f, "未找到: {}", msg),
-            ResourceError::ValidationError(msg) => write!(f, "验证错误: {}", msg),
-            ResourceError::Unauthorized(msg) => write!(f, "未授权: {}", msg),
-            ResourceError::AiError(msg) => write!(f, "AI 错误: {}", msg),
-            ResourceError::Conflict(msg) => write!(f, "资源冲突: {}", msg),
-        }
-    }
-}
-
-impl std::error::Error for ResourceError {}
 
 impl From<FileError> for ResourceError {
     fn from(err: FileError) -> Self {
@@ -49,8 +42,27 @@ impl From<StorageError> for ResourceError {
     }
 }
 
-impl From<sqlx::Error> for ResourceError {
-    fn from(err: sqlx::Error) -> Self {
-        ResourceError::DatabaseError(err.to_string())
+impl ResponseError for ResourceError {
+    fn error_response(&self) -> HttpResponse {
+        match self {
+            ResourceError::NotFound(msg) => not_found(msg),
+            ResourceError::ValidationError(msg) => bad_request(msg),
+            ResourceError::Unauthorized(msg) => forbidden(msg),
+            ResourceError::Conflict(msg) => conflict(msg),
+            // 文件/AI 错误按历史行为把内部信息回传（非 SQL 细节）
+            ResourceError::FileError(msg) => {
+                log::error!("[Resource] 文件错误 | error={}", msg);
+                internal_error(msg)
+            }
+            ResourceError::AiError(msg) => {
+                log::error!("[Resource] AI 错误 | error={}", msg);
+                internal_error(msg)
+            }
+            // 数据库错误一律 500，仅记录日志，响应不含 SQL 细节
+            ResourceError::Database(e) => {
+                log::error!("[Resource] 数据库错误 | error={}", e);
+                internal_error("服务器内部错误")
+            }
+        }
     }
 }

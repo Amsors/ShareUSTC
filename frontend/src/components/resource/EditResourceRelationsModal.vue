@@ -69,7 +69,10 @@
             <div class="resource-option">
               <span class="resource-title">{{ resource.title }}</span>
               <el-tag size="small" :type="getResourceTypeTagType(resource.resourceType)">
-                {{ ResourceTypeLabels[resource.resourceType as keyof typeof ResourceTypeLabels] || resource.resourceType }}
+                {{
+                  ResourceTypeLabels[resource.resourceType as keyof typeof ResourceTypeLabels] ||
+                  resource.resourceType
+                }}
               </el-tag>
             </div>
           </el-option>
@@ -80,9 +83,7 @@
 
     <template #footer>
       <el-button @click="visible = false">取消</el-button>
-      <el-button type="primary" :loading="submitting" @click="handleSubmit">
-        保存修改
-      </el-button>
+      <el-button type="primary" :loading="submitting" @click="handleSubmit"> 保存修改 </el-button>
     </template>
   </el-dialog>
 </template>
@@ -90,14 +91,15 @@
 <script setup lang="ts">
 import { ref, reactive, watch, onMounted, computed } from 'vue';
 import { ElMessage } from 'element-plus';
-import { getTeachers } from '../../api/teacher';
-import { getCourses } from '../../api/course';
-import { searchResourcesForRelation, updateResourceRelations } from '../../api/resource';
-import { ResourceTypeLabels } from '../../types/resource';
-import type { Teacher } from '../../types/teacher';
-import type { Course } from '../../types/course';
-import type { RelatedResourceItem } from '../../types/resource';
-import logger from '../../utils/logger';
+import { getTeachers } from '@/api/teacher';
+import { getCourses } from '@/api/course';
+import { searchResourcesForRelation, updateResourceRelations } from '@/api/resource';
+import { getErrorMessage, isHandledError } from '@/api/request';
+import { ResourceTypeLabels } from '@/types/resource';
+import type { Teacher } from '@/types/teacher';
+import type { Course } from '@/types/course';
+import type { RelatedResourceItem } from '@/types/resource';
+import logger from '@/utils/logger';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -114,13 +116,13 @@ const emit = defineEmits<{
 
 const visible = computed({
   get: () => props.modelValue,
-  set: (val: boolean) => emit('update:modelValue', val)
+  set: (val: boolean) => emit('update:modelValue', val),
 });
 
 const form = reactive({
   teacherSns: [...props.initialTeachers],
   courseSns: [...props.initialCourses],
-  relatedResourceIds: [...props.initialRelatedResources]
+  relatedResourceIds: [...props.initialRelatedResources],
 });
 
 // 数据加载状态
@@ -135,14 +137,17 @@ const submitting = ref(false);
 let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 
 // 监听 props 变化，更新表单
-watch(() => props.modelValue, (newVal) => {
-  if (newVal) {
-    form.teacherSns = [...props.initialTeachers];
-    form.courseSns = [...props.initialCourses];
-    form.relatedResourceIds = [...props.initialRelatedResources];
-    loadData();
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    if (newVal) {
+      form.teacherSns = [...props.initialTeachers];
+      form.courseSns = [...props.initialCourses];
+      form.relatedResourceIds = [...props.initialRelatedResources];
+      loadData();
+    }
   }
-});
+);
 
 // 加载教师列表
 const loadTeachers = async () => {
@@ -204,7 +209,7 @@ const getResourceTypeTagType = (type: string) => {
     doc: 'primary',
     docx: 'primary',
     web_markdown: 'success',
-    zip: 'info'
+    zip: 'info',
   };
   return typeMap[type] || 'info';
 };
@@ -216,13 +221,16 @@ const handleSubmit = async () => {
     await updateResourceRelations(props.resourceId, {
       teacherSns: form.teacherSns,
       courseSns: form.courseSns,
-      relatedResourceIds: form.relatedResourceIds
+      relatedResourceIds: form.relatedResourceIds,
     });
     ElMessage.success('关联信息修改成功');
     emit('success');
     visible.value = false;
-  } catch (error: any) {
-    ElMessage.error(error.message || '修改失败');
+  } catch (error) {
+    logger.error('[EditResourceRelationsModal]', '修改关联信息失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '修改失败'));
+    }
   } finally {
     submitting.value = false;
   }

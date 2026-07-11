@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# pre-commit 钩子：只对本次提交涉及的部分做快速检查（完整检查用 scripts/check.sh）
+# 启用方式：git config core.hooksPath .githooks
+set -e
+
+ROOT="$(git rev-parse --show-toplevel)"
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR)
+
+if echo "$STAGED" | grep -q '^backend/.*\.rs$'; then
+    echo "==> pre-commit: cargo fmt --check (backend)"
+    (cd "$ROOT/backend" && cargo fmt --check) || {
+        echo "❌ 后端代码未格式化，请运行: cd backend && cargo fmt"; exit 1; }
+fi
+
+if echo "$STAGED" | grep -qE '^frontend/src/.*\.(ts|vue|js|css|scss)$'; then
+    echo "==> pre-commit: prettier + eslint (frontend 变更文件)"
+    FILES=$(echo "$STAGED" | grep -E '^frontend/src/.*\.(ts|vue|js|css|scss)$' | sed 's|^frontend/||')
+    (cd "$ROOT/frontend" && npx prettier --check $FILES) || {
+        echo "❌ 前端代码未格式化，请运行: cd frontend && npm run format"; exit 1; }
+    TS_VUE=$(echo "$FILES" | grep -E '\.(ts|vue|js)$' || true)
+    if [ -n "$TS_VUE" ]; then
+        (cd "$ROOT/frontend" && npx eslint $TS_VUE) || {
+            echo "❌ ESLint 检查未通过，请修复后再提交"; exit 1; }
+    fi
+fi
+
+exit 0

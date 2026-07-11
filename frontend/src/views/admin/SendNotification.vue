@@ -19,16 +19,8 @@
         </el-form-item>
 
         <!-- 指定用户ID -->
-        <el-form-item
-          v-if="form.target === 'specific'"
-          label="用户ID"
-          prop="userId"
-        >
-          <el-input
-            v-model="form.userId"
-            placeholder="请输入用户UUID"
-            clearable
-          />
+        <el-form-item v-if="form.target === 'specific'" label="用户ID" prop="userId">
+          <el-input v-model="form.userId" placeholder="请输入用户UUID" clearable />
           <div class="form-tip">输入要接收通知的用户的唯一标识符</div>
         </el-form-item>
 
@@ -120,7 +112,10 @@ import { reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import type { FormInstance, FormRules } from 'element-plus';
 import { Bell, Promotion } from '@element-plus/icons-vue';
-import { sendNotification, type SendNotificationRequest } from '../../api/admin';
+import { sendNotification } from '@/api/admin';
+import type { SendNotificationRequest } from '@/types/admin';
+import { isHandledError, getErrorMessage } from '@/api/request';
+import logger from '@/utils/logger';
 
 const formRef = ref<FormInstance>();
 const sending = ref(false);
@@ -132,7 +127,7 @@ const form = reactive<SendNotificationRequest>({
   content: '',
   notificationType: 'system',
   priority: 'normal',
-  linkUrl: ''
+  linkUrl: '',
 });
 
 const rules: FormRules = {
@@ -148,19 +143,19 @@ const rules: FormRules = {
         } else {
           callback();
         }
-      }
-    }
+      },
+    },
   ],
   notificationType: [{ required: true, message: '请选择通知类型', trigger: 'change' }],
   priority: [{ required: true, message: '请选择优先级', trigger: 'change' }],
   title: [
     { required: true, message: '请输入通知标题', trigger: 'blur' },
-    { min: 2, max: 100, message: '标题长度应为2-100个字符', trigger: 'blur' }
+    { min: 2, max: 100, message: '标题长度应为2-100个字符', trigger: 'blur' },
   ],
   content: [
     { required: true, message: '请输入通知内容', trigger: 'blur' },
-    { min: 5, max: 1000, message: '内容长度应为5-1000个字符', trigger: 'blur' }
-  ]
+    { min: 5, max: 1000, message: '内容长度应为5-1000个字符', trigger: 'blur' },
+  ],
 };
 
 const handleSend = async () => {
@@ -178,7 +173,7 @@ const handleSend = async () => {
           {
             confirmButtonText: '确认发送',
             cancelButtonText: '取消',
-            type: 'warning'
+            type: 'warning',
           }
         );
       } catch {
@@ -189,15 +184,11 @@ const handleSend = async () => {
     // 群发确认
     if (form.target === 'all') {
       try {
-        await ElMessageBox.confirm(
-          '该通知将发送给所有用户，请确认？',
-          '确认群发通知',
-          {
-            confirmButtonText: '确认发送',
-            cancelButtonText: '取消',
-            type: 'warning'
-          }
-        );
+        await ElMessageBox.confirm('该通知将发送给所有用户，请确认？', '确认群发通知', {
+          confirmButtonText: '确认发送',
+          cancelButtonText: '取消',
+          type: 'warning',
+        });
       } catch {
         return;
       }
@@ -211,7 +202,7 @@ const handleSend = async () => {
         content: form.content.trim(),
         notificationType: form.notificationType,
         priority: form.priority,
-        linkUrl: form.linkUrl?.trim() || undefined
+        linkUrl: form.linkUrl?.trim() || undefined,
       };
 
       if (form.target === 'specific' && form.userId) {
@@ -221,9 +212,10 @@ const handleSend = async () => {
       await sendNotification(requestData);
       ElMessage.success('通知发送成功');
       handleReset();
-    } catch (error: any) {
-      if (!error.isHandled) {
-        ElMessage.error(error.message || '发送失败');
+    } catch (error) {
+      logger.error('[SendNotification]', '发送通知失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error(getErrorMessage(error, '发送失败'));
       }
     } finally {
       sending.value = false;
@@ -254,7 +246,7 @@ const handleReset = () => {
   font-size: 24px;
   font-weight: 600;
   margin-bottom: 24px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .notification-form-card {
@@ -271,7 +263,7 @@ const handleReset = () => {
 
 .form-tip {
   font-size: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-top: 4px;
 }
 
@@ -284,19 +276,19 @@ const handleReset = () => {
   font-size: 16px;
   font-weight: 500;
   margin-bottom: 16px;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .preview-card {
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   border-radius: 8px;
   padding: 16px;
-  border-left: 4px solid #409eff;
+  border-left: 4px solid var(--el-color-primary);
 }
 
 .preview-card.high-priority {
-  border-left-color: #f56c6c;
-  background-color: #fef0f0;
+  border-left-color: var(--el-color-danger);
+  background-color: var(--el-color-danger-light-9);
 }
 
 .preview-header {
@@ -309,12 +301,12 @@ const handleReset = () => {
 .preview-title {
   font-weight: 600;
   font-size: 15px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .preview-content {
   font-size: 14px;
-  color: #606266;
+  color: var(--el-text-color-regular);
   line-height: 1.6;
   white-space: pre-wrap;
 }
@@ -327,7 +319,7 @@ const handleReset = () => {
 .form-actions {
   margin-top: 32px;
   padding-top: 24px;
-  border-top: 1px solid #e4e7ed;
+  border-top: 1px solid var(--el-border-color-light);
 }
 
 .form-actions :deep(.el-button) {

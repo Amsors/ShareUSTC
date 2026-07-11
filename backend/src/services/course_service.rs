@@ -7,24 +7,29 @@ use crate::models::{
 };
 
 /// 课程服务错误类型
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum CourseError {
-    DatabaseError(String),
+    #[error("未找到: {0}")]
     NotFound(String),
+    #[error("验证错误: {0}")]
     ValidationError(String),
+    #[error("数据库错误: {0}")]
+    Database(#[from] sqlx::Error),
 }
 
-impl std::fmt::Display for CourseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl actix_web::ResponseError for CourseError {
+    fn error_response(&self) -> actix_web::HttpResponse {
+        use crate::utils::{bad_request, internal_error, not_found};
         match self {
-            CourseError::DatabaseError(msg) => write!(f, "数据库错误: {}", msg),
-            CourseError::NotFound(msg) => write!(f, "未找到: {}", msg),
-            CourseError::ValidationError(msg) => write!(f, "验证错误: {}", msg),
+            CourseError::NotFound(msg) => not_found(msg),
+            CourseError::ValidationError(msg) => bad_request(msg),
+            CourseError::Database(e) => {
+                log::error!("[Course] 数据库错误 | error={}", e);
+                internal_error("服务器内部错误")
+            }
         }
     }
 }
-
-impl std::error::Error for CourseError {}
 
 /// 课程服务
 pub struct CourseService;
@@ -51,8 +56,7 @@ impl CourseService {
         .bind(&req.semester)
         .bind(req.credits)
         .fetch_one(pool)
-        .await
-        .map_err(|e| CourseError::DatabaseError(e.to_string()))?;
+        .await?;
 
         Ok(course)
     }
@@ -78,10 +82,7 @@ impl CourseService {
 
         // 查询总数
         let count_sql = format!("SELECT COUNT(*) FROM courses WHERE {}", where_clause);
-        let total: i64 = sqlx::query_scalar(&count_sql)
-            .fetch_one(pool)
-            .await
-            .map_err(|e| CourseError::DatabaseError(e.to_string()))?;
+        let total: i64 = sqlx::query_scalar(&count_sql).fetch_one(pool).await?;
 
         // 查询列表
         let list_sql = format!(
@@ -97,8 +98,7 @@ impl CourseService {
 
         let courses = sqlx::query_as::<_, Course>(&list_sql)
             .fetch_all(pool)
-            .await
-            .map_err(|e| CourseError::DatabaseError(e.to_string()))?;
+            .await?;
 
         Ok(CourseListResponse {
             courses,
@@ -119,8 +119,7 @@ impl CourseService {
         )
         .bind(sn)
         .fetch_optional(pool)
-        .await
-        .map_err(|e| CourseError::DatabaseError(e.to_string()))?;
+        .await?;
 
         course.ok_or_else(|| CourseError::NotFound(format!("课程编号 {} 不存在", sn)))
     }
@@ -148,10 +147,7 @@ impl CourseService {
             "#
         };
 
-        let courses = sqlx::query_as::<_, Course>(sql)
-            .fetch_all(pool)
-            .await
-            .map_err(|e| CourseError::DatabaseError(e.to_string()))?;
+        let courses = sqlx::query_as::<_, Course>(sql).fetch_all(pool).await?;
 
         Ok(courses)
     }
@@ -194,8 +190,7 @@ impl CourseService {
         let course = sqlx::query_as::<_, Course>(&update_sql)
             .bind(sn)
             .fetch_one(pool)
-            .await
-            .map_err(|e| CourseError::DatabaseError(e.to_string()))?;
+            .await?;
 
         Ok(course)
     }
@@ -222,7 +217,7 @@ impl CourseService {
             if e.to_string().contains("no rows") {
                 CourseError::NotFound(format!("课程编号 {} 不存在", sn))
             } else {
-                CourseError::DatabaseError(e.to_string())
+                CourseError::Database(e)
             }
         })?;
 
@@ -234,8 +229,7 @@ impl CourseService {
         let result = sqlx::query("DELETE FROM courses WHERE sn = $1")
             .bind(sn)
             .execute(pool)
-            .await
-            .map_err(|e| CourseError::DatabaseError(e.to_string()))?;
+            .await?;
 
         if result.rows_affected() == 0 {
             return Err(CourseError::NotFound(format!("课程编号 {} 不存在", sn)));
@@ -285,7 +279,7 @@ impl CourseService {
             }
 
             if let Some(credits) = item.credits {
-                if credits < 0.0 || credits > 100.0 {
+                if !(0.0..=100.0).contains(&credits) {
                     fail_count += 1;
                     failed_items.push(FailedCourseImportItem {
                         name: item.name.clone(),
@@ -300,8 +294,7 @@ impl CourseService {
                 sqlx::query_as("SELECT sn FROM courses WHERE name = $1 LIMIT 1")
                     .bind(&item.name)
                     .fetch_optional(pool)
-                    .await
-                    .map_err(|e| CourseError::DatabaseError(e.to_string()))?;
+                    .await?;
 
             if existing.is_some() {
                 fail_count += 1;

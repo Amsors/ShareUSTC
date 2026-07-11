@@ -13,12 +13,8 @@
           <el-icon :size="32" color="#409EFF"><Folder /></el-icon>
           <h1>{{ favoriteName }}</h1>
         </div>
-        <p class="favorite-meta">
-          共 {{ resourceCount }} 个资源 · 创建于 {{ createdAt }}
-        </p>
-        <p v-if="currentFavorite?.id" class="favorite-uuid">
-          收藏夹ID: {{ currentFavorite.id }}
-        </p>
+        <p class="favorite-meta">共 {{ resourceCount }} 个资源 · 创建于 {{ createdAt }}</p>
+        <p v-if="currentFavorite?.id" class="favorite-uuid">收藏夹ID: {{ currentFavorite.id }}</p>
       </div>
       <div class="header-actions">
         <el-button @click="showEditModal = true">
@@ -32,7 +28,7 @@
           <el-icon><Star /></el-icon>
           {{ isDefaultFavorite(currentFavorite?.id || '') ? '取消默认' : '设为默认' }}
         </el-button>
-        
+
         <!-- 下载按钮组 -->
         <el-dropdown
           v-if="resourceCount > 0"
@@ -48,7 +44,7 @@
               <el-dropdown-item command="browser">
                 <el-icon><ChromeFilled /></el-icon>
                 浏览器打包下载
-                <el-tag size="small" type="success" effect="plain" style="margin-left: 8px;">
+                <el-tag size="small" type="success" effect="plain" style="margin-left: 8px">
                   推荐
                 </el-tag>
               </el-dropdown-item>
@@ -63,15 +59,11 @@
             </el-dropdown-menu>
           </template>
         </el-dropdown>
-        <el-button
-          v-else
-          type="primary"
-          disabled
-        >
+        <el-button v-else type="primary" disabled>
           <el-icon><Download /></el-icon>
           打包下载
         </el-button>
-        
+
         <el-button type="danger" text @click="handleDelete">
           <el-icon><Delete /></el-icon>
           删除收藏夹
@@ -87,14 +79,9 @@
       </div>
 
       <!-- 空状态 -->
-      <el-empty
-        v-else-if="resources.length === 0"
-        description="收藏夹是空的"
-      >
+      <el-empty v-else-if="resources.length === 0" description="收藏夹是空的">
         <p>快去浏览资源并添加到收藏夹吧！</p>
-        <el-button type="primary" @click="$router.push('/resources')">
-          浏览资源
-        </el-button>
+        <el-button type="primary" @click="$router.push('/resources')"> 浏览资源 </el-button>
       </el-empty>
 
       <!-- 资源卡片列表 -->
@@ -130,7 +117,7 @@
                 <p v-if="resource.courseName" class="resource-course">
                   {{ resource.courseName }}
                 </p>
-                <div class="resource-tags" v-if="resource.tags?.length">
+                <div v-if="resource.tags?.length" class="resource-tags">
                   <el-tag
                     v-for="tag in resource.tags.slice(0, 3)"
                     :key="tag"
@@ -185,7 +172,12 @@
     <CreateFavoriteModal
       v-if="currentFavorite"
       v-model="showEditModal"
-      :favorite="{ id: currentFavorite.id, name: currentFavorite.name, resourceCount: currentFavorite.resourceCount, createdAt: currentFavorite.createdAt }"
+      :favorite="{
+        id: currentFavorite.id,
+        name: currentFavorite.name,
+        resourceCount: currentFavorite.resourceCount,
+        createdAt: currentFavorite.createdAt,
+      }"
       is-edit
       @success="handleEditSuccess"
     />
@@ -226,22 +218,24 @@ import {
   Loading,
   ChromeFilled,
   Document,
-  FolderOpened
+  FolderOpened,
 } from '@element-plus/icons-vue';
-import { useDefaultFavorite } from '../../composables/useDefaultFavorite';
-import { useFavoriteStore } from '../../stores/favorite';
-import { downloadFavorite } from '../../api/favorite';
+import { useDefaultFavorite } from '@/composables/useDefaultFavorite';
+import { useFavoriteStore } from '@/stores/favorite';
+import { getErrorMessage, isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
+import { downloadFavorite } from '@/api/favorite';
 import {
   browserDownloadFavorite,
   checkBrowserSupport,
   downloadToFolder,
   checkFileSystemAccessSupport,
   type DownloadProgress,
-  type FolderDownloadProgress
-} from '../../utils/browserZip';
-import CreateFavoriteModal from '../../components/favorite/CreateFavoriteModal.vue';
-import BrowserDownloadProgressModal from '../../components/favorite/BrowserDownloadProgressModal.vue';
-import FolderDownloadProgressModal from '../../components/favorite/FolderDownloadProgressModal.vue';
+  type FolderDownloadProgress,
+} from '@/utils/browserZip';
+import CreateFavoriteModal from '@/components/favorite/CreateFavoriteModal.vue';
+import BrowserDownloadProgressModal from '@/components/favorite/BrowserDownloadProgressModal.vue';
+import FolderDownloadProgressModal from '@/components/favorite/FolderDownloadProgressModal.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -298,22 +292,22 @@ const createdAt = computed(() => {
 const hasMixedStorage = computed(() => {
   const resList = resources.value;
   if (resList.length === 0) return false;
-  const hasOss = resList.some(r => r.storageType === 'oss');
-  const hasLocal = resList.some(r => r.storageType === 'local');
+  const hasOss = resList.some((r) => r.storageType === 'oss');
+  const hasLocal = resList.some((r) => r.storageType === 'local');
   return hasOss && hasLocal;
 });
 
 // 获取资源类型颜色
 const getResourceTypeColor = (type: string) => {
   const colorMap: Record<string, string> = {
-    'pdf': '#F56C6C',
-    'ppt': '#E6A23C',
-    'pptx': '#E6A23C',
-    'doc': '#409EFF',
-    'docx': '#409EFF',
-    'web_markdown': '#67C23A',
-    'txt': '#909399',
-    'zip': '#909399'
+    pdf: '#F56C6C',
+    ppt: '#E6A23C',
+    pptx: '#E6A23C',
+    doc: '#409EFF',
+    docx: '#409EFF',
+    web_markdown: '#67C23A',
+    txt: '#909399',
+    zip: '#909399',
   };
   return colorMap[type] || '#909399';
 };
@@ -332,7 +326,10 @@ const fetchDetail = async () => {
   try {
     await favoriteStore.fetchFavoriteDetail(favoriteId.value);
   } catch (error) {
-    ElMessage.error('获取收藏夹详情失败');
+    logger.error('[FavoriteDetail]', '获取收藏夹详情失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error('获取收藏夹详情失败');
+    }
     router.push('/favorites');
   } finally {
     loading.value = false;
@@ -349,8 +346,11 @@ const removeResource = async (resourceId: string) => {
   try {
     await favoriteStore.removeResourceFromFavorite(favoriteId.value, resourceId);
     ElMessage.success('移除成功');
-  } catch (error: any) {
-    ElMessage.error(error.message || '移除失败');
+  } catch (error) {
+    logger.error('[FavoriteDetail]', '移除资源失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '移除失败'));
+    }
   }
 };
 
@@ -445,8 +445,11 @@ const handleServerDownload = async () => {
   try {
     await downloadFavorite(favoriteId.value, currentFavorite.value?.name);
     ElMessage.success('开始下载');
-  } catch (error: any) {
-    ElMessage.error(error.message || '下载失败');
+  } catch (error) {
+    logger.error('[FavoriteDetail]', '服务器打包下载失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '下载失败'));
+    }
   } finally {
     downloading.value = false;
   }
@@ -482,15 +485,18 @@ const handleBrowserDownload = async () => {
         browserDownloadProgress.value = progress;
       }
     );
-    
+
     ElMessage.success('浏览器打包下载完成');
-  } catch (error: any) {
+  } catch (error) {
+    logger.error('[FavoriteDetail]', '浏览器打包下载失败', error);
     browserDownloadProgress.value = {
       ...browserDownloadProgress.value,
       status: 'error',
-      error: error.message || '下载失败',
+      error: getErrorMessage(error, '下载失败'),
     };
-    ElMessage.error(error.message || '浏览器打包下载失败');
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '浏览器打包下载失败'));
+    }
   } finally {
     isBrowserDownloading.value = false;
   }
@@ -529,14 +535,10 @@ const handleFolderDownloadClick = async () => {
   // 检查浏览器支持
   const support = checkFileSystemAccessSupport();
   if (!support.supported) {
-    ElMessageBox.alert(
-      support.reason || '您的浏览器不支持文件夹选择功能',
-      '浏览器不支持',
-      {
-        confirmButtonText: '知道了',
-        type: 'warning',
-      }
-    );
+    ElMessageBox.alert(support.reason || '您的浏览器不支持文件夹选择功能', '浏览器不支持', {
+      confirmButtonText: '知道了',
+      type: 'warning',
+    });
     return;
   }
 
@@ -582,24 +584,25 @@ const handleFolderDownload = async () => {
   showFolderDownloadModal.value = true;
 
   try {
-    await downloadToFolder(
-      resources.value,
-      (progress) => {
-        folderDownloadProgress.value = progress;
-      }
-    );
+    await downloadToFolder(resources.value, (progress) => {
+      folderDownloadProgress.value = progress;
+    });
 
     if (folderDownloadProgress.value.status !== 'cancelled') {
       ElMessage.success('文件已成功保存到文件夹');
     }
-  } catch (error: any) {
+  } catch (error) {
+    const message = getErrorMessage(error, '');
     folderDownloadProgress.value = {
       ...folderDownloadProgress.value,
       status: 'error',
-      error: error.message || '下载失败',
+      error: message || '下载失败',
     };
-    if (error.message && !error.message.includes('取消')) {
-      ElMessage.error(error.message || '下载到文件夹失败');
+    if (message && !message.includes('取消')) {
+      logger.error('[FavoriteDetail]', '下载到文件夹失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error(message || '下载到文件夹失败');
+      }
     }
   } finally {
     isFolderDownloading.value = false;
@@ -636,7 +639,7 @@ const handleDelete = async () => {
       {
         confirmButtonText: '删除',
         cancelButtonText: '取消',
-        type: 'warning'
+        type: 'warning',
       }
     );
 
@@ -649,9 +652,12 @@ const handleDelete = async () => {
 
     ElMessage.success('删除成功');
     router.push('/favorites');
-  } catch (error: any) {
+  } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '删除失败');
+      logger.error('[FavoriteDetail]', '删除收藏夹失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error(getErrorMessage(error, '删除失败'));
+      }
     }
   }
 };
@@ -712,19 +718,19 @@ onMounted(() => {
       h1 {
         margin: 0;
         font-size: 24px;
-        color: #303133;
+        color: var(--el-text-color-primary);
       }
     }
 
     .favorite-meta {
       margin: 0;
-      color: #909399;
+      color: var(--el-text-color-secondary);
       font-size: 14px;
     }
 
     .favorite-uuid {
       margin: 4px 0 0;
-      color: #c0c4cc;
+      color: var(--el-text-color-disabled);
       font-size: 12px;
       font-family: monospace;
     }
@@ -833,11 +839,11 @@ onMounted(() => {
   z-index: 1;
 
   &.oss {
-    background-color: #67C23A;
+    background-color: var(--el-color-success);
   }
 
   &.local {
-    background-color: #909399;
+    background-color: var(--el-text-color-secondary);
   }
 }
 
@@ -851,7 +857,7 @@ onMounted(() => {
     margin: 0 0 4px;
     font-size: 14px;
     font-weight: 600;
-    color: #303133;
+    color: var(--el-text-color-primary);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -860,7 +866,7 @@ onMounted(() => {
   .resource-course {
     margin: 0 0 4px;
     font-size: 12px;
-    color: #606266;
+    color: var(--el-text-color-regular);
     min-height: 18px; // 固定高度，无内容时占位
   }
 
@@ -876,7 +882,7 @@ onMounted(() => {
     display: flex;
     gap: 12px;
     font-size: 12px;
-    color: #909399;
+    color: var(--el-text-color-secondary);
     margin-top: auto; // 将统计信息推到底部
 
     span {
@@ -886,7 +892,7 @@ onMounted(() => {
     }
 
     .file-size {
-      color: #409EFF;
+      color: var(--el-color-primary);
     }
   }
 }
@@ -894,7 +900,7 @@ onMounted(() => {
 .resource-actions {
   margin-top: auto;
   padding-top: 8px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--el-border-color-lighter);
   text-align: right;
   flex-shrink: 0;
 }

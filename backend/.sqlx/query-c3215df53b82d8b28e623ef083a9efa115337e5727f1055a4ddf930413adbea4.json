@@ -1,0 +1,76 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                COALESCE(SUM(difficulty), 0) AS \"difficulty_total?\",\n                COUNT(difficulty) AS \"difficulty_count?\",\n                COALESCE(SUM(overall_quality), 0) AS \"overall_quality_total?\",\n                COUNT(overall_quality) AS \"overall_quality_count?\",\n                COALESCE(SUM(answer_quality), 0) AS \"answer_quality_total?\",\n                COUNT(answer_quality) AS \"answer_quality_count?\",\n                COALESCE(SUM(format_quality), 0) AS \"format_quality_total?\",\n                COUNT(format_quality) AS \"format_quality_count?\",\n                COALESCE(SUM(detail_level), 0) AS \"detail_level_total?\",\n                COUNT(detail_level) AS \"detail_level_count?\"\n            FROM ratings\n            WHERE resource_id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "difficulty_total?",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "difficulty_count?",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "overall_quality_total?",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "overall_quality_count?",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "answer_quality_total?",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 5,
+        "name": "answer_quality_count?",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "format_quality_total?",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 7,
+        "name": "format_quality_count?",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "detail_level_total?",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 9,
+        "name": "detail_level_count?",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "c3215df53b82d8b28e623ef083a9efa115337e5727f1055a4ddf930413adbea4"
+}

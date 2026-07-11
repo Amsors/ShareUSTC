@@ -1,0 +1,154 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                r.id,\n                r.title,\n                r.course_name,\n                r.resource_type,\n                r.category,\n                r.tags,\n                r.file_size,\n                COALESCE(r.storage_type, 'local') as storage_type,\n                r.updated_at,\n                fr.added_at,\n                rs.views,\n                rs.downloads,\n                rs.likes,\n                rs.difficulty_total,\n                rs.difficulty_count,\n                rs.overall_quality_total,\n                rs.overall_quality_count,\n                rs.answer_quality_total,\n                rs.answer_quality_count,\n                rs.format_quality_total,\n                rs.format_quality_count,\n                rs.detail_level_total,\n                rs.detail_level_count\n            FROM favorite_resources fr\n            JOIN resources r ON fr.resource_id = r.id\n            LEFT JOIN resource_stats rs ON r.id = rs.resource_id\n            WHERE fr.favorite_id = $1\n            ORDER BY fr.added_at DESC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "course_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "resource_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "category",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "tags",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 6,
+        "name": "file_size",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 7,
+        "name": "storage_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "updated_at",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 9,
+        "name": "added_at",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 10,
+        "name": "views",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 11,
+        "name": "downloads",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 12,
+        "name": "likes",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 13,
+        "name": "difficulty_total",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 14,
+        "name": "difficulty_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 15,
+        "name": "overall_quality_total",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 16,
+        "name": "overall_quality_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 17,
+        "name": "answer_quality_total",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 18,
+        "name": "answer_quality_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 19,
+        "name": "format_quality_total",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 20,
+        "name": "format_quality_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 21,
+        "name": "detail_level_total",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 22,
+        "name": "detail_level_count",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      null,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "07de203be27b120ed59ed6e8810ff17fb03c98e6ed3502ed919cd38c2f9833bc"
+}

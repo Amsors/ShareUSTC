@@ -22,7 +22,7 @@ pub fn encode_rfc5987(filename: &str) -> String {
 
 /// 检查文件名是否只包含 ASCII 字符
 pub fn is_ascii_filename(filename: &str) -> bool {
-    filename.chars().all(|c| c.is_ascii())
+    filename.is_ascii()
 }
 
 /// 构建 Content-Disposition 头部值，支持中文文件名
@@ -49,7 +49,22 @@ pub fn build_content_disposition(filename: &str) -> String {
     }
 }
 
-/// 构建错误响应
+/// 构建带显式错误码的错误响应
+///
+/// `error` 为机器可读错误码（PascalCase），用于前端按码分支（如 `InvalidCredentials`、`TokenExpired`）。
+/// 详见 dev_docs/specs/api_design.md 第 3.2 节。
+pub fn error_response_with_code(status: u16, error: &str, message: &str) -> HttpResponse {
+    HttpResponse::build(
+        actix_web::http::StatusCode::from_u16(status)
+            .unwrap_or(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR),
+    )
+    .json(serde_json::json!({
+        "error": error,
+        "message": message
+    }))
+}
+
+/// 构建错误响应（错误码按状态码通用映射）
 pub fn error_response(status: u16, message: &str) -> HttpResponse {
     let error = match status {
         400 => "BadRequest",
@@ -64,14 +79,7 @@ pub fn error_response(status: u16, message: &str) -> HttpResponse {
         _ => "UnknownError",
     };
 
-    HttpResponse::build(
-        actix_web::http::StatusCode::from_u16(status)
-            .unwrap_or(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR),
-    )
-    .json(serde_json::json!({
-        "error": error,
-        "message": message
-    }))
+    error_response_with_code(status, error, message)
 }
 
 /// 快速构建 400 Bad Request 错误

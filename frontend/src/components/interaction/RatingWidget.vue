@@ -4,9 +4,7 @@
     <div class="rating-display">
       <div class="rating-header">
         <h4>资源评分</h4>
-        <span v-if="ratingInfo" class="rating-count">
-          {{ ratingInfo.ratingCount }} 人评分
-        </span>
+        <span v-if="ratingInfo" class="rating-count"> {{ ratingInfo.ratingCount }} 人评分 </span>
       </div>
 
       <!-- 加载状态 -->
@@ -17,11 +15,7 @@
 
       <!-- 评分维度列表 -->
       <div v-else-if="ratingInfo && ratingInfo.dimensions.length > 0" class="dimensions-list">
-        <div
-          v-for="dim in ratingInfo.dimensions"
-          :key="dim.key"
-          class="dimension-item"
-        >
+        <div v-for="dim in ratingInfo.dimensions" :key="dim.key" class="dimension-item">
           <div class="dimension-info">
             <span class="dimension-name">{{ dim.name }}</span>
             <el-tooltip :content="dim.description" placement="top">
@@ -51,21 +45,13 @@
 
       <!-- 评分按钮 -->
       <div v-if="isAuthenticated" class="rating-actions">
-        <el-button
-          type="primary"
-          size="large"
-          @click="showRatingDialog = true"
-        >
+        <el-button type="primary" size="large" @click="showRatingDialog = true">
           <el-icon><Edit /></el-icon>
           {{ hasUserRating ? '修改评分' : '我要评分' }}
         </el-button>
       </div>
       <div v-else class="rating-actions">
-        <el-button
-          type="default"
-          size="large"
-          @click="goToLogin"
-        >
+        <el-button type="default" size="large" @click="goToLogin">
           <el-icon><Lock /></el-icon>
           登录后评分
         </el-button>
@@ -83,11 +69,7 @@
       <div class="rating-form">
         <p class="rating-hint">请对以下5个维度进行评分（1-10分）</p>
 
-        <div
-          v-for="dim in dimensionConfigs"
-          :key="dim.key"
-          class="rating-item"
-        >
+        <div v-for="dim in dimensionConfigs" :key="dim.key" class="rating-item">
           <div class="rating-item-header">
             <span class="rating-item-name">{{ dim.name }}</span>
             <el-tooltip :content="dim.description" placement="top">
@@ -113,16 +95,12 @@
           <el-button
             v-if="hasUserRating"
             type="danger"
-            @click="handleDeleteRating"
             :loading="submitting"
+            @click="handleDeleteRating"
           >
             删除评分
           </el-button>
-          <el-button
-            type="primary"
-            @click="handleSubmitRating"
-            :loading="submitting"
-          >
+          <el-button type="primary" :loading="submitting" @click="handleSubmitRating">
             提交评分
           </el-button>
         </div>
@@ -136,11 +114,12 @@ import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Edit, StarFilled, InfoFilled, Loading, Lock } from '@element-plus/icons-vue';
-import { getResourceRatingInfo, submitRating, deleteRating } from '../../api/rating';
-import type { ResourceRatingInfo, CreateRatingRequest } from '../../types/rating';
-import { RatingDimensionsConfig } from '../../types/rating';
-import logger from '../../utils/logger';
-import { useAuthStore } from '../../stores/auth';
+import { getResourceRatingInfo, submitRating, deleteRating } from '@/api/rating';
+import type { ResourceRatingInfo, CreateRatingRequest } from '@/types/rating';
+import { RatingDimensionsConfig } from '@/types/rating';
+import logger from '@/utils/logger';
+import { useAuthStore } from '@/stores/auth';
+import { getErrorMessage, isHandledError } from '@/api/request';
 
 const props = defineProps<{
   resourceId: string;
@@ -234,9 +213,10 @@ const handleSubmitRating = async () => {
     ElMessage.success('评分提交成功！');
     showRatingDialog.value = false;
     await loadRatingInfo();
-  } catch (error: any) {
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '评分提交失败');
+  } catch (error) {
+    logger.error('[RatingWidget]', '提交评分失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '评分提交失败'));
     }
   } finally {
     submitting.value = false;
@@ -246,15 +226,11 @@ const handleSubmitRating = async () => {
 // 删除评分
 const handleDeleteRating = async () => {
   try {
-    await ElMessageBox.confirm(
-      '确定要删除您的评分吗？',
-      '确认删除',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning',
-      }
-    );
+    await ElMessageBox.confirm('确定要删除您的评分吗？', '确认删除', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    });
 
     submitting.value = true;
     await deleteRating(props.resourceId);
@@ -269,9 +245,12 @@ const handleDeleteRating = async () => {
     ratingForm.detailLevel = 5;
 
     await loadRatingInfo();
-  } catch (error: any) {
+  } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '删除失败');
+      logger.error('[RatingWidget]', '删除评分失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error(getErrorMessage(error, '删除失败'));
+      }
     }
   } finally {
     submitting.value = false;
@@ -282,14 +261,18 @@ const handleDeleteRating = async () => {
 const goToLogin = () => {
   router.push({
     path: '/login',
-    query: { redirect: router.currentRoute.value.fullPath }
+    query: { redirect: router.currentRoute.value.fullPath },
   });
 };
 
 // 监听资源ID变化
-watch(() => props.resourceId, () => {
-  loadRatingInfo();
-}, { immediate: true });
+watch(
+  () => props.resourceId,
+  () => {
+    loadRatingInfo();
+  },
+  { immediate: true }
+);
 
 // 组件挂载时加载
 onMounted(() => {
@@ -299,7 +282,7 @@ onMounted(() => {
 
 <style scoped>
 .rating-widget {
-  background: #f5f7fa;
+  background: var(--el-fill-color-light);
   border-radius: 8px;
   padding: 20px;
 }
@@ -314,12 +297,12 @@ onMounted(() => {
 .rating-header h4 {
   margin: 0;
   font-size: 16px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .rating-count {
   font-size: 15 px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 .loading-state {
@@ -328,7 +311,7 @@ onMounted(() => {
   justify-content: center;
   gap: 8px;
   padding: 40px 0;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 .loading-icon {
@@ -336,8 +319,12 @@ onMounted(() => {
 }
 
 @keyframes rotating {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .dimensions-list {
@@ -366,12 +353,12 @@ onMounted(() => {
 
 .dimension-name {
   font-size: 14px;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .dimension-info .el-icon {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   cursor: help;
 }
 
@@ -409,7 +396,7 @@ onMounted(() => {
 }
 
 .score-number.no-score {
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-weight: normal;
   font-size: 13px;
 }
@@ -420,19 +407,19 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 40px 0;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 .no-ratings .el-icon {
   font-size: 32px;
-  color: #dcdfe6;
+  color: var(--el-border-color);
 }
 
 .rating-actions {
   display: flex;
   justify-content: center;
   padding-top: 16px;
-  border-top: 1px solid #e4e7ed;
+  border-top: 1px solid var(--el-border-color-light);
 }
 
 /* 弹窗样式 */
@@ -442,7 +429,7 @@ onMounted(() => {
 
 .rating-hint {
   margin: 0 0 20px 0;
-  color: #606266;
+  color: var(--el-text-color-regular);
   font-size: 14px;
 }
 
@@ -460,12 +447,12 @@ onMounted(() => {
 .rating-item-name {
   font-size: 14px;
   font-weight: 500;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .rating-item-header .el-icon {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   cursor: help;
 }
 

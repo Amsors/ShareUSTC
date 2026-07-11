@@ -5,19 +5,13 @@ use actix_web::{
 use serde::Serialize;
 use uuid::Uuid;
 
-mod api;
-mod config;
-mod db;
-mod middleware;
-mod models;
-mod services;
-mod tasks;
-mod utils;
-
-use crate::utils::{internal_error, not_found};
-use config::Config;
-use db::AppState;
-use middleware::{JwtAuth, PublicPathRule};
+use backend::api;
+use backend::config::{self, Config};
+use backend::db::{self, AppState};
+use backend::middleware::{JwtAuth, PublicPathRule};
+use backend::services::{self, StorageBackendType};
+use backend::tasks;
+use backend::utils::{internal_error, not_found};
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -55,8 +49,6 @@ async fn health_check(config: web::Data<AppState>) -> impl Responder {
 /// 使用后端代理模式读取文件，避免浏览器直接访问 OSS 产生 CORS 问题
 #[get("/images/{image_id}")]
 async fn serve_image(data: web::Data<AppState>, path: web::Path<Uuid>) -> impl Responder {
-    use crate::services::StorageBackendType;
-
     let image_id = path.into_inner();
 
     // 从数据库获取图片路径和存储类型
@@ -109,8 +101,7 @@ async fn serve_image(data: web::Data<AppState>, path: web::Path<Uuid>) -> impl R
                 Ok(file_content) => {
                     // 根据MIME类型设置Content-Type
                     let content_type = mime_type
-                        .map(|m| m.parse::<mime::Mime>().ok())
-                        .flatten()
+                        .and_then(|m| m.parse::<mime::Mime>().ok())
                         .unwrap_or(mime::APPLICATION_OCTET_STREAM);
 
                     HttpResponse::Ok()
@@ -189,6 +180,16 @@ async fn main() -> std::io::Result<()> {
             std::process::exit(1);
         }
     };
+
+    // 执行数据库迁移（backend/migrations/）
+    // 迁移采用 IF NOT EXISTS 幂等写法：新库建全量 schema，存量库重复执行无副作用
+    match sqlx::migrate!().run(&pool).await {
+        Ok(()) => log::info!("[System] 数据库迁移完成"),
+        Err(e) => {
+            log::error!("[System] 数据库迁移失败 | error={}", e);
+            std::process::exit(1);
+        }
+    }
 
     // 同步管理员权限（根据环境变量配置）
     if !config.admin_usernames.is_empty() {

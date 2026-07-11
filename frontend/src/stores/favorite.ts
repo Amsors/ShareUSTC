@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { Favorite, FavoriteDetail } from '../types/favorite';
-import * as favoriteApi from '../api/favorite';
-import request from '../api/request';
+import type { Favorite, FavoriteDetail } from '@/types/favorite';
+import * as favoriteApi from '@/api/favorite';
+import request, { isBusinessError } from '@/api/request';
 
 export const useFavoriteStore = defineStore('favorite', () => {
   // State
@@ -78,7 +78,7 @@ export const useFavoriteStore = defineStore('favorite', () => {
     try {
       await favoriteApi.updateFavorite(favoriteId, { name });
       // 更新本地状态
-      const index = favorites.value.findIndex(f => f.id === favoriteId);
+      const index = favorites.value.findIndex((f) => f.id === favoriteId);
       if (index !== -1) {
         favorites.value[index]!.name = name;
       }
@@ -102,7 +102,7 @@ export const useFavoriteStore = defineStore('favorite', () => {
     try {
       await favoriteApi.deleteFavorite(favoriteId);
       // 从本地列表中移除
-      favorites.value = favorites.value.filter(f => f.id !== favoriteId);
+      favorites.value = favorites.value.filter((f) => f.id !== favoriteId);
       // 如果当前查看的收藏夹被删除，清空它
       if (currentFavorite.value?.id === favoriteId) {
         currentFavorite.value = null;
@@ -122,7 +122,10 @@ export const useFavoriteStore = defineStore('favorite', () => {
    * @returns 是否成功添加（如果资源已存在返回false）
    * @throws 非业务错误（如网络错误）会抛出异常
    */
-  const addResourceToFavorite = async (favoriteId: string, resourceId: string): Promise<boolean> => {
+  const addResourceToFavorite = async (
+    favoriteId: string,
+    resourceId: string
+  ): Promise<boolean> => {
     try {
       // 使用原始request调用，添加skipErrorHandler标记让拦截器不显示弹窗
       await request({
@@ -130,10 +133,10 @@ export const useFavoriteStore = defineStore('favorite', () => {
         method: 'post',
         data: { resourceId },
         skipErrorHandler: true, // 标记跳过错误处理，由调用方处理
-      } as any);
+      });
 
       // 更新本地收藏夹计数
-      const favorite = favorites.value.find(f => f.id === favoriteId);
+      const favorite = favorites.value.find((f) => f.id === favoriteId);
       if (favorite) {
         favorite.resourceCount++;
       }
@@ -143,9 +146,9 @@ export const useFavoriteStore = defineStore('favorite', () => {
       }
 
       return true; // 添加成功
-    } catch (err: any) {
+    } catch (err) {
       // 检查是否是资源已存在的错误（409状态码）
-      if (err.status === 409 || err.response?.status === 409) {
+      if (isBusinessError(err) && err.status === 409) {
         return false; // 资源已存在，返回false但不抛出错误
       }
       // 其他错误继续抛出
@@ -157,22 +160,18 @@ export const useFavoriteStore = defineStore('favorite', () => {
    * 从收藏夹移除资源
    */
   const removeResourceFromFavorite = async (favoriteId: string, resourceId: string) => {
-    try {
-      await favoriteApi.removeFromFavorite(favoriteId, resourceId);
-      // 更新本地收藏夹计数
-      const favorite = favorites.value.find(f => f.id === favoriteId);
-      if (favorite) {
-        favorite.resourceCount = Math.max(0, favorite.resourceCount - 1);
-      }
-      // 如果当前查看的是这个收藏夹，从列表中移除
-      if (currentFavorite.value?.id === favoriteId) {
-        currentFavorite.value.resources = currentFavorite.value.resources.filter(
-          r => r.id !== resourceId
-        );
-        currentFavorite.value.resourceCount = currentFavorite.value.resources.length;
-      }
-    } catch (err) {
-      throw err;
+    await favoriteApi.removeFromFavorite(favoriteId, resourceId);
+    // 更新本地收藏夹计数
+    const favorite = favorites.value.find((f) => f.id === favoriteId);
+    if (favorite) {
+      favorite.resourceCount = Math.max(0, favorite.resourceCount - 1);
+    }
+    // 如果当前查看的是这个收藏夹，从列表中移除
+    if (currentFavorite.value?.id === favoriteId) {
+      currentFavorite.value.resources = currentFavorite.value.resources.filter(
+        (r) => r.id !== resourceId
+      );
+      currentFavorite.value.resourceCount = currentFavorite.value.resources.length;
     }
   };
 
@@ -183,7 +182,7 @@ export const useFavoriteStore = defineStore('favorite', () => {
     try {
       const response = await favoriteApi.checkResourceInFavorite(resourceId);
       return response;
-    } catch (err) {
+    } catch {
       return { inFavorites: [], isFavorited: false };
     }
   };

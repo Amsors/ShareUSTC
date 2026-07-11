@@ -79,7 +79,7 @@
         </el-row>
 
         <!-- 资源类型分布 -->
-        <div class="distribution-section" v-if="stats.resourceStats.typeDistribution.length > 0">
+        <div v-if="stats.resourceStats.typeDistribution.length > 0" class="distribution-section">
           <h4 class="subsection-title">资源类型分布</h4>
           <div class="type-distribution">
             <div
@@ -130,7 +130,7 @@
         </el-row>
 
         <!-- 热门资源排行 -->
-        <div class="top-resources-section" v-if="stats.downloadStats.topResources.length > 0">
+        <div v-if="stats.downloadStats.topResources.length > 0" class="top-resources-section">
           <h4 class="subsection-title">热门资源排行（Top 10）</h4>
           <el-table :data="stats.downloadStats.topResources" stripe style="width: 100%">
             <el-table-column type="index" width="50" label="排名" />
@@ -142,9 +142,7 @@
             </el-table-column>
             <el-table-column width="100" align="center">
               <template #default="{ row }">
-                <el-button type="primary" link @click="viewResource(row.id)">
-                  查看
-                </el-button>
+                <el-button type="primary" link @click="viewResource(row.id)"> 查看 </el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -186,7 +184,10 @@
         </el-row>
 
         <!-- 评分分布 -->
-        <div class="rating-distribution" v-if="stats.interactionStats.ratingDistribution.length > 0">
+        <div
+          v-if="stats.interactionStats.ratingDistribution.length > 0"
+          class="rating-distribution"
+        >
           <h4 class="subsection-title">评分分布</h4>
           <div class="rating-bars">
             <div
@@ -223,9 +224,12 @@ import {
   ChatDotSquare,
   StarFilled,
   Pointer,
-  Loading
+  Loading,
 } from '@element-plus/icons-vue';
-import { getDetailedStats, type DetailedStats } from '../../api/admin';
+import { getDetailedStats } from '@/api/admin';
+import type { DetailedStats } from '@/types/admin';
+import { isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 const router = useRouter();
 const stats = ref<DetailedStats | null>(null);
@@ -236,8 +240,9 @@ const fetchStats = async () => {
   try {
     const data = await getDetailedStats();
     stats.value = data;
-  } catch (error: any) {
-    if (!error.isHandled) {
+  } catch (error) {
+    logger.error('[DetailedStats]', '获取统计数据失败', error);
+    if (!isHandledError(error)) {
       ElMessage.error('获取统计数据失败');
     }
   } finally {
@@ -256,38 +261,38 @@ const calculatePercentage = (value: number, total: number): number => {
 
 const formatResourceType = (type: string): string => {
   const typeMap: Record<string, string> = {
-    'web_markdown': 'Markdown文档',
-    'pdf': 'PDF文档',
-    'ppt': 'PPT演示',
-    'pptx': 'PPT演示',
-    'doc': 'Word文档',
-    'docx': 'Word文档',
-    'txt': '文本文件',
-    'zip': '压缩文件',
-    'image': '图片',
-    'unknown': '其他类型'
+    web_markdown: 'Markdown文档',
+    pdf: 'PDF文档',
+    ppt: 'PPT演示',
+    pptx: 'PPT演示',
+    doc: 'Word文档',
+    docx: 'Word文档',
+    txt: '文本文件',
+    zip: '压缩文件',
+    image: '图片',
+    unknown: '其他类型',
   };
   return typeMap[type] || type;
 };
 
 const formatRatingRange = (range: string): string => {
   const rangeMap: Record<string, string> = {
-    'excellent': '优秀 (9-10分)',
-    'good': '良好 (7-8分)',
-    'average': '一般 (5-6分)',
-    'poor': '较差 (3-4分)',
-    'bad': '很差 (1-2分)'
+    excellent: '优秀 (9-10分)',
+    good: '良好 (7-8分)',
+    average: '一般 (5-6分)',
+    poor: '较差 (3-4分)',
+    bad: '很差 (1-2分)',
   };
   return rangeMap[range] || range;
 };
 
 const getRatingColor = (range: string): string => {
   const colorMap: Record<string, string> = {
-    'excellent': '#67c23a',
-    'good': '#409eff',
-    'average': '#e6a23c',
-    'poor': '#f56c6c',
-    'bad': '#909399'
+    excellent: '#67c23a',
+    good: '#409eff',
+    average: '#e6a23c',
+    poor: '#f56c6c',
+    bad: '#909399',
   };
   return colorMap[range] || '#409eff';
 };
@@ -306,7 +311,7 @@ onMounted(() => {
   font-size: 24px;
   font-weight: 600;
   margin-bottom: 24px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 /* 加载状态 */
@@ -316,7 +321,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 60px 0;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 .loading-icon {
@@ -350,16 +355,16 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .subsection-title {
   font-size: 14px;
   font-weight: 600;
-  color: #606266;
+  color: var(--el-text-color-regular);
   margin: 24px 0 16px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #e4e7ed;
+  border-bottom: 1px solid var(--el-border-color-light);
 }
 
 /* 用户统计网格 */
@@ -372,28 +377,28 @@ onMounted(() => {
 .stat-item {
   text-align: center;
   padding: 20px;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   border-radius: 8px;
 }
 
 .stat-item.highlight {
-  background-color: #ecf5ff;
+  background-color: var(--el-color-primary-light-9);
 }
 
 .stat-value {
   font-size: 32px;
   font-weight: 700;
-  color: #303133;
+  color: var(--el-text-color-primary);
   line-height: 1.2;
 }
 
 .stat-item.highlight .stat-value {
-  color: #409eff;
+  color: var(--el-color-primary);
 }
 
 .stat-label {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-top: 8px;
 }
 
@@ -401,44 +406,44 @@ onMounted(() => {
 .resource-stat-card {
   text-align: center;
   padding: 20px;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   border-radius: 8px;
   margin-bottom: 16px;
 }
 
 .resource-stat-card.pending {
-  background-color: #fdf6ec;
+  background-color: var(--el-color-warning-light-9);
 }
 
 .resource-stat-card.approved {
-  background-color: #f0f9eb;
+  background-color: var(--el-color-success-light-9);
 }
 
 .resource-stat-card.rejected {
-  background-color: #fef0f0;
+  background-color: var(--el-color-danger-light-9);
 }
 
 .resource-stat-value {
   font-size: 28px;
   font-weight: 700;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .resource-stat-card.pending .resource-stat-value {
-  color: #e6a23c;
+  color: var(--el-color-warning);
 }
 
 .resource-stat-card.approved .resource-stat-value {
-  color: #67c23a;
+  color: var(--el-color-success);
 }
 
 .resource-stat-card.rejected .resource-stat-value {
-  color: #f56c6c;
+  color: var(--el-color-danger);
 }
 
 .resource-stat-label {
   font-size: 13px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-top: 4px;
 }
 
@@ -463,7 +468,7 @@ onMounted(() => {
   width: 100px;
   flex-shrink: 0;
   font-size: 14px;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .type-item :deep(.el-progress) {
@@ -474,23 +479,23 @@ onMounted(() => {
 .download-stat {
   text-align: center;
   padding: 24px;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   border-radius: 8px;
 }
 
 .download-value {
   font-size: 36px;
   font-weight: 700;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .download-value.highlight {
-  color: #67c23a;
+  color: var(--el-color-success);
 }
 
 .download-label {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-top: 8px;
 }
 
@@ -504,20 +509,20 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   padding: 24px;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   border-radius: 8px;
 }
 
 .interaction-value {
   font-size: 28px;
   font-weight: 700;
-  color: #303133;
+  color: var(--el-text-color-primary);
   margin-top: 12px;
 }
 
 .interaction-label {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-top: 4px;
 }
 
@@ -542,7 +547,7 @@ onMounted(() => {
   width: 120px;
   flex-shrink: 0;
   font-size: 13px;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .rating-bar-item :deep(.el-progress) {

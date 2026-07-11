@@ -22,8 +22,7 @@ pub async fn delete_resource(
     let resource: Resource = sqlx::query_as::<_, Resource>("SELECT * FROM resources WHERE id = $1")
         .bind(resource_id)
         .fetch_optional(pool)
-        .await
-        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?
+        .await?
         .ok_or_else(|| ResourceError::NotFound(format!("资源 {} 不存在", resource_id)))?;
 
     // 检查权限（上传者或管理员）
@@ -63,8 +62,7 @@ pub async fn delete_resource(
     sqlx::query("DELETE FROM resources WHERE id = $1")
         .bind(resource_id)
         .execute(pool)
-        .await
-        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+        .await?;
 
     Ok(title)
 }
@@ -89,8 +87,7 @@ pub async fn update_resource_content(
     let resource: Resource = sqlx::query_as::<_, Resource>("SELECT * FROM resources WHERE id = $1")
         .bind(resource_id)
         .fetch_optional(pool)
-        .await
-        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?
+        .await?
         .ok_or_else(|| ResourceError::NotFound(format!("资源 {} 不存在", resource_id)))?;
 
     // 检查权限（上传者或管理员）
@@ -248,8 +245,7 @@ pub async fn update_resource_content(
     .bind(resource_id)
     .bind(old_hash)
     .fetch_optional(pool)
-    .await
-    .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+    .await?;
 
     match update_result {
         Some(updated_at) => Ok(UpdateResourceContentResponse {
@@ -290,8 +286,7 @@ pub async fn update_resource_description(
     let resource: Resource = sqlx::query_as::<_, Resource>("SELECT * FROM resources WHERE id = $1")
         .bind(resource_id)
         .fetch_optional(pool)
-        .await
-        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?
+        .await?
         .ok_or_else(|| ResourceError::NotFound(format!("资源 {} 不存在", resource_id)))?;
 
     // 检查权限（上传者或管理员）
@@ -308,8 +303,7 @@ pub async fn update_resource_description(
     .bind(description)
     .bind(resource_id)
     .execute(pool)
-    .await
-    .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+    .await?;
 
     log::info!(
         "[Resource] 资源描述更新成功 | resource_id={}, user_id={}",
@@ -334,8 +328,7 @@ pub async fn update_resource_relations(
         sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM resources WHERE id = $1)")
             .bind(resource_id)
             .fetch_one(pool)
-            .await
-            .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+            .await?;
 
     if !resource_exists {
         return Err(ResourceError::NotFound(format!(
@@ -345,10 +338,7 @@ pub async fn update_resource_relations(
     }
 
     // 开启事务
-    let mut tx = pool
-        .begin()
-        .await
-        .map_err(|e| ResourceError::DatabaseError(format!("开启事务失败: {}", e)))?;
+    let mut tx = pool.begin().await.map_err(ResourceError::Database)?;
 
     // 1. 更新教师关联 - 先删除旧的，再插入新的
     if let Err(e) = sqlx::query("DELETE FROM resource_teachers WHERE resource_id = $1")
@@ -357,10 +347,7 @@ pub async fn update_resource_relations(
         .await
     {
         let _ = tx.rollback().await;
-        return Err(ResourceError::DatabaseError(format!(
-            "删除旧教师关联失败: {}",
-            e
-        )));
+        return Err(ResourceError::Database(e));
     }
 
     for teacher_sn in &teacher_sns {
@@ -385,10 +372,7 @@ pub async fn update_resource_relations(
         .await
     {
         let _ = tx.rollback().await;
-        return Err(ResourceError::DatabaseError(format!(
-            "删除旧课程关联失败: {}",
-            e
-        )));
+        return Err(ResourceError::Database(e));
     }
 
     for course_sn in &course_sns {
@@ -413,10 +397,7 @@ pub async fn update_resource_relations(
         .await
     {
         let _ = tx.rollback().await;
-        return Err(ResourceError::DatabaseError(format!(
-            "删除旧资源关联失败: {}",
-            e
-        )));
+        return Err(ResourceError::Database(e));
     }
 
     for related_id in &related_resource_ids {
@@ -442,7 +423,7 @@ pub async fn update_resource_relations(
 
     // 提交事务
     if let Err(e) = tx.commit().await {
-        return Err(ResourceError::DatabaseError(format!("提交事务失败: {}", e)));
+        return Err(ResourceError::Database(e));
     }
 
     log::info!(

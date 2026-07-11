@@ -14,7 +14,7 @@ export const calculateFileHash = async (
   onProgress?: (progress: number) => void
 ): Promise<string> => {
   // 使用 Web Crypto API 计算 SHA256
-  const crypto = window.crypto || (window as any).msCrypto;
+  const crypto = window.crypto || (window as unknown as { msCrypto?: Crypto }).msCrypto;
   if (!crypto || !crypto.subtle) {
     throw new Error('浏览器不支持 Web Crypto API，无法计算文件哈希');
   }
@@ -29,7 +29,7 @@ export const calculateFileHash = async (
 
   // 将 ArrayBuffer 转换为十六进制字符串
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 
   return hashHex.toLowerCase();
 };
@@ -44,7 +44,7 @@ export const calculateFileHashChunked = async (
   file: File,
   onProgress?: (progress: number) => void
 ): Promise<string> => {
-  const crypto = window.crypto || (window as any).msCrypto;
+  const crypto = window.crypto || (window as unknown as { msCrypto?: Crypto }).msCrypto;
   if (!crypto || !crypto.subtle) {
     throw new Error('浏览器不支持 Web Crypto API，无法计算文件哈希');
   }
@@ -71,7 +71,7 @@ export const calculateFileHashChunked = async (
 
   // 转换为十六进制
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 
   return hashHex.toLowerCase();
 };

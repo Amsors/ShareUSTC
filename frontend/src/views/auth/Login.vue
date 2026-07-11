@@ -38,8 +38,8 @@
             type="primary"
             size="large"
             :loading="authStore.isLoading"
-            @click="handleSubmit"
             style="width: 100%"
+            @click="handleSubmit"
           >
             登录
           </el-button>
@@ -58,10 +58,10 @@
 import { ref, reactive } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { User, Lock } from '@element-plus/icons-vue';
-import { useAuthStore } from '../../stores/auth';
+import { useAuthStore } from '@/stores/auth';
 import type { FormInstance, FormRules } from 'element-plus';
-import logger from '../../utils/logger';
-import { authConfig } from '../../config/site.config';
+import logger from '@/utils/logger';
+import { authConfig } from '@/config/site.config';
 
 const router = useRouter();
 const route = useRoute();
@@ -70,18 +70,18 @@ const formRef = ref<FormInstance>();
 
 const form = reactive({
   username: '',
-  password: ''
+  password: '',
 });
 
 const rules: FormRules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 50, message: '用户名长度在 3 到 50 个字符', trigger: 'blur' }
+    { min: 3, max: 50, message: '用户名长度在 3 到 50 个字符', trigger: 'blur' },
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度至少为 6 个字符', trigger: 'blur' }
-  ]
+    { min: 6, message: '密码长度至少为 6 个字符', trigger: 'blur' },
+  ],
 };
 
 const handleSubmit = async () => {
@@ -93,7 +93,7 @@ const handleSubmit = async () => {
 
     const success = await authStore.loginUser({
       username: form.username,
-      password: form.password
+      password: form.password,
     });
 
     if (success) {
@@ -101,7 +101,7 @@ const handleSubmit = async () => {
       const redirect = route.query.redirect as string;
       router.push(redirect || '/');
     }
-  } catch (error) {
+  } catch {
     // 验证失败，不执行登录
     logger.debug('[Login]', '表单验证失败');
   }
@@ -114,7 +114,7 @@ const handleSubmit = async () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--su-brand-gradient);
   padding: 20px;
 }
 
@@ -127,26 +127,26 @@ const handleSubmit = async () => {
 .login-title {
   text-align: center;
   margin: 0;
-  color: #303133;
+  color: var(--el-text-color-primary);
   font-size: 24px;
 }
 
 .login-subtitle {
   text-align: center;
   margin: 8px 0 0;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 14px;
 }
 
 .login-links {
   text-align: center;
   margin-top: 16px;
-  color: #606266;
+  color: var(--el-text-color-regular);
   font-size: 14px;
 }
 
 .login-links a {
-  color: #409eff;
+  color: var(--el-color-primary);
   text-decoration: none;
   margin-left: 4px;
 }

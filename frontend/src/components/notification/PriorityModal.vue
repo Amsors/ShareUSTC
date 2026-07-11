@@ -20,9 +20,7 @@
       <p class="priority-text">{{ currentNotification.content }}</p>
 
       <div v-if="currentNotification.linkUrl" class="priority-link">
-        <el-link type="primary" @click="handleLinkClick">
-          点击查看详情
-        </el-link>
+        <el-link type="primary" @click="handleLinkClick"> 点击查看详情 </el-link>
       </div>
 
       <div class="priority-meta">
@@ -33,14 +31,10 @@
 
     <template #footer>
       <div class="priority-footer">
-        <el-button
-          v-if="pendingCount > 1"
-          @click="handleDismissAndNext"
-          :loading="dismissing"
-        >
+        <el-button v-if="pendingCount > 1" :loading="dismissing" @click="handleDismissAndNext">
           下一条
         </el-button>
-        <el-button type="primary" @click="handleDismiss" :loading="dismissing">
+        <el-button type="primary" :loading="dismissing" @click="handleDismiss">
           {{ pendingCount > 1 ? '我知道了' : '关闭' }}
         </el-button>
       </div>
@@ -52,9 +46,11 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { WarningFilled } from '@element-plus/icons-vue';
-import { useNotificationStore } from '../../stores/notification';
-import type { Notification } from '../../types/notification';
+import { useNotificationStore } from '@/stores/notification';
+import type { Notification } from '@/types/notification';
 import { ElMessage } from 'element-plus';
+import { isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 const router = useRouter();
 const notificationStore = useNotificationStore();
@@ -98,8 +94,9 @@ async function handleDismiss() {
   try {
     await notificationStore.dismissPriority(currentNotification.value.id);
     showNext();
-  } catch (error: any) {
-    if (!error.isHandled) {
+  } catch (error) {
+    logger.error('[PriorityModal]', '关闭优先通知失败', error);
+    if (!isHandledError(error)) {
       ElMessage.error('操作失败');
     }
   } finally {
@@ -119,8 +116,9 @@ async function handleDismissAndNext() {
       showNext();
       dismissing.value = false;
     }, 200);
-  } catch (error: any) {
-    if (!error.isHandled) {
+  } catch (error) {
+    logger.error('[PriorityModal]', '关闭优先通知失败', error);
+    if (!isHandledError(error)) {
       ElMessage.error('操作失败');
     }
     dismissing.value = false;
@@ -153,7 +151,7 @@ function formatTime(time: string): string {
 
 // 暴露方法给父组件
 defineExpose({
-  checkAndShowPriorityNotifications
+  checkAndShowPriorityNotifications,
 });
 </script>
 

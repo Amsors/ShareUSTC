@@ -33,7 +33,7 @@
           <el-radio-button label="approved">已通过</el-radio-button>
           <el-radio-button label="rejected">已拒绝</el-radio-button>
         </el-radio-group>
-        <el-button @click="fetchComments" :icon="Refresh">刷新</el-button>
+        <el-button :icon="Refresh" @click="fetchComments">刷新</el-button>
       </div>
     </el-card>
 
@@ -42,12 +42,7 @@
       <el-empty v-if="!loading && comments.length === 0" description="暂无评论" />
 
       <div v-else class="comment-list">
-        <el-card
-          v-for="comment in comments"
-          :key="comment.id"
-          class="comment-item"
-          shadow="hover"
-        >
+        <el-card v-for="comment in comments" :key="comment.id" class="comment-item" shadow="hover">
           <div class="comment-header">
             <div class="user-info">
               <el-avatar :size="32" :icon="UserFilled" />
@@ -90,20 +85,10 @@
             >
               拒绝
             </el-button>
-            <el-button
-              type="primary"
-              link
-              size="small"
-              @click="viewResource(comment.resourceId)"
-            >
+            <el-button type="primary" link size="small" @click="viewResource(comment.resourceId)">
               查看资源
             </el-button>
-            <el-button
-              type="danger"
-              link
-              size="small"
-              @click="handleDelete(comment)"
-            >
+            <el-button type="danger" link size="small" @click="handleDelete(comment)">
               删除
             </el-button>
           </div>
@@ -131,7 +116,9 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Refresh, UserFilled, Document, Clock } from '@element-plus/icons-vue';
-import { adminApi } from '../../api/admin';
+import { getCommentList, auditComment, deleteComment } from '@/api/admin';
+import { isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 interface Comment {
   id: string;
@@ -153,15 +140,15 @@ const perPage = ref(20);
 const filterStatus = ref('');
 
 // 统计
-const pendingCount = computed(() =>
-  comments.value.filter(c => c.auditStatus === 'pending').length
+const pendingCount = computed(
+  () => comments.value.filter((c) => c.auditStatus === 'pending').length
 );
 
 const getStatusType = (status: string) => {
   const types: Record<string, string> = {
     pending: 'warning',
     approved: 'success',
-    rejected: 'danger'
+    rejected: 'danger',
   };
   return types[status] || 'info';
 };
@@ -170,7 +157,7 @@ const getStatusLabel = (status: string) => {
   const labels: Record<string, string> = {
     pending: '待审核',
     approved: '已通过',
-    rejected: '已拒绝'
+    rejected: '已拒绝',
   };
   return labels[status] || status;
 };
@@ -184,15 +171,12 @@ const formatDate = (date: string) => {
 const fetchComments = async () => {
   loading.value = true;
   try {
-    const data = await adminApi.getCommentList(
-      page.value,
-      perPage.value,
-      filterStatus.value || undefined
-    );
+    const data = await getCommentList(page.value, perPage.value, filterStatus.value || undefined);
     comments.value = data.comments;
     total.value = data.total;
-  } catch (error: any) {
-    if (!error.isHandled) {
+  } catch (error) {
+    logger.error('[CommentManagement]', '获取评论列表失败', error);
+    if (!isHandledError(error)) {
       ElMessage.error('获取评论列表失败');
     }
   } finally {
@@ -211,66 +195,63 @@ const viewResource = (resourceId: string) => {
 
 const handleApprove = async (comment: Comment) => {
   try {
-    await ElMessageBox.confirm(
-      '确定要通过这条评论吗？',
-      '确认操作',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'success'
-      }
-    );
+    await ElMessageBox.confirm('确定要通过这条评论吗？', '确认操作', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'success',
+    });
 
-    await adminApi.auditComment(comment.id, 'approved');
+    await auditComment(comment.id, 'approved');
     ElMessage.success('评论已通过');
     fetchComments();
-  } catch (error: any) {
-    if (error !== 'cancel' && !error.isHandled) {
-      ElMessage.error('操作失败');
+  } catch (error) {
+    if (error !== 'cancel') {
+      logger.error('[CommentManagement]', '通过评论失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error('操作失败');
+      }
     }
   }
 };
 
 const handleReject = async (comment: Comment) => {
   try {
-    await ElMessageBox.confirm(
-      '确定要拒绝这条评论吗？',
-      '确认操作',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    );
+    await ElMessageBox.confirm('确定要拒绝这条评论吗？', '确认操作', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    });
 
-    await adminApi.auditComment(comment.id, 'rejected');
+    await auditComment(comment.id, 'rejected');
     ElMessage.success('评论已拒绝');
     fetchComments();
-  } catch (error: any) {
-    if (error !== 'cancel' && !error.isHandled) {
-      ElMessage.error('操作失败');
+  } catch (error) {
+    if (error !== 'cancel') {
+      logger.error('[CommentManagement]', '拒绝评论失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error('操作失败');
+      }
     }
   }
 };
 
 const handleDelete = async (comment: Comment) => {
   try {
-    await ElMessageBox.confirm(
-      '确定要删除这条评论吗？删除后无法恢复。',
-      '确认删除',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    );
+    await ElMessageBox.confirm('确定要删除这条评论吗？删除后无法恢复。', '确认删除', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    });
 
-    await adminApi.deleteComment(comment.id);
+    await deleteComment(comment.id);
     ElMessage.success('评论已删除');
     fetchComments();
-  } catch (error: any) {
-    if (error !== 'cancel' && !error.isHandled) {
-      ElMessage.error('删除失败');
+  } catch (error) {
+    if (error !== 'cancel') {
+      logger.error('[CommentManagement]', '删除评论失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error('删除失败');
+      }
     }
   }
 };
@@ -302,7 +283,7 @@ onMounted(() => {
 .page-title {
   font-size: 24px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .mb-4 {
@@ -315,18 +296,18 @@ onMounted(() => {
 
 .stat-label {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-bottom: 8px;
 }
 
 .stat-value {
   font-size: 28px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .text-warning {
-  color: #e6a23c;
+  color: var(--el-color-warning);
 }
 
 .filter-bar {
@@ -365,19 +346,19 @@ onMounted(() => {
 
 .username {
   font-weight: 500;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .comment-content {
   padding: 12px;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   border-radius: 8px;
   margin-bottom: 12px;
 }
 
 .comment-content p {
   margin: 0;
-  color: #606266;
+  color: var(--el-text-color-regular);
   line-height: 1.6;
   white-space: pre-wrap;
 }
@@ -386,7 +367,7 @@ onMounted(() => {
   display: flex;
   gap: 24px;
   margin-bottom: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 13px;
 }
 
@@ -401,7 +382,7 @@ onMounted(() => {
   gap: 12px;
   justify-content: flex-end;
   padding-top: 12px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--el-border-color-lighter);
 }
 
 .pagination-container {
@@ -409,7 +390,7 @@ onMounted(() => {
   justify-content: flex-end;
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--el-border-color-lighter);
 }
 
 @media (max-width: 768px) {

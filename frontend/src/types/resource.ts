@@ -11,24 +11,25 @@ export const ResourceType = {
   Jpg: 'jpg',
   Png: 'png',
   Zip: 'zip',
-  Other: 'other'
+  Other: 'other',
 } as const;
 
-export type ResourceTypeType = typeof ResourceType[keyof typeof ResourceType];
+export type ResourceTypeType = (typeof ResourceType)[keyof typeof ResourceType];
 
 // 资源类型筛选选项（用于筛选下拉框，合并相关类型）
 export const ResourceTypeFilterOptions = {
-  ppt: 'ppt',           // PPT（包含 ppt 和 pptx）
-  doc: 'doc',           // Word 文档（包含 doc 和 docx）
-  pdf: 'pdf',           // PDF
-  image: 'image',       // 图片（包含 jpeg, jpg, png）
+  ppt: 'ppt', // PPT（包含 ppt 和 pptx）
+  doc: 'doc', // Word 文档（包含 doc 和 docx）
+  pdf: 'pdf', // PDF
+  image: 'image', // 图片（包含 jpeg, jpg, png）
   web_markdown: 'web_markdown', // 网页 Markdown
-  txt: 'txt',           // 文本文件
-  zip: 'zip',           // ZIP 压缩包
-  other: 'other'        // 其他
+  txt: 'txt', // 文本文件
+  zip: 'zip', // ZIP 压缩包
+  other: 'other', // 其他
 } as const;
 
-export type ResourceTypeFilterType = typeof ResourceTypeFilterOptions[keyof typeof ResourceTypeFilterOptions];
+export type ResourceTypeFilterType =
+  (typeof ResourceTypeFilterOptions)[keyof typeof ResourceTypeFilterOptions];
 
 // 资源分类
 export const ResourceCategory = {
@@ -38,19 +39,19 @@ export const ResourceCategory = {
   Note: 'note',
   ReviewOutline: 'review_outline',
   Lecture: 'lecture',
-  Other: 'other'
+  Other: 'other',
 } as const;
 
-export type ResourceCategoryType = typeof ResourceCategory[keyof typeof ResourceCategory];
+export type ResourceCategoryType = (typeof ResourceCategory)[keyof typeof ResourceCategory];
 
 // 审核状态
 export const AuditStatus = {
   Pending: 'pending',
   Approved: 'approved',
-  Rejected: 'rejected'
+  Rejected: 'rejected',
 } as const;
 
-export type AuditStatusType = typeof AuditStatus[keyof typeof AuditStatus];
+export type AuditStatusType = (typeof AuditStatus)[keyof typeof AuditStatus];
 
 // 资源统计信息（5维度评分）
 export interface ResourceStats {
@@ -58,11 +59,11 @@ export interface ResourceStats {
   downloads: number;
   likes: number;
   // 5维度评分平均分
-  avgDifficulty?: number;        // 难度
-  avgOverallQuality?: number;    // 总体质量
-  avgAnswerQuality?: number;     // 参考答案质量
-  avgFormatQuality?: number;     // 格式质量
-  avgDetailLevel?: number;       // 知识点详细程度
+  avgDifficulty?: number; // 难度
+  avgOverallQuality?: number; // 总体质量
+  avgAnswerQuality?: number; // 参考答案质量
+  avgFormatQuality?: number; // 格式质量
+  avgDetailLevel?: number; // 知识点详细程度
   ratingCount: number;
 }
 
@@ -72,7 +73,7 @@ export type StorageType = 'local' | 'oss';
 // 存储类型显示标签
 export const StorageTypeLabels: Record<StorageType, string> = {
   local: '本地存储',
-  oss: '云端存储'
+  oss: '云端存储',
 };
 
 // 资源列表项
@@ -211,7 +212,7 @@ export const ResourceTypeLabels: Record<ResourceTypeType, string> = {
   [ResourceType.Jpg]: 'JPG 图片',
   [ResourceType.Png]: 'PNG 图片',
   [ResourceType.Zip]: 'ZIP 压缩包',
-  [ResourceType.Other]: '其他'
+  [ResourceType.Other]: '其他',
 };
 
 // 资源类型筛选显示名称映射（用于筛选下拉框，合并相关类型）
@@ -223,7 +224,7 @@ export const ResourceTypeFilterLabels: Record<ResourceTypeFilterType, string> = 
   web_markdown: '网页 Markdown',
   txt: '文本文件',
   zip: 'ZIP 压缩包',
-  other: '其他'
+  other: '其他',
 };
 
 // 资源分类显示名称映射
@@ -234,14 +235,14 @@ export const ResourceCategoryLabels: Record<ResourceCategoryType, string> = {
   [ResourceCategory.Note]: '笔记',
   [ResourceCategory.ReviewOutline]: '复习提纲',
   [ResourceCategory.Lecture]: '讲义',
-  [ResourceCategory.Other]: '其他'
+  [ResourceCategory.Other]: '其他',
 };
 
 // 审核状态显示名称映射
 export const AuditStatusLabels: Record<AuditStatusType, string> = {
   [AuditStatus.Pending]: '待审核',
   [AuditStatus.Approved]: '已通过',
-  [AuditStatus.Rejected]: '已拒绝'
+  [AuditStatus.Rejected]: '已拒绝',
 };
 
 // 获取资源类型颜色
@@ -254,7 +255,7 @@ export function getResourceTypeColor(type: string): string {
     [ResourceType.Docx]: '#409EFF',
     [ResourceType.WebMarkdown]: '#67C23A',
     [ResourceType.Txt]: '#909399',
-    [ResourceType.Zip]: '#909399'
+    [ResourceType.Zip]: '#909399',
   };
   return colorMap[type] || '#909399';
 }
@@ -269,26 +270,36 @@ export function formatFileSize(bytes?: number): string {
 
 // 支持的文件扩展名
 export const SupportedExtensions = [
-  'md', 'markdown', 'ppt', 'pptx', 'doc', 'docx',
-  'pdf', 'txt', 'jpeg', 'jpg', 'png', 'zip'
+  'md',
+  'markdown',
+  'ppt',
+  'pptx',
+  'doc',
+  'docx',
+  'pdf',
+  'txt',
+  'jpeg',
+  'jpg',
+  'png',
+  'zip',
 ];
 
 // 从文件名获取资源类型
 export function getResourceTypeFromFileName(fileName: string): ResourceTypeType {
   const ext = fileName.split('.').pop()?.toLowerCase() || '';
   const typeMap: Record<string, ResourceTypeType> = {
-    'md': ResourceType.WebMarkdown,
-    'markdown': ResourceType.WebMarkdown,
-    'ppt': ResourceType.Ppt,
-    'pptx': ResourceType.Pptx,
-    'doc': ResourceType.Doc,
-    'docx': ResourceType.Docx,
-    'pdf': ResourceType.Pdf,
-    'txt': ResourceType.Txt,
-    'jpeg': ResourceType.Jpeg,
-    'jpg': ResourceType.Jpg,
-    'png': ResourceType.Png,
-    'zip': ResourceType.Zip
+    md: ResourceType.WebMarkdown,
+    markdown: ResourceType.WebMarkdown,
+    ppt: ResourceType.Ppt,
+    pptx: ResourceType.Pptx,
+    doc: ResourceType.Doc,
+    docx: ResourceType.Docx,
+    pdf: ResourceType.Pdf,
+    txt: ResourceType.Txt,
+    jpeg: ResourceType.Jpeg,
+    jpg: ResourceType.Jpg,
+    png: ResourceType.Png,
+    zip: ResourceType.Zip,
   };
   return typeMap[ext] || ResourceType.Other;
 }

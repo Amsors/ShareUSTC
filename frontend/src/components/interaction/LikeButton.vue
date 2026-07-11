@@ -3,8 +3,8 @@
     <el-button
       :type="isLiked ? 'primary' : 'default'"
       size="large"
-      @click="handleToggleLike"
       :loading="loading"
+      @click="handleToggleLike"
     >
       <el-icon><Star /></el-icon>
       <span>{{ isLiked ? '取消点赞' : '点赞' }}</span>
@@ -17,8 +17,9 @@
 import { ref, onMounted } from 'vue';
 import { Star } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
-import { toggleLike, getLikeStatus } from '../../api/like';
-import logger from '../../utils/logger';
+import { toggleLike, getLikeStatus } from '@/api/like';
+import logger from '@/utils/logger';
+import { getErrorMessage, isHandledError } from '@/api/request';
 
 const props = defineProps<{
   resourceId: string;
@@ -60,9 +61,10 @@ const handleToggleLike = async () => {
     likeCount.value = result.likeCount;
     ElMessage.success(result.message);
     emit('update', isLiked.value, likeCount.value);
-  } catch (error: any) {
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '操作失败');
+  } catch (error) {
+    logger.error('[LikeButton]', '切换点赞失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '操作失败'));
     }
   } finally {
     loading.value = false;

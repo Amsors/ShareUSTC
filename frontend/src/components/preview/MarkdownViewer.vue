@@ -8,6 +8,7 @@
       <el-button type="primary" @click="loadContent">重试</el-button>
     </div>
     <div v-else class="markdown-container">
+      <!-- eslint-disable-next-line vue/no-v-html 内容经 markdown-it（html:false）渲染，原始 HTML 已转义 -->
       <div class="markdown-body" v-html="renderedContent"></div>
     </div>
   </div>
@@ -16,8 +17,12 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import MarkdownIt from 'markdown-it';
-import { getResourcePreviewInfo, getResourcePreviewContent, type PreviewUrlResponse } from '../../api/resource';
-import logger from '../../utils/logger';
+import {
+  getResourcePreviewInfo,
+  getResourcePreviewContent,
+  type PreviewUrlResponse,
+} from '@/api/resource';
+import logger from '@/utils/logger';
 
 const props = defineProps<{
   resourceId: string;
@@ -31,10 +36,10 @@ const content = ref('');
 
 // 初始化 MarkdownIt（使用安全模式）
 const md = new MarkdownIt({
-  html: false,        // 禁用 HTML 标签，防止 XSS
-  breaks: true,       // 转换换行符为 <br>
-  linkify: true,      // 自动转换 URL 为链接
-  typographer: true,  // 启用排版美化
+  html: false, // 禁用 HTML 标签，防止 XSS
+  breaks: true, // 转换换行符为 <br>
+  linkify: true, // 自动转换 URL 为链接
+  typographer: true, // 启用排版美化
 });
 
 const renderedContent = computed(() => {
@@ -47,14 +52,20 @@ const loadContent = async () => {
   try {
     // 获取预览信息
     const previewInfo: PreviewUrlResponse = await getResourcePreviewInfo(props.resourceId);
-    logger.debug('[MarkdownViewer]', `获取到预览信息 | storageType=${previewInfo.storageType}, directAccess=${previewInfo.directAccess}`);
+    logger.debug(
+      '[MarkdownViewer]',
+      `获取到预览信息 | storageType=${previewInfo.storageType}, directAccess=${previewInfo.directAccess}`
+    );
 
     // 获取内容（会自动使用缓存）
     const blob = await getResourcePreviewContent(props.resourceId, previewInfo, {
-      resourceDetail: props.resourceTitle && props.resourceType ? {
-        title: props.resourceTitle,
-        resourceType: props.resourceType
-      } : undefined
+      resourceDetail:
+        props.resourceTitle && props.resourceType
+          ? {
+              title: props.resourceTitle,
+              resourceType: props.resourceType,
+            }
+          : undefined,
     });
     const text = await blob.text();
 
@@ -73,9 +84,13 @@ const loadContent = async () => {
   }
 };
 
-watch(() => props.resourceId, () => {
-  loadContent();
-}, { immediate: true });
+watch(
+  () => props.resourceId,
+  () => {
+    loadContent();
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>
@@ -91,7 +106,7 @@ watch(() => props.resourceId, () => {
 }
 
 .loading-text {
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 14px;
 }
 

@@ -88,13 +88,13 @@ export const RatingDimensionsConfig: RatingDimension[] = [
 
 // 获取维度显示名称
 export function getDimensionLabel(key: string): string {
-  const config = RatingDimensionsConfig.find(d => d.key === key);
+  const config = RatingDimensionsConfig.find((d) => d.key === key);
   return config?.name || key;
 }
 
 // 获取维度描述
 export function getDimensionDescription(key: string): string {
-  const config = RatingDimensionsConfig.find(d => d.key === key);
+  const config = RatingDimensionsConfig.find((d) => d.key === key);
   return config?.description || '';
 }
 

@@ -1,0 +1,23 @@
+# 统一编辑器基础格式，配合 Prettier（前端）与 rustfmt（后端）
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{ts,vue,js,json,css,scss,html,yml,yaml,md}]
+indent_style = space
+indent_size = 2
+
+[*.rs]
+indent_style = space
+indent_size = 4
+
+[*.py]
+indent_style = space
+indent_size = 4
+
+[Makefile]
+indent_style = tab

@@ -5,8 +5,25 @@ use crate::models::{
     CreateNotificationRequest, Notification, NotificationListQuery, NotificationListResponse,
     NotificationPriority, NotificationResponse, NotificationType, UnreadCountResponse,
 };
-use crate::services::ResourceError;
 use chrono::NaiveDateTime;
+
+/// 通知服务错误类型
+#[derive(Debug, thiserror::Error)]
+pub enum NotificationError {
+    #[error("数据库错误: {0}")]
+    Database(#[from] sqlx::Error),
+}
+
+impl actix_web::ResponseError for NotificationError {
+    fn error_response(&self) -> actix_web::HttpResponse {
+        match self {
+            NotificationError::Database(e) => {
+                log::error!("[Notification] 数据库错误 | error={}", e);
+                crate::utils::internal_error("服务器内部错误")
+            }
+        }
+    }
+}
 
 /// 带已读状态的通知（查询结果）
 #[derive(Debug, sqlx::FromRow)]
@@ -29,7 +46,7 @@ impl NotificationService {
     pub async fn create_notification(
         pool: &PgPool,
         request: CreateNotificationRequest,
-    ) -> Result<Notification, ResourceError> {
+    ) -> Result<Notification, NotificationError> {
         let notification = sqlx::query_as::<_, Notification>(
             r#"
             INSERT INTO notifications
@@ -48,13 +65,19 @@ impl NotificationService {
         .bind(request.priority.as_str())
         .bind(request.link_url)
         .fetch_one(pool)
-        .await
-        .map_err(|e| {
-            log::error!("[NotificationService] 创建通知失败: {}", e);
-            ResourceError::DatabaseError(e.to_string())
-        })?;
+        .await?;
 
         Ok(notification)
+    }
+
+    /// 统计活跃用户数量（用于广播通知的接收者计数）
+    pub async fn count_active_users(pool: &PgPool) -> Result<i64, NotificationError> {
+        let count =
+            sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM users WHERE is_active = true")
+                .fetch_one(pool)
+                .await?;
+
+        Ok(count)
     }
 
     /// 获取用户的通知列表
@@ -62,7 +85,7 @@ impl NotificationService {
         pool: &PgPool,
         user_id: Uuid,
         query: NotificationListQuery,
-    ) -> Result<NotificationListResponse, ResourceError> {
+    ) -> Result<NotificationListResponse, NotificationError> {
         let page = query.page.unwrap_or(1).max(1);
         let per_page = query.per_page.unwrap_or(20).min(100);
         let offset = (page - 1) * per_page;
@@ -101,8 +124,7 @@ impl NotificationService {
             .bind(user_id)
             .fetch_one(pool)
             .await
-        }
-        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+        }?;
 
         // 获取未读总数
         let unread_count = sqlx::query_scalar::<_, i64>(
@@ -121,8 +143,7 @@ impl NotificationService {
         )
         .bind(user_id)
         .fetch_one(pool)
-        .await
-        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+        .await?;
 
         // 获取通知列表（包含已读状态计算）
         let notifications = sqlx::query_as::<_, NotificationWithReadStatus>(
@@ -153,8 +174,7 @@ impl NotificationService {
         .bind(per_page)
         .bind(offset)
         .fetch_all(pool)
-        .await
-        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+        .await?;
 
         // 如果只需要未读，过滤掉已读的
         let notifications: Vec<NotificationWithReadStatus> = if unread_only {
@@ -199,14 +219,13 @@ impl NotificationService {
         pool: &PgPool,
         notification_id: Uuid,
         user_id: Uuid,
-    ) -> Result<bool, ResourceError> {
+    ) -> Result<bool, NotificationError> {
         // 先查询通知类型
         let notification =
             sqlx::query_as::<_, Notification>("SELECT * FROM notifications WHERE id = $1")
                 .bind(notification_id)
                 .fetch_optional(pool)
-                .await
-                .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+                .await?;
 
         let notification = match notification {
             Some(n) => n,
@@ -223,8 +242,7 @@ impl NotificationService {
             sqlx::query("UPDATE notifications SET is_read = TRUE WHERE id = $1")
                 .bind(notification_id)
                 .execute(pool)
-                .await
-                .map_err(|e| ResourceError::DatabaseError(e.to_string()))?
+                .await?
                 .rows_affected()
         } else {
             // 群发通知：插入到 notification_reads 表
@@ -238,8 +256,7 @@ impl NotificationService {
             .bind(notification_id)
             .bind(user_id)
             .execute(pool)
-            .await
-            .map_err(|e| ResourceError::DatabaseError(e.to_string()))?
+            .await?
             .rows_affected()
         };
 
@@ -247,7 +264,7 @@ impl NotificationService {
     }
 
     /// 标记所有通知为已读
-    pub async fn mark_all_as_read(pool: &PgPool, user_id: Uuid) -> Result<i64, ResourceError> {
+    pub async fn mark_all_as_read(pool: &PgPool, user_id: Uuid) -> Result<i64, NotificationError> {
         // 1. 标记所有定向通知为已读
         let direct_result = sqlx::query(
             r#"
@@ -258,8 +275,7 @@ impl NotificationService {
         )
         .bind(user_id)
         .execute(pool)
-        .await
-        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+        .await?;
 
         // 2. 为所有未读的群发通知插入已读记录
         let broadcast_result = sqlx::query(
@@ -276,8 +292,7 @@ impl NotificationService {
         )
         .bind(user_id)
         .execute(pool)
-        .await
-        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+        .await?;
 
         Ok((direct_result.rows_affected() + broadcast_result.rows_affected()) as i64)
     }
@@ -286,7 +301,7 @@ impl NotificationService {
     pub async fn get_unread_count(
         pool: &PgPool,
         user_id: Uuid,
-    ) -> Result<UnreadCountResponse, ResourceError> {
+    ) -> Result<UnreadCountResponse, NotificationError> {
         let count = sqlx::query_scalar::<_, i64>(
             r#"
             SELECT COUNT(*) FROM notifications n
@@ -303,8 +318,7 @@ impl NotificationService {
         )
         .bind(user_id)
         .fetch_one(pool)
-        .await
-        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+        .await?;
 
         Ok(UnreadCountResponse { count })
     }
@@ -313,7 +327,7 @@ impl NotificationService {
     pub async fn get_priority_notifications(
         pool: &PgPool,
         user_id: Uuid,
-    ) -> Result<Vec<NotificationResponse>, ResourceError> {
+    ) -> Result<Vec<NotificationResponse>, NotificationError> {
         let notifications = sqlx::query_as::<_, NotificationWithReadStatus>(
             r#"
             SELECT
@@ -348,8 +362,7 @@ impl NotificationService {
         )
         .bind(user_id)
         .fetch_all(pool)
-        .await
-        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+        .await?;
 
         let notifications: Vec<NotificationResponse> = notifications
             .into_iter()
@@ -374,15 +387,14 @@ impl NotificationService {
         pool: &PgPool,
         notification_id: Uuid,
         user_id: Uuid,
-    ) -> Result<bool, ResourceError> {
+    ) -> Result<bool, NotificationError> {
         // 先查询通知类型
         let notification = sqlx::query_as::<_, Notification>(
             "SELECT * FROM notifications WHERE id = $1 AND priority = 'high'",
         )
         .bind(notification_id)
         .fetch_optional(pool)
-        .await
-        .map_err(|e| ResourceError::DatabaseError(e.to_string()))?;
+        .await?;
 
         let notification = match notification {
             Some(n) => n,
@@ -399,8 +411,7 @@ impl NotificationService {
             sqlx::query("UPDATE notifications SET is_read = TRUE WHERE id = $1")
                 .bind(notification_id)
                 .execute(pool)
-                .await
-                .map_err(|e| ResourceError::DatabaseError(e.to_string()))?
+                .await?
                 .rows_affected()
         } else {
             // 群发通知：插入到 notification_reads 表
@@ -414,8 +425,7 @@ impl NotificationService {
             .bind(notification_id)
             .bind(user_id)
             .execute(pool)
-            .await
-            .map_err(|e| ResourceError::DatabaseError(e.to_string()))?
+            .await?
             .rows_affected()
         };
 
@@ -429,7 +439,7 @@ impl NotificationService {
         resource_title: &str,
         uploader_id: Uuid,
         commenter_name: &str,
-    ) -> Result<(), ResourceError> {
+    ) -> Result<(), NotificationError> {
         // 不给自己发通知
         // 注意：这里需要在调用处检查，因为我们不知道评论者ID
 
@@ -456,7 +466,7 @@ impl NotificationService {
         resource_title: &str,
         uploader_id: Uuid,
         rater_name: &str,
-    ) -> Result<(), ResourceError> {
+    ) -> Result<(), NotificationError> {
         let request = CreateNotificationRequest {
             recipient_id: Some(uploader_id),
             title: "您的资源收到新评分".to_string(),

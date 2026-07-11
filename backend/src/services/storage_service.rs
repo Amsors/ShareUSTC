@@ -26,28 +26,41 @@ impl StorageBackendType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum StorageError {
+    #[error("参数错误: {0}")]
     Validation(String),
+    #[error("配置错误: {0}")]
     Config(String),
+    #[error("未找到: {0}")]
     NotFound(String),
+    #[error("IO 错误: {0}")]
     Io(String),
+    #[error("后端错误: {0}")]
     Backend(String),
 }
 
-impl std::fmt::Display for StorageError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl actix_web::ResponseError for StorageError {
+    fn error_response(&self) -> actix_web::HttpResponse {
+        use crate::utils::{bad_request, internal_error, not_found};
         match self {
-            StorageError::Validation(msg) => write!(f, "参数错误: {}", msg),
-            StorageError::Config(msg) => write!(f, "配置错误: {}", msg),
-            StorageError::NotFound(msg) => write!(f, "未找到: {}", msg),
-            StorageError::Io(msg) => write!(f, "IO 错误: {}", msg),
-            StorageError::Backend(msg) => write!(f, "后端错误: {}", msg),
+            StorageError::Validation(msg) => bad_request(msg),
+            StorageError::NotFound(msg) => not_found(msg),
+            StorageError::Config(msg) => {
+                log::error!("[Storage] 配置错误 | error={}", msg);
+                internal_error("服务器内部错误")
+            }
+            StorageError::Io(msg) => {
+                log::error!("[Storage] IO 错误 | error={}", msg);
+                internal_error("服务器内部错误")
+            }
+            StorageError::Backend(msg) => {
+                log::error!("[Storage] 后端错误 | error={}", msg);
+                internal_error("服务器内部错误")
+            }
         }
     }
 }
-
-impl std::error::Error for StorageError {}
 
 #[derive(Debug, Clone, Default)]
 pub struct StorageFileMetadata {

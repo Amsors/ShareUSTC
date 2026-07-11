@@ -16,7 +16,7 @@
         @keyup.enter="handleCreateNew"
       >
         <template #append>
-          <el-button @click="handleCreateNew" :loading="creating">
+          <el-button :loading="creating" @click="handleCreateNew">
             <el-icon><Plus /></el-icon>
           </el-button>
         </template>
@@ -53,7 +53,9 @@
               <span class="favorite-count">{{ favorite.resourceCount }} 个资源</span>
             </div>
             <div class="favorite-check">
-              <el-icon v-if="isInFavorite(favorite.id)" :size="20" color="#67C23A"><Check /></el-icon>
+              <el-icon v-if="isInFavorite(favorite.id)" :size="20" color="#67C23A"
+                ><Check
+              /></el-icon>
             </div>
           </div>
         </div>
@@ -70,9 +72,11 @@
 import { ref, watch, onMounted, computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Plus, Folder, Check } from '@element-plus/icons-vue';
-import { useFavoriteStore } from '../../stores/favorite';
+import { useFavoriteStore } from '@/stores/favorite';
 import { storeToRefs } from 'pinia';
-import * as favoriteApi from '../../api/favorite';
+import * as favoriteApi from '@/api/favorite';
+import { getErrorMessage, isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -96,17 +100,23 @@ const favorites = computed(() => storeFavorites.value);
 const visible = ref(props.modelValue);
 
 // 监听 modelValue 变化
-watch(() => props.modelValue, (newVal) => {
-  visible.value = newVal;
-  if (newVal) {
-    fetchData();
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    visible.value = newVal;
+    if (newVal) {
+      fetchData();
+    }
   }
-});
+);
 
 // 监听 visible 变化，同步到父组件
-watch(() => visible.value, (newVal) => {
-  emit('update:modelValue', newVal);
-});
+watch(
+  () => visible.value,
+  (newVal) => {
+    emit('update:modelValue', newVal);
+  }
+);
 
 // 状态
 const loading = ref(false);
@@ -121,13 +131,16 @@ const fetchData = async () => {
     // 并行获取收藏夹列表和资源收藏状态
     const [, statusRes] = await Promise.all([
       favoriteStore.fetchFavorites(),
-      favoriteApi.checkResourceInFavorite(props.resourceId)
+      favoriteApi.checkResourceInFavorite(props.resourceId),
     ]);
 
     // 设置已选中的收藏夹
     selectedFavorites.value = new Set(statusRes.inFavorites);
   } catch (error) {
-    ElMessage.error('获取数据失败');
+    logger.error('[AddToFavoriteModal]', '获取收藏夹数据失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error('获取数据失败');
+    }
   } finally {
     loading.value = false;
   }
@@ -159,9 +172,12 @@ const toggleFavorite = async (favoriteId: string) => {
       }
     }
     emit('success');
-  } catch (error: any) {
-    const errorMessage = error.response?.data?.message || error.message || '操作失败';
-    ElMessage.error(errorMessage);
+  } catch (error) {
+    logger.error('[AddToFavoriteModal]', '切换收藏夹失败', error);
+    if (!isHandledError(error)) {
+      const errorMessage = getErrorMessage(error, '操作失败');
+      ElMessage.error(errorMessage);
+    }
   }
 };
 
@@ -194,8 +210,11 @@ const handleCreateNew = async () => {
     } else {
       ElMessage.success('创建成功');
     }
-  } catch (error: any) {
-    ElMessage.error(error.message || '创建失败');
+  } catch (error) {
+    logger.error('[AddToFavoriteModal]', '创建收藏夹失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '创建失败'));
+    }
   } finally {
     creating.value = false;
   }
@@ -223,7 +242,7 @@ onMounted(() => {
   h4 {
     margin: 0 0 12px;
     font-size: 14px;
-    color: #606266;
+    color: var(--el-text-color-regular);
   }
 }
 
@@ -234,12 +253,12 @@ onMounted(() => {
 }
 
 .empty-text {
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 14px;
 }
 
 .loading-text {
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 14px;
 }
 
@@ -257,15 +276,15 @@ onMounted(() => {
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--el-border-color-lighter);
 
   &:hover {
-    background-color: #f5f7fa;
+    background-color: var(--el-fill-color-light);
   }
 
   &.is-selected {
     background-color: #f0f9ff;
-    border-color: #409eff;
+    border-color: var(--el-color-primary);
   }
 
   .favorite-item-content {
@@ -277,7 +296,7 @@ onMounted(() => {
 
     .favorite-name {
       font-size: 14px;
-      color: #303133;
+      color: var(--el-text-color-primary);
       flex: 1;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -286,7 +305,7 @@ onMounted(() => {
 
     .favorite-count {
       font-size: 12px;
-      color: #909399;
+      color: var(--el-text-color-secondary);
       flex-shrink: 0;
     }
   }

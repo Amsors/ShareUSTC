@@ -7,28 +7,41 @@ use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
 /// 用户服务错误类型
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum UserError {
+    #[error("用户不存在: {0}")]
     UserNotFound(String),
+    #[error("用户已存在: {0}")]
     UserExists(String),
-    DatabaseError(String),
+    #[error("验证错误: {0}")]
     ValidationError(String),
+    #[error("凭据错误: {0}")]
     InvalidCredentials(String),
+    #[error("内部错误: {0}")]
+    Internal(String),
+    #[error("数据库错误: {0}")]
+    Database(#[from] sqlx::Error),
 }
 
-impl std::fmt::Display for UserError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl actix_web::ResponseError for UserError {
+    fn error_response(&self) -> actix_web::HttpResponse {
+        use crate::utils::{bad_request, conflict, internal_error, not_found, unauthorized};
         match self {
-            UserError::UserNotFound(msg) => write!(f, "用户不存在: {}", msg),
-            UserError::UserExists(msg) => write!(f, "用户已存在: {}", msg),
-            UserError::DatabaseError(msg) => write!(f, "数据库错误: {}", msg),
-            UserError::ValidationError(msg) => write!(f, "验证错误: {}", msg),
-            UserError::InvalidCredentials(msg) => write!(f, "凭据错误: {}", msg),
+            UserError::UserNotFound(msg) => not_found(msg),
+            UserError::UserExists(msg) => conflict(msg),
+            UserError::ValidationError(msg) => bad_request(msg),
+            UserError::InvalidCredentials(msg) => unauthorized(msg),
+            UserError::Internal(msg) => {
+                log::error!("[User] 内部错误 | error={}", msg);
+                internal_error("服务器内部错误")
+            }
+            UserError::Database(e) => {
+                log::error!("[User] 数据库错误 | error={}", e);
+                internal_error("服务器内部错误")
+            }
         }
     }
 }
-
-impl std::error::Error for UserError {}
 
 /// 用户服务
 pub struct UserService;
@@ -45,8 +58,7 @@ impl UserService {
         )
         .bind(user_id)
         .fetch_optional(pool)
-        .await
-        .map_err(|e| UserError::DatabaseError(e.to_string()))?
+        .await?
         .ok_or_else(|| UserError::UserNotFound("用户不存在".to_string()))?;
 
         Ok(UserInfo::from(user))
@@ -67,8 +79,7 @@ impl UserService {
         )
         .bind(user_id)
         .fetch_optional(pool)
-        .await
-        .map_err(|e| UserError::DatabaseError(e.to_string()))?
+        .await?
         .ok_or_else(|| UserError::UserNotFound("用户不存在".to_string()))?;
 
         // 获取用户上传的资源数量
@@ -133,7 +144,7 @@ impl UserService {
         allow_email_change: bool,
     ) -> Result<UserInfo, UserError> {
         // 验证请求
-        req.validate().map_err(|e| UserError::ValidationError(e))?;
+        req.validate().map_err(UserError::ValidationError)?;
 
         // 检查是否允许修改用户名
         if !allow_username_change && req.username.is_some() {
@@ -157,8 +168,7 @@ impl UserService {
             .bind(username)
             .bind(user_id)
             .fetch_optional(pool)
-            .await
-            .map_err(|e| UserError::DatabaseError(e.to_string()))?;
+            .await?;
 
             if existing.is_some() {
                 return Err(UserError::UserExists("用户名已被使用".to_string()));
@@ -192,8 +202,7 @@ impl UserService {
                     .bind(&trimmed_email)
                     .bind(user_id)
                     .fetch_optional(pool)
-                    .await
-                    .map_err(|e| UserError::DatabaseError(e.to_string()))?;
+                    .await?;
 
                     if existing.is_some() {
                         return Err(UserError::UserExists("邮箱已被其他用户使用".to_string()));
@@ -224,7 +233,7 @@ impl UserService {
         .bind(user_id)
         .fetch_optional(pool)
         .await
-        .map_err(|e| UserError::DatabaseError(format!("更新失败: {}", e)))?
+        .map_err(UserError::Database)?
         .ok_or_else(|| UserError::UserNotFound("用户不存在".to_string()))?;
 
         log::info!("用户资料已更新: {}", updated_user.username);
@@ -248,8 +257,7 @@ impl UserService {
         )
         .bind(user_id)
         .fetch_optional(pool)
-        .await
-        .map_err(|e| UserError::DatabaseError(e.to_string()))?
+        .await?
         .ok_or_else(|| UserError::UserNotFound("用户不存在".to_string()))?;
 
         // 检查是否已经是实名用户
@@ -280,7 +288,7 @@ impl UserService {
         .bind(user_id)
         .fetch_one(pool)
         .await
-        .map_err(|e| UserError::DatabaseError(format!("认证失败: {}", e)))?;
+        .map_err(UserError::Database)?;
 
         log::info!("用户完成实名认证: {}", updated_user.username);
 
@@ -304,8 +312,7 @@ impl UserService {
         )
         .bind(user_id)
         .fetch_optional(pool)
-        .await
-        .map_err(|e| UserError::DatabaseError(e.to_string()))?
+        .await?
         .ok_or_else(|| UserError::UserNotFound("用户不存在".to_string()))?;
 
         // 获取用户上传的已通过审核的资源数量
@@ -366,8 +373,7 @@ impl UserService {
         .bind(per_page as i64)
         .bind(offset as i64)
         .fetch_all(pool)
-        .await
-        .map_err(|e| UserError::DatabaseError(e.to_string()))?;
+        .await?;
 
         // 映射资源列表
         let mut resources = Vec::new();
@@ -419,26 +425,14 @@ impl UserService {
             .unwrap_or(0);
 
             resources.push(ResourceListItem {
-                id: row
-                    .try_get("id")
-                    .map_err(|e| UserError::DatabaseError(e.to_string()))?,
-                title: row
-                    .try_get("title")
-                    .map_err(|e| UserError::DatabaseError(e.to_string()))?,
+                id: row.try_get("id")?,
+                title: row.try_get("title")?,
                 course_name: row.try_get("course_name").ok(),
-                resource_type: row
-                    .try_get("resource_type")
-                    .map_err(|e| UserError::DatabaseError(e.to_string()))?,
-                category: row
-                    .try_get("category")
-                    .map_err(|e| UserError::DatabaseError(e.to_string()))?,
+                resource_type: row.try_get("resource_type")?,
+                category: row.try_get("category")?,
                 tags,
-                audit_status: row
-                    .try_get("audit_status")
-                    .map_err(|e| UserError::DatabaseError(e.to_string()))?,
-                created_at: row
-                    .try_get("created_at")
-                    .map_err(|e| UserError::DatabaseError(e.to_string()))?,
+                audit_status: row.try_get("audit_status")?,
+                created_at: row.try_get("created_at")?,
                 stats: ResourceStatsResponse {
                     views: row.try_get::<i32, _>("views").unwrap_or(0),
                     downloads: row.try_get::<i32, _>("downloads").unwrap_or(0),
@@ -499,29 +493,27 @@ impl UserService {
         )
         .bind(user_id)
         .fetch_optional(pool)
-        .await
-        .map_err(|e| UserError::DatabaseError(e.to_string()))?
+        .await?
         .ok_or_else(|| UserError::UserNotFound("用户不存在".to_string()))?;
 
         // 验证原密码
         let password_valid = crate::utils::verify_password(old_password, &user.password_hash)
-            .map_err(|e| UserError::DatabaseError(format!("密码验证失败: {}", e)))?;
+            .map_err(UserError::Internal)?;
 
         if !password_valid {
             return Err(UserError::InvalidCredentials("原密码错误".to_string()));
         }
 
         // 哈希新密码
-        let new_password_hash = crate::utils::hash_password(new_password)
-            .map_err(|e| UserError::DatabaseError(format!("密码哈希失败: {}", e)))?;
+        let new_password_hash =
+            crate::utils::hash_password(new_password).map_err(UserError::Internal)?;
 
         // 更新密码
         sqlx::query("UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2")
             .bind(new_password_hash)
             .bind(user_id)
             .execute(pool)
-            .await
-            .map_err(|e| UserError::DatabaseError(format!("更新密码失败: {}", e)))?;
+            .await?;
 
         log::info!("[User] 用户密码已修改 | user_id={}", user_id);
 
@@ -560,26 +552,17 @@ impl UserService {
         )
         .bind(limit as i64)
         .fetch_all(pool)
-        .await
-        .map_err(|e| UserError::DatabaseError(e.to_string()))?;
+        .await?;
 
         let mut users = Vec::new();
         for row in rows {
             users.push(LeaderboardUser {
-                id: row
-                    .try_get("id")
-                    .map_err(|e| UserError::DatabaseError(e.to_string()))?,
+                id: row.try_get("id")?,
                 sn: row.try_get("sn").ok(),
-                username: row
-                    .try_get("username")
-                    .map_err(|e| UserError::DatabaseError(e.to_string()))?,
+                username: row.try_get("username")?,
                 bio: row.try_get("bio").ok(),
-                role: row
-                    .try_get("role")
-                    .map_err(|e| UserError::DatabaseError(e.to_string()))?,
-                is_verified: row
-                    .try_get("is_verified")
-                    .map_err(|e| UserError::DatabaseError(e.to_string()))?,
+                role: row.try_get("role")?,
+                is_verified: row.try_get("is_verified")?,
                 uploads_count: row.try_get::<i64, _>("uploads_count").unwrap_or(0),
                 total_likes: row.try_get::<i64, _>("total_likes").unwrap_or(0),
                 total_downloads: row.try_get::<i64, _>("total_downloads").unwrap_or(0),

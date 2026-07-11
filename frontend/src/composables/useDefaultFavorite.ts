@@ -1,5 +1,5 @@
 import { ref, computed, watch } from 'vue';
-import { useAuthStore } from '../stores/auth';
+import { useAuthStore } from '@/stores/auth';
 import { storeToRefs } from 'pinia';
 
 const DEFAULT_FAVORITE_KEY = 'default_favorite';
@@ -87,7 +87,7 @@ export function useDefaultFavorite() {
     const data: DefaultFavoriteData = {
       userId: user.value.id,
       favoriteId,
-      favoriteName
+      favoriteName,
     };
 
     localStorage.setItem(DEFAULT_FAVORITE_KEY, JSON.stringify(data));
@@ -108,16 +108,22 @@ export function useDefaultFavorite() {
    */
   const isDefaultFavorite = (favoriteId: string): boolean => {
     if (!user.value || !defaultFavorite.value) return false;
-    return defaultFavorite.value.userId === user.value.id &&
-           defaultFavorite.value.favoriteId === favoriteId;
+    return (
+      defaultFavorite.value.userId === user.value.id &&
+      defaultFavorite.value.favoriteId === favoriteId
+    );
   };
 
   // 监听用户变化，自动加载或清理默认收藏夹信息
-  watch(() => user.value?.id, (newUserId, oldUserId) => {
-    if (newUserId !== oldUserId) {
-      loadDefaultFavorite();
-    }
-  }, { immediate: true });
+  watch(
+    () => user.value?.id,
+    (newUserId, oldUserId) => {
+      if (newUserId !== oldUserId) {
+        loadDefaultFavorite();
+      }
+    },
+    { immediate: true }
+  );
 
   return {
     defaultFavorite,
@@ -127,13 +133,13 @@ export function useDefaultFavorite() {
     setDefaultFavorite,
     clearDefaultFavorite,
     isDefaultFavorite,
-    loadDefaultFavorite
+    loadDefaultFavorite,
   };
 }
 
 /**
-   * 清除默认收藏夹（用于登出时调用）
-   */
+ * 清除默认收藏夹（用于登出时调用）
+ */
 export const clearDefaultFavoriteStorage = () => {
   localStorage.removeItem(DEFAULT_FAVORITE_KEY);
 };

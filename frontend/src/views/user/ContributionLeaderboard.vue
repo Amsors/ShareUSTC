@@ -37,12 +37,15 @@
             >
               <!-- 排名 -->
               <div class="rank-cell">
-                <div class="rank-badge" :class="{
-                  'rank-1': index === 0,
-                  'rank-2': index === 1,
-                  'rank-3': index === 2,
-                  'rank-other': index >= 3
-                }">
+                <div
+                  class="rank-badge"
+                  :class="{
+                    'rank-1': index === 0,
+                    'rank-2': index === 1,
+                    'rank-3': index === 2,
+                    'rank-other': index >= 3,
+                  }"
+                >
                   <template v-if="index < 3">
                     <el-icon><Medal /></el-icon>
                   </template>
@@ -101,12 +104,7 @@
 
         <!-- 提示信息 -->
         <div class="tips-section">
-          <el-alert
-            title="如何上榜？"
-            type="info"
-            :closable="false"
-            show-icon
-          >
+          <el-alert title="如何上榜？" type="info" :closable="false" show-icon>
             <template #default>
               上传资源并通过审核后即可上榜。上传越多、质量越高（获得更多点赞），排名越靠前！
             </template>
@@ -120,16 +118,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { getLeaderboard } from '../../api/user';
-import type { LeaderboardUser, LeaderboardResponse } from '../../api/user';
-import {
-  Trophy,
-  Medal,
-  UserFilled,
-  ArrowRight,
-  Loading
-} from '@element-plus/icons-vue';
+import { getLeaderboard } from '@/api/user';
+import type { LeaderboardUser, LeaderboardResponse } from '@/types/user';
+import { Trophy, Medal, UserFilled, ArrowRight, Loading } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
+import { getErrorMessage, isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 const router = useRouter();
 
@@ -164,8 +158,11 @@ const loadLeaderboard = async () => {
     const data: LeaderboardResponse = await getLeaderboard({ limit: 50 });
     users.value = data.users;
     total.value = data.total;
-  } catch (error: any) {
-    ElMessage.error(error.message || '加载榜单失败');
+  } catch (error) {
+    logger.error('[ContributionLeaderboard]', '加载榜单失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '加载榜单失败'));
+    }
   } finally {
     loading.value = false;
   }
@@ -179,7 +176,7 @@ onMounted(() => {
 <style scoped>
 .leaderboard-page {
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   padding: 24px;
 }
 
@@ -201,18 +198,18 @@ onMounted(() => {
   gap: 12px;
   font-size: 28px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
   margin: 0 0 8px;
 }
 
 .page-title .el-icon {
-  color: #e6a23c;
+  color: var(--el-color-warning);
   font-size: 32px;
 }
 
 .page-subtitle {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin: 0;
 }
 
@@ -223,18 +220,22 @@ onMounted(() => {
 }
 
 .loading-icon {
-  color: #409eff;
+  color: var(--el-color-primary);
   animation: rotating 2s linear infinite;
 }
 
 @keyframes rotating {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-state p {
   margin-top: 16px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 /* 榜单卡片 */
@@ -292,26 +293,26 @@ onMounted(() => {
 }
 
 .rank-badge.rank-1 {
-  background: linear-gradient(135deg, #ffd700 0%, #ffb800 100%);
+  background: var(--su-medal-gold);
   color: #fff;
   font-size: 20px;
 }
 
 .rank-badge.rank-2 {
-  background: linear-gradient(135deg, #c0c0c0 0%, #a0a0a0 100%);
+  background: var(--su-medal-silver);
   color: #fff;
   font-size: 20px;
 }
 
 .rank-badge.rank-3 {
-  background: linear-gradient(135deg, #cd7f32 0%, #b87333 100%);
+  background: var(--su-medal-bronze);
   color: #fff;
   font-size: 20px;
 }
 
 .rank-badge.rank-other {
   background-color: #f0f2f5;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 /* 用户信息 */
@@ -324,7 +325,7 @@ onMounted(() => {
 }
 
 .user-avatar {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--su-brand-gradient);
   color: #fff;
   flex-shrink: 0;
 }
@@ -344,7 +345,7 @@ onMounted(() => {
 .username {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -352,7 +353,7 @@ onMounted(() => {
 
 .user-bio {
   font-size: 13px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -374,13 +375,13 @@ onMounted(() => {
   display: block;
   font-size: 18px;
   font-weight: 600;
-  color: #409eff;
+  color: var(--el-color-primary);
   margin-bottom: 2px;
 }
 
 .stat-label {
   font-size: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 /* 操作按钮 */
@@ -456,7 +457,7 @@ onMounted(() => {
   .stats-cell {
     padding-left: 0;
     width: 100%;
-    border-top: 1px solid #ebeef5;
+    border-top: 1px solid var(--el-border-color-lighter);
     padding-top: 12px;
     margin-top: 4px;
   }

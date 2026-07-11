@@ -27,7 +27,9 @@
         <el-form-item :label="emailLabel" prop="email">
           <el-input
             v-model="form.email"
-            :placeholder="siteConfigStore.requireEmailOnRegister ? '请输入邮箱（必填）' : '请输入邮箱'"
+            :placeholder="
+              siteConfigStore.requireEmailOnRegister ? '请输入邮箱（必填）' : '请输入邮箱'
+            "
             :prefix-icon="Message"
             size="large"
             autocomplete="off"
@@ -47,11 +49,14 @@
             data-lpignore="true"
             @input="checkPasswordStrength"
           />
-          <div class="password-strength" v-if="form.password">
+          <div v-if="form.password" class="password-strength">
             <div class="strength-bar">
               <div
                 class="strength-fill"
-                :style="{ width: passwordStrength.percent + '%', backgroundColor: passwordStrength.color }"
+                :style="{
+                  width: passwordStrength.percent + '%',
+                  backgroundColor: passwordStrength.color,
+                }"
               />
             </div>
             <span class="strength-text" :style="{ color: passwordStrength.color }">
@@ -78,8 +83,8 @@
             type="primary"
             size="large"
             :loading="authStore.isLoading"
-            @click="handleSubmit"
             style="width: 100%"
+            @click="handleSubmit"
           >
             注册
           </el-button>
@@ -98,11 +103,11 @@
 import { ref, reactive, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { User, Lock, Message } from '@element-plus/icons-vue';
-import { useAuthStore } from '../../stores/auth';
-import { useSiteConfigStore } from '../../stores/siteConfig';
+import { useAuthStore } from '@/stores/auth';
+import { useSiteConfigStore } from '@/stores/siteConfig';
 import type { FormInstance, FormRules, FormItemRule } from 'element-plus';
-import logger from '../../utils/logger';
-import { authConfig } from '../../config/site.config';
+import logger from '@/utils/logger';
+import { authConfig } from '@/config/site.config';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -119,12 +124,10 @@ const emailRules = computed<FormItemRule[]>(() => {
   if (siteConfigStore.requireEmailOnRegister) {
     return [
       { required: true, message: '请输入邮箱', trigger: 'blur' },
-      { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
+      { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' },
     ];
   }
-  return [
-    { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
-  ];
+  return [{ type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }];
 });
 
 // 页面加载时获取站点配置
@@ -136,14 +139,14 @@ const form = reactive({
   username: '',
   email: '',
   password: '',
-  confirmPassword: ''
+  confirmPassword: '',
 });
 
 // 密码强度
 const passwordStrength = reactive({
   percent: 0,
   color: '#ff4d4f',
-  text: '弱'
+  text: '弱',
 });
 
 const checkPasswordStrength = () => {
@@ -171,7 +174,7 @@ const checkPasswordStrength = () => {
 };
 
 // 验证确认密码
-const validateConfirmPassword = (_rule: any, value: string, callback: any) => {
+const validateConfirmPassword: FormItemRule['validator'] = (_rule, value, callback) => {
   if (value !== form.password) {
     callback(new Error('两次输入的密码不一致'));
   } else {
@@ -183,22 +186,22 @@ const baseRules: FormRules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
     { min: 3, max: 50, message: '用户名长度在 3 到 50 个字符', trigger: 'blur' },
-    { pattern: /^[a-zA-Z0-9_]+$/, message: '用户名只能包含字母、数字和下划线', trigger: 'blur' }
+    { pattern: /^[a-zA-Z0-9_]+$/, message: '用户名只能包含字母、数字和下划线', trigger: 'blur' },
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度至少为 6 个字符', trigger: 'blur' }
+    { min: 6, message: '密码长度至少为 6 个字符', trigger: 'blur' },
   ],
   confirmPassword: [
     { required: true, message: '请确认密码', trigger: 'blur' },
-    { validator: validateConfirmPassword, trigger: 'blur' }
-  ]
+    { validator: validateConfirmPassword, trigger: 'blur' },
+  ],
 };
 
 // 动态规则
 const rules = computed<FormRules>(() => ({
   ...baseRules,
-  email: emailRules.value
+  email: emailRules.value,
 }));
 
 const handleSubmit = async () => {
@@ -211,14 +214,14 @@ const handleSubmit = async () => {
     const success = await authStore.registerUser({
       username: form.username,
       password: form.password,
-      email: form.email || undefined
+      email: form.email || undefined,
     });
 
     if (success) {
       // 注册成功，跳转到首页
       router.push('/');
     }
-  } catch (error) {
+  } catch {
     // 验证失败，不执行注册
     logger.debug('[Register]', '表单验证失败');
   }
@@ -231,7 +234,7 @@ const handleSubmit = async () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--su-brand-gradient);
   padding: 20px;
 }
 
@@ -244,14 +247,14 @@ const handleSubmit = async () => {
 .register-title {
   text-align: center;
   margin: 0;
-  color: #303133;
+  color: var(--el-text-color-primary);
   font-size: 24px;
 }
 
 .register-subtitle {
   text-align: center;
   margin: 8px 0 0;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 14px;
 }
 
@@ -265,7 +268,7 @@ const handleSubmit = async () => {
 .strength-bar {
   flex: 1;
   height: 4px;
-  background-color: #e4e7ed;
+  background-color: var(--el-border-color-light);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -283,12 +286,12 @@ const handleSubmit = async () => {
 .register-links {
   text-align: center;
   margin-top: 16px;
-  color: #606266;
+  color: var(--el-text-color-regular);
   font-size: 14px;
 }
 
 .register-links a {
-  color: #409eff;
+  color: var(--el-color-primary);
   text-decoration: none;
   margin-left: 4px;
 }

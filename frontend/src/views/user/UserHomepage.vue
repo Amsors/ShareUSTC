@@ -27,9 +27,7 @@
                 <el-tag :type="getUserTagType()" size="default">
                   {{ getUserTagText() }}
                 </el-tag>
-                <el-tag v-if="homepage.isVerified" type="success" size="small">
-                  已认证
-                </el-tag>
+                <el-tag v-if="homepage.isVerified" type="success" size="small"> 已认证 </el-tag>
               </div>
               <p class="join-date">加入于 {{ formatDate(homepage.createdAt) }}</p>
             </div>
@@ -53,10 +51,11 @@
         </el-card>
 
         <!-- 个人简介 -->
-        <el-card class="bio-card" v-if="homepage.bio">
+        <el-card v-if="homepage.bio" class="bio-card">
           <template #header>
             <span>个人简介</span>
           </template>
+          <!-- eslint-disable-next-line vue/no-v-html 内容经 markdown-it（html:false）渲染，原始 HTML 已转义 -->
           <div class="bio-content markdown-body" v-html="renderedBio"></div>
         </el-card>
 
@@ -81,21 +80,38 @@
               <div class="resource-main">
                 <h4 class="resource-title">{{ resource.title }}</h4>
                 <div class="resource-meta">
-                  <span v-if="resource.courseName" class="course-name">{{ resource.courseName }}</span>
-                  <el-tag size="small" :color="getResourceTypeColor(resource.resourceType)" effect="dark">
+                  <span v-if="resource.courseName" class="course-name">{{
+                    resource.courseName
+                  }}</span>
+                  <el-tag
+                    size="small"
+                    :color="getResourceTypeColor(resource.resourceType)"
+                    effect="dark"
+                  >
                     {{ getResourceTypeLabel(resource.resourceType) }}
                   </el-tag>
                 </div>
-                <div class="resource-tags" v-if="resource.tags && resource.tags.length > 0">
-                  <el-tag v-for="tag in resource.tags.slice(0, 3)" :key="tag" size="small" effect="plain">
+                <div v-if="resource.tags && resource.tags.length > 0" class="resource-tags">
+                  <el-tag
+                    v-for="tag in resource.tags.slice(0, 3)"
+                    :key="tag"
+                    size="small"
+                    effect="plain"
+                  >
                     {{ tag }}
                   </el-tag>
                 </div>
               </div>
               <div class="resource-stats">
-                <span><el-icon><View /></el-icon> {{ resource.stats.views }}</span>
-                <span><el-icon><Download /></el-icon> {{ resource.stats.downloads }}</span>
-                <span><el-icon><Star /></el-icon> {{ resource.stats.likes }}</span>
+                <span
+                  ><el-icon><View /></el-icon> {{ resource.stats.views }}</span
+                >
+                <span
+                  ><el-icon><Download /></el-icon> {{ resource.stats.downloads }}</span
+                >
+                <span
+                  ><el-icon><Star /></el-icon> {{ resource.stats.likes }}</span
+                >
               </div>
             </div>
           </div>
@@ -120,17 +136,13 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import MarkdownIt from 'markdown-it';
-import { getUserHomepage } from '../../api/user';
-import type { UserHomepage } from '../../api/user';
-import { ResourceTypeLabels, getResourceTypeColor as getTypeColor } from '../../types/resource';
-import {
-  UserFilled,
-  View,
-  Download,
-  Star,
-  Loading
-} from '@element-plus/icons-vue';
+import { getUserHomepage } from '@/api/user';
+import type { UserHomepage } from '@/types/user';
+import { ResourceTypeLabels, getResourceTypeColor as getTypeColor } from '@/types/resource';
+import { UserFilled, View, Download, Star, Loading } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
+import { getErrorMessage, isApiError, isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 const route = useRoute();
 
@@ -139,7 +151,7 @@ const md = new MarkdownIt({
   html: false,
   breaks: true,
   linkify: true,
-  typographer: true
+  typographer: true,
 });
 
 // 状态
@@ -204,13 +216,14 @@ const loadHomepage = async () => {
   try {
     homepage.value = await getUserHomepage(userId, {
       page: currentPage.value,
-      perPage: perPage.value
+      perPage: perPage.value,
     });
-  } catch (error: any) {
-    if (error.code === 404) {
+  } catch (error) {
+    logger.error('[UserHomepage]', '加载用户主页失败', error);
+    if (isApiError(error) && error.status === 404) {
       notFound.value = true;
-    } else if (!error.isHandled) {
-      ElMessage.error(error.message || '加载用户主页失败');
+    } else if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '加载用户主页失败'));
     }
   } finally {
     loading.value = false;
@@ -218,10 +231,13 @@ const loadHomepage = async () => {
 };
 
 // 监听路由参数变化
-watch(() => route.params.id, () => {
-  currentPage.value = 1;
-  loadHomepage();
-});
+watch(
+  () => route.params.id,
+  () => {
+    currentPage.value = 1;
+    loadHomepage();
+  }
+);
 
 onMounted(() => {
   loadHomepage();
@@ -231,7 +247,7 @@ onMounted(() => {
 <style scoped>
 .user-homepage {
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   padding: 24px;
 }
 
@@ -247,18 +263,22 @@ onMounted(() => {
 }
 
 .loading-icon {
-  color: #409eff;
+  color: var(--el-color-primary);
   animation: rotating 2s linear infinite;
 }
 
 @keyframes rotating {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-state p {
   margin-top: 16px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 /* 用户信息卡片 */
@@ -284,12 +304,12 @@ onMounted(() => {
 .username {
   margin: 0 0 8px;
   font-size: 28px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .user-id {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-bottom: 8px;
 }
 
@@ -302,7 +322,7 @@ onMounted(() => {
 .join-date {
   margin: 0;
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 /* 统计数据 */
@@ -310,7 +330,7 @@ onMounted(() => {
   display: flex;
   justify-content: space-around;
   padding-top: 24px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--el-border-color-lighter);
 }
 
 .stat-item {
@@ -321,13 +341,13 @@ onMounted(() => {
   display: block;
   font-size: 28px;
   font-weight: bold;
-  color: #409eff;
+  color: var(--el-color-primary);
   margin-bottom: 4px;
 }
 
 .stat-label {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 /* 个人简介 */
@@ -347,12 +367,12 @@ onMounted(() => {
 .markdown-body :deep(h5),
 .markdown-body :deep(h6) {
   margin: 16px 0 12px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .markdown-body :deep(h1) {
   font-size: 1.5em;
-  border-bottom: 1px solid #e4e7ed;
+  border-bottom: 1px solid var(--el-border-color-light);
   padding-bottom: 8px;
 }
 
@@ -363,7 +383,7 @@ onMounted(() => {
 .markdown-body :deep(p) {
   margin: 12px 0;
   line-height: 1.8;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .markdown-body :deep(img) {
@@ -374,7 +394,7 @@ onMounted(() => {
 }
 
 .markdown-body :deep(a) {
-  color: #409eff;
+  color: var(--el-color-primary);
   text-decoration: none;
 }
 
@@ -383,7 +403,7 @@ onMounted(() => {
 }
 
 .markdown-body :deep(code) {
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   padding: 2px 6px;
   border-radius: 3px;
   font-family: 'Consolas', 'Monaco', monospace;
@@ -406,10 +426,10 @@ onMounted(() => {
 }
 
 .markdown-body :deep(blockquote) {
-  border-left: 4px solid #409eff;
+  border-left: 4px solid var(--el-color-primary);
   padding-left: 16px;
   margin: 12px 0;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .markdown-body :deep(ul),
@@ -435,7 +455,7 @@ onMounted(() => {
 
 .resources-count {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-weight: normal;
 }
 
@@ -469,7 +489,7 @@ onMounted(() => {
 .resource-title {
   margin: 0 0 8px;
   font-size: 16px;
-  color: #303133;
+  color: var(--el-text-color-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -484,7 +504,7 @@ onMounted(() => {
 
 .course-name {
   font-size: 13px;
-  color: #409eff;
+  color: var(--el-color-primary);
 }
 
 .resource-tags {
@@ -496,7 +516,7 @@ onMounted(() => {
   display: flex;
   gap: 16px;
   font-size: 13px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   flex-shrink: 0;
 }
 

@@ -3,10 +3,10 @@ export const UserRole = {
   Guest: 'guest',
   User: 'user',
   Verified: 'verified',
-  Admin: 'admin'
+  Admin: 'admin',
 } as const;
 
-export type UserRoleType = typeof UserRole[keyof typeof UserRole];
+export type UserRoleType = (typeof UserRole)[keyof typeof UserRole];
 
 // 用户信息
 export interface User {
@@ -40,11 +40,6 @@ export interface TokenResponse {
   tokenType: string;
   expiresIn: number;
 }
-
-// 认证响应
-// 注意：Token 现在存储在 HttpOnly Cookie 中，不再在响应体中返回
-// API 直接返回 User 对象（不再包装在 {user: ...} 中）
-export type AuthResponse = User;
 
 // 刷新 Token 请求
 export interface RefreshTokenRequest {

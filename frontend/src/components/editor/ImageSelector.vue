@@ -95,16 +95,16 @@
 
         <el-tab-pane label="外部链接" name="url">
           <div class="url-input-section">
-            <el-input
-              v-model="externalUrl"
-              placeholder="请输入图片URL地址"
-              size="large"
-              clearable
-            >
+            <el-input v-model="externalUrl" placeholder="请输入图片URL地址" size="large" clearable>
               <template #prepend>URL</template>
             </el-input>
             <div v-if="externalUrl" class="url-preview">
-              <img :src="externalUrl" alt="预览" @error="handleImageError" @load="externalUrlValid = true" />
+              <img
+                :src="externalUrl"
+                alt="预览"
+                @error="handleImageError"
+                @load="externalUrlValid = true"
+              />
             </div>
           </div>
         </el-tab-pane>
@@ -126,8 +126,10 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Loading, Check, Upload } from '@element-plus/icons-vue';
-import { getMyImages, uploadImage } from '../../api/imageHost';
-import type { Image } from '../../types/image';
+import { getMyImages, uploadImage } from '@/api/imageHost';
+import type { Image } from '@/types/image';
+import { getErrorMessage, isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -141,7 +143,7 @@ const emit = defineEmits<{
 // 对话框可见性
 const dialogVisible = computed({
   get: () => props.modelValue,
-  set: (val) => emit('update:modelValue', val)
+  set: (val) => emit('update:modelValue', val),
 });
 
 // 标签页
@@ -183,13 +185,14 @@ const loadImages = async () => {
   try {
     const result = await getMyImages({
       page: currentPage.value,
-      perPage: pageSize.value
+      perPage: pageSize.value,
     });
     images.value = result.images;
     total.value = result.total;
-  } catch (error: any) {
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '加载图片列表失败');
+  } catch (error) {
+    logger.error('[ImageSelector]', '加载图片列表失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '加载图片列表失败'));
     }
   } finally {
     loading.value = false;
@@ -259,7 +262,7 @@ const uploadFile = async (file: File) => {
       originalName: result.originalName,
       fileSize: result.fileSize,
       createdAt: result.createdAt,
-      storageType: (result as any).storageType || 'local'
+      storageType: result.storageType || 'local',
     };
 
     lastUploadedImage.value = image;
@@ -268,9 +271,10 @@ const uploadFile = async (file: File) => {
 
     // 刷新图片列表
     await loadImages();
-  } catch (error: any) {
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '上传失败');
+  } catch (error) {
+    logger.error('[ImageSelector]', '上传图片失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '上传失败'));
     }
   } finally {
     uploading.value = false;

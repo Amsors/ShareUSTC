@@ -1,0 +1,22 @@
+/**
+ * 项目自有设计 token（品牌色 / 渐变 / 徽章）。
+ *
+ * Element Plus 语义色请直接使用官方 --el-* 变量（如 --el-color-primary、
+ * --el-text-color-regular），不要在此重复定义；此文件只放项目品牌相关、
+ * Element Plus 未覆盖的 token，组件通过 var(--su-*) 引用。
+ */
+:root {
+  /* 品牌主色渐变（登录 / 注册 / 首页 Banner / 排行榜头图等紫蓝渐变） */
+  --su-brand-gradient-start: #667eea;
+  --su-brand-gradient-end: #764ba2;
+  --su-brand-gradient: linear-gradient(
+    135deg,
+    var(--su-brand-gradient-start) 0%,
+    var(--su-brand-gradient-end) 100%
+  );
+
+  /* 排行榜 / 成就徽章的奖牌渐变（金 / 银 / 铜） */
+  --su-medal-gold: linear-gradient(135deg, #ffd700 0%, #ffb800 100%);
+  --su-medal-silver: linear-gradient(135deg, #c0c0c0 0%, #a0a0a0 100%);
+  --su-medal-bronze: linear-gradient(135deg, #cd7f32 0%, #b87333 100%);
+}

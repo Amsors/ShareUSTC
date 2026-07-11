@@ -7,9 +7,9 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import Navbar from './components/Navbar.vue';
-import PriorityModal from './components/notification/PriorityModal.vue';
-import { useAuthStore } from './stores/auth';
+import Navbar from '@/components/Navbar.vue';
+import PriorityModal from '@/components/notification/PriorityModal.vue';
+import { useAuthStore } from '@/stores/auth';
 
 const route = useRoute();
 const authStore = useAuthStore();
@@ -38,7 +38,8 @@ watch(
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: #2c3e50;

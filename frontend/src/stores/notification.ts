@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { Notification, NotificationListQuery } from '../types/notification';
+import type { Notification, NotificationListQuery } from '@/types/notification';
 import {
   getNotifications,
   markAsRead,
@@ -8,7 +8,7 @@ import {
   getUnreadCount,
   getPriorityNotifications,
   dismissPriorityNotification,
-} from '../api/notification';
+} from '@/api/notification';
 
 export const useNotificationStore = defineStore('notification', () => {
   // State
@@ -110,9 +110,7 @@ export const useNotificationStore = defineStore('notification', () => {
     await dismissPriorityNotification(notificationId);
 
     // 更新本地状态
-    const index = priorityNotifications.value.findIndex(
-      (n) => n.id === notificationId
-    );
+    const index = priorityNotifications.value.findIndex((n) => n.id === notificationId);
     if (index > -1) {
       priorityNotifications.value.splice(index, 1);
     }

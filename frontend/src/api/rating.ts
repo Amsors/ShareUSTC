@@ -1,5 +1,5 @@
-import request from './request';
-import type { Rating, CreateRatingRequest, ResourceRatingInfo } from '../types/rating';
+import request from '@/api/request';
+import type { Rating, CreateRatingRequest, ResourceRatingInfo } from '@/types/rating';
 
 /**
  * 提交评分（创建或更新）
@@ -13,7 +13,7 @@ export const submitRating = async (
   return request({
     url: `/resources/${resourceId}/rate`,
     method: 'post',
-    data
+    data,
   }) as Promise<Rating>;
 };
 
@@ -24,7 +24,7 @@ export const submitRating = async (
 export const getMyRating = async (resourceId: string): Promise<Rating | null> => {
   return request({
     url: `/resources/${resourceId}/rate`,
-    method: 'get'
+    method: 'get',
   }) as Promise<Rating | null>;
 };
 
@@ -35,7 +35,7 @@ export const getMyRating = async (resourceId: string): Promise<Rating | null> =>
 export const deleteRating = async (resourceId: string): Promise<void> => {
   return request({
     url: `/resources/${resourceId}/rate`,
-    method: 'delete'
+    method: 'delete',
   }) as Promise<void>;
 };
 
@@ -46,6 +46,6 @@ export const deleteRating = async (resourceId: string): Promise<void> => {
 export const getResourceRatingInfo = async (resourceId: string): Promise<ResourceRatingInfo> => {
   return request({
     url: `/resources/${resourceId}/ratings`,
-    method: 'get'
+    method: 'get',
   }) as Promise<ResourceRatingInfo>;
 };

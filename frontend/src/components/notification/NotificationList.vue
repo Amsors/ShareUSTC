@@ -16,12 +16,7 @@
       <div class="notification-content">
         <div class="notification-header">
           <h4 class="notification-title">{{ notification.title }}</h4>
-          <el-tag
-            v-if="notification.priority === 'high'"
-            type="danger"
-            size="small"
-            effect="dark"
-          >
+          <el-tag v-if="notification.priority === 'high'" type="danger" size="small" effect="dark">
             重要
           </el-tag>
         </div>
@@ -48,17 +43,10 @@
 
 <script setup lang="ts">
 // 无需额外导入 computed
-import {
-  Bell,
-  Check,
-  Document,
-  Star,
-  Warning,
-  ChatDotRound,
-} from '@element-plus/icons-vue';
-import type { Notification, NotificationType } from '../../types/notification';
+import { Bell, Check, Document, Star, Warning, ChatDotRound } from '@element-plus/icons-vue';
+import type { Notification, NotificationType } from '@/types/notification';
 
-const props = defineProps<{
+defineProps<{
   notifications: Notification[];
 }>();
 

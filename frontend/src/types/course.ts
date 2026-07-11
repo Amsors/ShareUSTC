@@ -84,4 +84,4 @@ export const SemesterOptions = [
   { value: '四秋', label: '四秋' },
 ] as const;
 
-export type SemesterType = typeof SemesterOptions[number]['value'];
+export type SemesterType = (typeof SemesterOptions)[number]['value'];

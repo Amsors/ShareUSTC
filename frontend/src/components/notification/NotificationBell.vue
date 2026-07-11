@@ -24,7 +24,7 @@
             </el-button>
           </div>
 
-          <div class="notification-list" v-if="recentNotifications.length > 0">
+          <div v-if="recentNotifications.length > 0" class="notification-list">
             <el-dropdown-item
               v-for="notification in recentNotifications"
               :key="notification.id"
@@ -34,17 +34,12 @@
             >
               <div class="notification-content">
                 <div class="notification-title">{{ notification.title }}</div>
-                <div class="notification-text" v-if="notification.content">
+                <div v-if="notification.content" class="notification-text">
                   {{ truncateText(notification.content, 50) }}
                 </div>
                 <div class="notification-time">{{ formatTime(notification.createdAt) }}</div>
               </div>
-              <el-badge
-                v-if="!notification.isRead"
-                is-dot
-                type="danger"
-                class="unread-dot"
-              />
+              <el-badge v-if="!notification.isRead" is-dot type="danger" class="unread-dot" />
             </el-dropdown-item>
           </div>
 
@@ -56,9 +51,7 @@
           </div>
 
           <div class="notification-footer">
-            <el-button link type="primary" @click="goToNotificationCenter">
-              查看全部
-            </el-button>
+            <el-button link type="primary" @click="goToNotificationCenter"> 查看全部 </el-button>
           </div>
         </el-dropdown-menu>
       </template>
@@ -70,10 +63,12 @@
 import { computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { Bell } from '@element-plus/icons-vue';
-import { useNotificationStore } from '../../stores/notification';
-import { useAuthStore } from '../../stores/auth';
-import type { Notification } from '../../types/notification';
+import { useNotificationStore } from '@/stores/notification';
+import { useAuthStore } from '@/stores/auth';
+import type { Notification } from '@/types/notification';
 import { ElMessage } from 'element-plus';
+import { isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 const router = useRouter();
 const notificationStore = useNotificationStore();
@@ -81,9 +76,7 @@ const authStore = useAuthStore();
 
 // 状态
 const unreadCount = computed(() => notificationStore.unreadCount);
-const recentNotifications = computed(() =>
-  notificationStore.notifications.slice(0, 5)
-);
+const recentNotifications = computed(() => notificationStore.notifications.slice(0, 5));
 
 // 轮询定时器
 let pollTimer: ReturnType<typeof setInterval> | null = null;
@@ -114,8 +107,9 @@ async function handleMarkAllRead() {
   try {
     await notificationStore.markAllNotificationsAsRead();
     ElMessage.success('已全部标记为已读');
-  } catch (error: any) {
-    if (!error.isHandled) {
+  } catch (error) {
+    logger.error('[NotificationBell]', '标记全部已读失败', error);
+    if (!isHandledError(error)) {
       ElMessage.error('操作失败');
     }
   }

@@ -4,7 +4,12 @@
 
     <!-- 统计卡片 -->
     <div class="stats-grid">
-      <el-card v-for="stat in statsCards" :key="stat.title" class="stat-card" :body-style="{ padding: '20px' }">
+      <el-card
+        v-for="stat in statsCards"
+        :key="stat.title"
+        class="stat-card"
+        :body-style="{ padding: '20px' }"
+      >
         <div class="stat-content">
           <div class="stat-icon" :style="{ backgroundColor: stat.color + '20', color: stat.color }">
             <el-icon :size="28">
@@ -64,7 +69,7 @@
       </template>
       <div class="pending-list">
         <div class="pending-item" @click="$router.push('/admin/resources')">
-          <div class="pending-icon" style="background-color: #f56c6c20; color: #f56c6c;">
+          <div class="pending-icon" style="background-color: #f56c6c20; color: #f56c6c">
             <el-icon :size="20">
               <Document />
             </el-icon>
@@ -77,7 +82,7 @@
         </div>
         <el-divider />
         <div class="pending-item" @click="$router.push('/admin/comments')">
-          <div class="pending-icon" style="background-color: #e6a23c20; color: #e6a23c;">
+          <div class="pending-icon" style="background-color: #e6a23c20; color: #e6a23c">
             <el-icon :size="20">
               <ChatDotSquare />
             </el-icon>
@@ -95,15 +100,11 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
-import {
-  UserFilled,
-  Document,
-  Download,
-  Warning,
-  ChatDotSquare
-} from '@element-plus/icons-vue';
+import { UserFilled, Document, Download, Warning, ChatDotSquare } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
-import { adminApi } from '../../api/admin';
+import { getDashboardStats } from '@/api/admin';
+import { isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 interface DashboardStats {
   totalUsers: number;
@@ -123,35 +124,36 @@ const statsCards = computed(() => [
     title: '总用户数',
     value: stats.value?.totalUsers || 0,
     icon: UserFilled,
-    color: '#409eff'
+    color: '#409eff',
   },
   {
     title: '总资源数',
     value: stats.value?.totalResources || 0,
     icon: Document,
-    color: '#67c23a'
+    color: '#67c23a',
   },
   {
     title: '总下载量',
     value: stats.value?.totalDownloads || 0,
     icon: Download,
-    color: '#e6a23c'
+    color: '#e6a23c',
   },
   {
     title: '待审核',
     value: (stats.value?.pendingResources || 0) + (stats.value?.pendingComments || 0),
     icon: Warning,
-    color: '#f56c6c'
-  }
+    color: '#f56c6c',
+  },
 ]);
 
 const fetchStats = async () => {
   loading.value = true;
   try {
-    const data = await adminApi.getDashboardStats();
+    const data = await getDashboardStats();
     stats.value = data;
-  } catch (error: any) {
-    if (!error.isHandled) {
+  } catch (error) {
+    logger.error('[Dashboard]', '获取统计数据失败', error);
+    if (!isHandledError(error)) {
       ElMessage.error('获取统计数据失败');
     }
   } finally {
@@ -173,7 +175,7 @@ onMounted(() => {
   font-size: 24px;
   font-weight: 600;
   margin-bottom: 24px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 /* 统计卡片 */
@@ -214,13 +216,13 @@ onMounted(() => {
 .stat-value {
   font-size: 28px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
   line-height: 1.2;
 }
 
 .stat-title {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-top: 4px;
 }
 
@@ -242,7 +244,7 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   gap: 16px;
 }
 
@@ -261,7 +263,7 @@ onMounted(() => {
 }
 
 .pending-item:hover {
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
 }
 
 .pending-icon {
@@ -280,13 +282,13 @@ onMounted(() => {
 
 .pending-title {
   font-size: 14px;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .pending-count {
   font-size: 18px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
   margin-top: 4px;
 }
 

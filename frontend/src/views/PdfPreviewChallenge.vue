@@ -19,17 +19,11 @@
         <h2>检测通过</h2>
         <p>您的浏览器支持 PDF 预览功能</p>
         <p class="sub-text">已为您开启"自动加载 PDF 资料预览"功能</p>
-        <el-button type="primary" @click="goToSettings">
-          前往设置页面
-        </el-button>
+        <el-button type="primary" @click="goToSettings"> 前往设置页面 </el-button>
       </div>
 
       <div v-else class="challenge-content">
-        <el-alert
-          type="info"
-          :closable="false"
-          class="challenge-info"
-        >
+        <el-alert type="info" :closable="false" class="challenge-info">
           <template #title>
             <strong>检测说明</strong>
           </template>
@@ -82,8 +76,8 @@
                 size="large"
                 :loading="verifying"
                 :disabled="!isValidCode"
-                @click="handleSubmit"
                 class="submit-btn"
+                @click="handleSubmit"
               >
                 提交验证
               </el-button>
@@ -100,9 +94,14 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { Loading, Warning, CircleCheck, Key } from '@element-plus/icons-vue';
-import PdfViewer from '../components/preview/PdfViewer.vue';
-import { getPdfPreviewChallengeConfig, verifyPdfPreviewChallenge, type PdfPreviewChallengeConfig } from '../api/resource';
-import logger from '../utils/logger';
+import PdfViewer from '@/components/preview/PdfViewer.vue';
+import {
+  getPdfPreviewChallengeConfig,
+  verifyPdfPreviewChallenge,
+  type PdfPreviewChallengeConfig,
+} from '@/api/resource';
+import logger from '@/utils/logger';
+import { isHandledError } from '@/api/request';
 
 const router = useRouter();
 const loading = ref(true);
@@ -145,7 +144,9 @@ const loadConfig = async () => {
     logger.info('[PdfPreviewChallenge]', 'Config loaded:', data);
   } catch (error) {
     logger.error('[PdfPreviewChallenge]', 'Failed to load config:', error);
-    ElMessage.error('加载配置失败');
+    if (!isHandledError(error)) {
+      ElMessage.error('加载配置失败');
+    }
   } finally {
     loading.value = false;
   }
@@ -163,20 +164,29 @@ const handleSubmit = async () => {
     const result = await verifyPdfPreviewChallenge(inputCode.value);
     if (result.success) {
       // 验证成功，保存状态
-      localStorage.setItem(PDF_PREVIEW_VERIFIED_KEY, JSON.stringify({
-        verified: true,
-        timestamp: Date.now()
-      }));
+      localStorage.setItem(
+        PDF_PREVIEW_VERIFIED_KEY,
+        JSON.stringify({
+          verified: true,
+          timestamp: Date.now(),
+        })
+      );
       // 开启自动加载
-      localStorage.setItem(PDF_PREVIEW_AUTO_LOAD_KEY, JSON.stringify({
-        enabled: true,
-        timestamp: Date.now()
-      }));
+      localStorage.setItem(
+        PDF_PREVIEW_AUTO_LOAD_KEY,
+        JSON.stringify({
+          enabled: true,
+          timestamp: Date.now(),
+        })
+      );
       // 允许用户手动控制
-      localStorage.setItem(PDF_PREVIEW_USER_ENABLED_KEY, JSON.stringify({
-        enabled: true,
-        timestamp: Date.now()
-      }));
+      localStorage.setItem(
+        PDF_PREVIEW_USER_ENABLED_KEY,
+        JSON.stringify({
+          enabled: true,
+          timestamp: Date.now(),
+        })
+      );
 
       verified.value = true;
       ElMessage.success('验证成功！已为您开启自动加载 PDF 预览功能');
@@ -186,7 +196,9 @@ const handleSubmit = async () => {
     }
   } catch (error) {
     logger.error('[PdfPreviewChallenge]', 'Verification failed:', error);
-    ElMessage.error('验证失败，请稍后重试');
+    if (!isHandledError(error)) {
+      ElMessage.error('验证失败，请稍后重试');
+    }
   } finally {
     verifying.value = false;
   }
@@ -206,7 +218,7 @@ onMounted(() => {
 <style scoped>
 .challenge-page {
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   padding: 40px 20px;
 }
 
@@ -218,7 +230,7 @@ onMounted(() => {
 .page-title {
   margin: 0 0 32px;
   font-size: 28px;
-  color: #303133;
+  color: var(--el-text-color-primary);
   font-weight: 600;
   text-align: center;
 }
@@ -256,19 +268,19 @@ onMounted(() => {
 .success-state p {
   margin: 8px 0;
   font-size: 16px;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .error-state .sub-text,
 .success-state .sub-text {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-bottom: 24px;
 }
 
 .success-state h2 {
   margin: 16px 0 8px;
-  color: #67c23a;
+  color: var(--el-color-success);
   font-size: 24px;
 }
 
@@ -291,7 +303,7 @@ onMounted(() => {
 .challenge-info li {
   margin: 4px 0;
   line-height: 1.6;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .preview-section {
@@ -304,22 +316,22 @@ onMounted(() => {
   align-items: center;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #ebeef5;
+  border-bottom: 1px solid var(--el-border-color-lighter);
 }
 
 .preview-title {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .preview-hint {
   font-size: 13px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 .preview-container {
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--el-border-color-lighter);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -328,7 +340,7 @@ onMounted(() => {
   max-width: 500px;
   margin: 0 auto;
   padding-top: 24px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--el-border-color-lighter);
 }
 
 .code-input {

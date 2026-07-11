@@ -29,7 +29,7 @@
       <template #header>
         <div class="card-header">
           <span>待审核资源列表</span>
-          <el-button @click="fetchResources" :icon="Refresh">刷新</el-button>
+          <el-button :icon="Refresh" @click="fetchResources">刷新</el-button>
         </div>
       </template>
 
@@ -83,24 +83,9 @@
           </div>
 
           <div class="resource-actions">
-            <el-button
-              type="primary"
-              @click="viewResource(resource)"
-            >
-              查看详情
-            </el-button>
-            <el-button
-              type="success"
-              @click="handleApprove(resource)"
-            >
-              通过
-            </el-button>
-            <el-button
-              type="danger"
-              @click="handleReject(resource)"
-            >
-              拒绝
-            </el-button>
+            <el-button type="primary" @click="viewResource(resource)"> 查看详情 </el-button>
+            <el-button type="success" @click="handleApprove(resource)"> 通过 </el-button>
+            <el-button type="danger" @click="handleReject(resource)"> 拒绝 </el-button>
           </div>
         </el-card>
       </div>
@@ -120,11 +105,7 @@
     </el-card>
 
     <!-- 拒绝理由弹窗 -->
-    <el-dialog
-      v-model="rejectDialogVisible"
-      title="拒绝资源"
-      width="500px"
-    >
+    <el-dialog v-model="rejectDialogVisible" title="拒绝资源" width="500px">
       <el-form :model="rejectForm">
         <el-form-item label="拒绝原因">
           <el-input
@@ -148,7 +129,9 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Refresh } from '@element-plus/icons-vue';
-import { adminApi } from '../../api/admin';
+import { getPendingResources, auditResource } from '@/api/admin';
+import { isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 interface Resource {
   id: string;
@@ -175,7 +158,7 @@ const todayAuditCount = ref(0);
 const rejectDialogVisible = ref(false);
 const rejectForm = ref({
   resourceId: '',
-  reason: ''
+  reason: '',
 });
 
 const formatDate = (date: string) => {
@@ -187,12 +170,13 @@ const formatDate = (date: string) => {
 const fetchResources = async () => {
   loading.value = true;
   try {
-    const data = await adminApi.getPendingResources(page.value, perPage.value);
+    const data = await getPendingResources(page.value, perPage.value);
     resources.value = data.resources;
     total.value = data.total;
     pendingCount.value = data.total;
-  } catch (error: any) {
-    if (!error.isHandled) {
+  } catch (error) {
+    logger.error('[ResourceAudit]', '获取待审核资源失败', error);
+    if (!isHandledError(error)) {
       ElMessage.error('获取待审核资源失败');
     }
   } finally {
@@ -206,22 +190,21 @@ const viewResource = (resource: Resource) => {
 
 const handleApprove = async (resource: Resource) => {
   try {
-    await ElMessageBox.confirm(
-      `确定要通过资源 "${resource.title}" 吗？`,
-      '确认审核',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'success'
-      }
-    );
+    await ElMessageBox.confirm(`确定要通过资源 "${resource.title}" 吗？`, '确认审核', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'success',
+    });
 
-    await adminApi.auditResource(resource.id, 'approved');
+    await auditResource(resource.id, 'approved');
     ElMessage.success('资源审核通过');
     fetchResources();
-  } catch (error: any) {
-    if (error !== 'cancel' && !error.isHandled) {
-      ElMessage.error('操作失败');
+  } catch (error) {
+    if (error !== 'cancel') {
+      logger.error('[ResourceAudit]', '通过资源失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error('操作失败');
+      }
     }
   }
 };
@@ -229,7 +212,7 @@ const handleApprove = async (resource: Resource) => {
 const handleReject = (resource: Resource) => {
   rejectForm.value = {
     resourceId: resource.id,
-    reason: ''
+    reason: '',
   };
   rejectDialogVisible.value = true;
 };
@@ -241,16 +224,13 @@ const confirmReject = async () => {
   }
 
   try {
-    await adminApi.auditResource(
-      rejectForm.value.resourceId,
-      'rejected',
-      rejectForm.value.reason
-    );
+    await auditResource(rejectForm.value.resourceId, 'rejected', rejectForm.value.reason);
     ElMessage.success('资源已拒绝');
     rejectDialogVisible.value = false;
     fetchResources();
-  } catch (error: any) {
-    if (!error.isHandled) {
+  } catch (error) {
+    logger.error('[ResourceAudit]', '拒绝资源失败', error);
+    if (!isHandledError(error)) {
       ElMessage.error('操作失败');
     }
   }
@@ -283,7 +263,7 @@ onMounted(() => {
 .page-title {
   font-size: 24px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .mb-4 {
@@ -296,18 +276,18 @@ onMounted(() => {
 
 .stat-label {
   font-size: 14px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-bottom: 8px;
 }
 
 .stat-value {
   font-size: 28px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .text-warning {
-  color: #e6a23c;
+  color: var(--el-color-warning);
 }
 
 .card-header {
@@ -342,7 +322,7 @@ onMounted(() => {
 .resource-title {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
   margin: 0;
 }
 
@@ -355,11 +335,11 @@ onMounted(() => {
 
 .meta-item {
   font-size: 14px;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .meta-label {
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 .ai-reason {
@@ -371,7 +351,7 @@ onMounted(() => {
   gap: 12px;
   justify-content: flex-end;
   padding-top: 16px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--el-border-color-lighter);
 }
 
 .pagination-container {
@@ -379,7 +359,7 @@ onMounted(() => {
   justify-content: flex-end;
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--el-border-color-lighter);
 }
 
 @media (max-width: 768px) {

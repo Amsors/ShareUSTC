@@ -5,18 +5,16 @@
       <el-icon :size="48" color="var(--el-color-info)"><Document /></el-icon>
       <div class="lazy-load-message">
         <p class="lazy-load-title">PDF 预览</p>
-        <p v-if="!isUserVerified" class="lazy-load-desc">
-          通过检测后可自动加载预览
-        </p>
+        <p v-if="!isUserVerified" class="lazy-load-desc">通过检测后可自动加载预览</p>
       </div>
       <div class="lazy-load-actions">
-        <el-button type="primary" @click="loadPdf" size="large">
+        <el-button type="primary" size="large" @click="loadPdf">
           <el-icon class="el-icon--left"><View /></el-icon>加载预览
         </el-button>
-        <el-button v-if="!isUserVerified" @click="goToChallenge" size="large">
+        <el-button v-if="!isUserVerified" size="large" @click="goToChallenge">
           <el-icon class="el-icon--left"><Check /></el-icon>前往检测页面
         </el-button>
-        <el-button v-else @click="enableAutoLoad" size="large">
+        <el-button v-else size="large" @click="enableAutoLoad">
           <el-icon class="el-icon--left"><Check /></el-icon>以后自动加载预览
         </el-button>
       </div>
@@ -28,17 +26,16 @@
       <div class="lazy-load-message">
         <p class="lazy-load-title">文件大小超过设定阈值</p>
         <p class="lazy-load-desc">
-          当前文件大小 {{ formatFileSize(props.fileSize || 0) }}，超过自动加载阈值 {{ getThresholdMB() }}MB
+          当前文件大小 {{ formatFileSize(props.fileSize || 0) }}，超过自动加载阈值
+          {{ getThresholdMB() }}MB
         </p>
-        <p class="lazy-load-hint">
-          您可以手动加载此文件，或调整自动加载阈值
-        </p>
+        <p class="lazy-load-hint">您可以手动加载此文件，或调整自动加载阈值</p>
       </div>
       <div class="lazy-load-actions">
-        <el-button type="primary" @click="loadPdf" size="large">
+        <el-button type="primary" size="large" @click="loadPdf">
           <el-icon class="el-icon--left"><View /></el-icon>加载预览
         </el-button>
-        <el-button @click="goToSettings" size="large">
+        <el-button size="large" @click="goToSettings">
           <el-icon class="el-icon--left"><Setting /></el-icon>编辑自动加载阈值
         </el-button>
       </div>
@@ -72,7 +69,7 @@
       <!-- 工具栏 -->
       <div class="pdf-toolbar">
         <div class="toolbar-left">
-          <el-button circle size="small" @click="prevPage" :disabled="currentPage <= 1">
+          <el-button circle size="small" :disabled="currentPage <= 1" @click="prevPage">
             <el-icon><ArrowLeft /></el-icon>
           </el-button>
           <span class="page-info">
@@ -86,17 +83,17 @@
             />
             <span class="page-total">/ {{ totalPages }}</span>
           </span>
-          <el-button circle size="small" @click="nextPage" :disabled="currentPage >= totalPages">
+          <el-button circle size="small" :disabled="currentPage >= totalPages" @click="nextPage">
             <el-icon><ArrowRight /></el-icon>
           </el-button>
         </div>
 
         <div class="toolbar-right">
-          <el-button circle size="small" @click="zoomOut" :disabled="scale <= 0.5">
+          <el-button circle size="small" :disabled="scale <= 0.5" @click="zoomOut">
             <el-icon><ZoomOut /></el-icon>
           </el-button>
           <span class="zoom-info">{{ Math.round(scale * 100) }}%</span>
-          <el-button circle size="small" @click="zoomIn" :disabled="scale >= 3">
+          <el-button circle size="small" :disabled="scale >= 3" @click="zoomIn">
             <el-icon><ZoomIn /></el-icon>
           </el-button>
           <el-button circle size="small" @click="toggleFullscreen">
@@ -106,7 +103,7 @@
       </div>
 
       <!-- PDF 渲染区域 -->
-      <div class="pdf-content" ref="pdfContentRef">
+      <div ref="pdfContentRef" class="pdf-content">
         <canvas ref="canvasRef" class="pdf-canvas"></canvas>
       </div>
     </div>
@@ -120,19 +117,19 @@
       class="fullscreen-pdf"
     >
       <div class="fullscreen-toolbar">
-        <el-button circle size="small" @click="prevPage" :disabled="currentPage <= 1">
+        <el-button circle size="small" :disabled="currentPage <= 1" @click="prevPage">
           <el-icon><ArrowLeft /></el-icon>
         </el-button>
         <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
-        <el-button circle size="small" @click="nextPage" :disabled="currentPage >= totalPages">
+        <el-button circle size="small" :disabled="currentPage >= totalPages" @click="nextPage">
           <el-icon><ArrowRight /></el-icon>
         </el-button>
         <el-divider direction="vertical" />
-        <el-button circle size="small" @click="zoomOut" :disabled="scale <= 0.5">
+        <el-button circle size="small" :disabled="scale <= 0.5" @click="zoomOut">
           <el-icon><ZoomOut /></el-icon>
         </el-button>
         <span class="zoom-info">{{ Math.round(scale * 100) }}%</span>
-        <el-button circle size="small" @click="zoomIn" :disabled="scale >= 3">
+        <el-button circle size="small" :disabled="scale >= 3" @click="zoomIn">
           <el-icon><ZoomIn /></el-icon>
         </el-button>
       </div>
@@ -146,12 +143,32 @@
 <script setup lang="ts">
 import { ref, watch, nextTick, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { ArrowLeft, ArrowRight, ZoomIn, ZoomOut, FullScreen, Download, DocumentDelete, Document, View, Check, Warning, Setting } from '@element-plus/icons-vue';
+import {
+  ArrowLeft,
+  ArrowRight,
+  ZoomIn,
+  ZoomOut,
+  FullScreen,
+  Download,
+  DocumentDelete,
+  Document,
+  View,
+  Check,
+  Warning,
+  Setting,
+} from '@element-plus/icons-vue';
 import * as pdfjsLib from 'pdfjs-dist';
+import type { PDFDocumentProxy, OnProgressParameters } from 'pdfjs-dist';
 import PDFWorker from 'pdfjs-dist/build/pdf.worker.mjs?worker';
-import { getResourcePreviewInfo, getResourcePreviewContent, downloadResource, type PreviewUrlResponse } from '../../api/resource';
-import logger from '../../utils/logger';
+import {
+  getResourcePreviewInfo,
+  getResourcePreviewContent,
+  downloadResource,
+  type PreviewUrlResponse,
+} from '@/api/resource';
+import logger from '@/utils/logger';
 import { ElMessage } from 'element-plus';
+import { getErrorMessage, isHandledError } from '@/api/request';
 
 // 设置 PDF.js worker - 使用 Vite 的 worker 导入
 pdfjsLib.GlobalWorkerOptions.workerPort = new PDFWorker();
@@ -196,7 +213,7 @@ const PDF_PREVIEW_USER_ENABLED_KEY = 'pdfPreviewUserEnabled';
 const DEFAULT_SIZE_THRESHOLD = 5 * 1024 * 1024;
 
 // 使用普通变量而非 ref，避免 Vue 响应式代理破坏 PDF.js 内部私有成员
-let pdfDoc: any = null;
+let pdfDoc: PDFDocumentProxy | null = null;
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const fullscreenCanvasRef = ref<HTMLCanvasElement | null>(null);
 
@@ -209,7 +226,7 @@ const isUserVerified = computed(() => {
     }
     const verified = JSON.parse(verifiedData);
     return verified.verified === true;
-  } catch (e) {
+  } catch {
     return false;
   }
 });
@@ -258,20 +275,28 @@ const shouldAutoLoad = (): boolean => {
 // 启用自动加载
 const enableAutoLoad = () => {
   try {
-    localStorage.setItem(PDF_PREVIEW_AUTO_LOAD_KEY, JSON.stringify({
-      enabled: true,
-      timestamp: Date.now()
-    }));
-    localStorage.setItem(PDF_PREVIEW_USER_ENABLED_KEY, JSON.stringify({
-      enabled: true,
-      timestamp: Date.now()
-    }));
+    localStorage.setItem(
+      PDF_PREVIEW_AUTO_LOAD_KEY,
+      JSON.stringify({
+        enabled: true,
+        timestamp: Date.now(),
+      })
+    );
+    localStorage.setItem(
+      PDF_PREVIEW_USER_ENABLED_KEY,
+      JSON.stringify({
+        enabled: true,
+        timestamp: Date.now(),
+      })
+    );
     ElMessage.success('已开启自动加载 PDF 预览');
     // 重新加载当前 PDF
     loadPdf();
   } catch (e) {
     logger.error('[PdfViewer]', 'Failed to enable auto load:', e);
-    ElMessage.error('设置保存失败');
+    if (!isHandledError(e)) {
+      ElMessage.error('设置保存失败');
+    }
   }
 };
 
@@ -318,12 +343,12 @@ const goToSettings = () => {
 };
 
 // 超时包装函数
-const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> => {
+const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> => {
   return Promise.race([
     promise,
     new Promise<T>((_, reject) =>
       setTimeout(() => reject(new Error(`${label} 超时 (${timeoutMs}ms)`)), timeoutMs)
-    )
+    ),
   ]);
 };
 
@@ -337,14 +362,20 @@ const loadPdf = async () => {
 
     // 获取预览信息（带缓存）
     const previewInfo: PreviewUrlResponse = await getResourcePreviewInfo(props.resourceId);
-    logger.debug('[PdfViewer]', `获取到预览信息 | storageType=${previewInfo.storageType}, directAccess=${previewInfo.directAccess}`);
+    logger.debug(
+      '[PdfViewer]',
+      `获取到预览信息 | storageType=${previewInfo.storageType}, directAccess=${previewInfo.directAccess}`
+    );
 
     // 获取内容（会自动使用缓存）
     const blob = await getResourcePreviewContent(props.resourceId, previewInfo, {
-      resourceDetail: props.resourceTitle && props.resourceType ? {
-        title: props.resourceTitle,
-        resourceType: props.resourceType
-      } : undefined
+      resourceDetail:
+        props.resourceTitle && props.resourceType
+          ? {
+              title: props.resourceTitle,
+              resourceType: props.resourceType,
+            }
+          : undefined,
     });
     logger.debug('[PdfViewer]', `获取到blob | type=${blob.type}, size=${blob.size}`);
 
@@ -360,15 +391,15 @@ const loadPdf = async () => {
 
     const loadingTask = pdfjsLib.getDocument({
       data: arrayBuffer,
-      useSystemFonts: true,  // 使用系统字体支持中文显示
+      useSystemFonts: true, // 使用系统字体支持中文显示
       cMapUrl: 'https://unpkg.com/pdfjs-dist@' + pdfjsLib.version + '/cmaps/',
       cMapPacked: true,
-      disableFontFace: false,  // 启用字体face以更好地支持嵌入式字体
-      fontExtraProperties: true,  // 保留额外字体属性
+      disableFontFace: false, // 启用字体face以更好地支持嵌入式字体
+      fontExtraProperties: true, // 保留额外字体属性
       stopAtErrors: false,
       maxImageSize: 50 * 1024 * 1024, // 最大支持 50MB 的图片
     });
-    loadingTask.onProgress = (progress: any) => {
+    loadingTask.onProgress = (progress: OnProgressParameters) => {
       logger.debug('[PdfViewer]', `加载进度 | loaded=${progress.loaded}, total=${progress.total}`);
     };
 
@@ -382,8 +413,11 @@ const loadPdf = async () => {
     // 等待 DOM 更新后再渲染，确保 canvasRef 已存在
     await nextTick();
     await renderPage();
-  } catch (err: any) {
-    logger.error('[PdfViewer]', 'PDF加载失败', { message: err.message, stack: err.stack });
+  } catch (err) {
+    logger.error('[PdfViewer]', 'PDF加载失败', {
+      message: getErrorMessage(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
     error.value = true;
     loading.value = false;
   }
@@ -405,8 +439,8 @@ const renderPage = async () => {
     try {
       const textContent = await page.getTextContent();
       const fontNames = new Set<string>();
-      textContent.items.forEach((item: any) => {
-        if (item.fontName) {
+      textContent.items.forEach((item) => {
+        if ('fontName' in item && item.fontName) {
           fontNames.add(item.fontName);
         }
       });
@@ -423,7 +457,10 @@ const renderPage = async () => {
     }
 
     const viewport = page.getViewport({ scale: scale.value });
-    logger.debug('[PdfViewer]', `viewport 尺寸 | width=${viewport.width}, height=${viewport.height}`);
+    logger.debug(
+      '[PdfViewer]',
+      `viewport 尺寸 | width=${viewport.width}, height=${viewport.height}`
+    );
 
     // 设置 canvas 的实际像素尺寸
     canvas.height = viewport.height;
@@ -434,9 +471,13 @@ const renderPage = async () => {
     canvas.style.width = `${viewport.width}px`;
 
     logger.debug('[PdfViewer]', `canvas 尺寸 | width=${canvas.width}, height=${canvas.height}`);
-    logger.debug('[PdfViewer]', `canvas 样式尺寸 | styleWidth=${canvas.style.width}, styleHeight=${canvas.style.height}`);
+    logger.debug(
+      '[PdfViewer]',
+      `canvas 样式尺寸 | styleWidth=${canvas.style.width}, styleHeight=${canvas.style.height}`
+    );
 
     const renderContext = {
+      canvas: canvas,
       canvasContext: context,
       viewport: viewport,
       // 启用背景填充，避免透明背景导致的渲染问题
@@ -447,7 +488,7 @@ const renderPage = async () => {
     const renderTask = page.render(renderContext);
     await renderTask.promise;
     logger.debug('[PdfViewer]', '渲染完成');
-  } catch (err: any) {
+  } catch (err) {
     logger.error('[PdfViewer]', '渲染页面失败', err);
   }
 };
@@ -467,6 +508,7 @@ const renderFullscreenPage = async () => {
   canvas.style.width = `${viewport.width}px`;
 
   await page.render({
+    canvas: canvas,
     canvasContext: context,
     viewport: viewport,
     background: 'white',
@@ -533,15 +575,20 @@ const downloadPdf = async () => {
     logger.info('[PdfViewer]', `开始下载PDF | resourceId=${props.resourceId}`);
     await downloadResource(props.resourceId, undefined, {
       useCache: true,
-      resourceDetail: props.resourceTitle && props.resourceType ? {
-        title: props.resourceTitle,
-        resourceType: props.resourceType
-      } : undefined
+      resourceDetail:
+        props.resourceTitle && props.resourceType
+          ? {
+              title: props.resourceTitle,
+              resourceType: props.resourceType,
+            }
+          : undefined,
     });
     ElMessage.success('已开始下载');
-  } catch (err: any) {
+  } catch (err) {
     logger.error('[PdfViewer]', 'PDF下载失败', err);
-    ElMessage.error('下载失败，请稍后重试');
+    if (!isHandledError(err)) {
+      ElMessage.error('下载失败，请稍后重试');
+    }
   }
 };
 
@@ -559,7 +606,10 @@ const initialize = () => {
       loading.value = false;
       isFileTooLarge.value = true;
       showLazyLoadPrompt.value = false;
-      logger.info('[PdfViewer]', `文件大小超过阈值: ${formatFileSize(props.fileSize || 0)} > ${formatFileSize(getSizeThreshold())}`);
+      logger.info(
+        '[PdfViewer]',
+        `文件大小超过阈值: ${formatFileSize(props.fileSize || 0)} > ${formatFileSize(getSizeThreshold())}`
+      );
     } else {
       loadPdf();
     }
@@ -570,9 +620,13 @@ const initialize = () => {
 };
 
 // 监听resourceId变化
-watch(() => props.resourceId, () => {
-  initialize();
-}, { immediate: true });
+watch(
+  () => props.resourceId,
+  () => {
+    initialize();
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>

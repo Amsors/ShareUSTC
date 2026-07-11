@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                f.id,\n                f.name,\n                f.created_at,\n                COUNT(fr.resource_id) as resource_count\n            FROM favorites f\n            LEFT JOIN favorite_resources fr ON f.id = fr.favorite_id\n            WHERE f.user_id = $1\n            GROUP BY f.id, f.name, f.created_at\n            ORDER BY f.created_at DESC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "created_at",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 3,
+        "name": "resource_count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      null
+    ]
+  },
+  "hash": "c666229faf5d13121e45aaadfd879242eb76dffe73f9d89fc22ea004a426376c"
+}

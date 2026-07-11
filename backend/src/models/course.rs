@@ -41,7 +41,7 @@ impl CreateCourseRequest {
             }
         }
         if let Some(credits) = self.credits {
-            if credits < 0.0 || credits > 100.0 {
+            if !(0.0..=100.0).contains(&credits) {
                 return Err("学分必须在0-100之间".to_string());
             }
         }
@@ -75,7 +75,7 @@ impl UpdateCourseRequest {
             }
         }
         if let Some(credits) = self.credits {
-            if credits < 0.0 || credits > 100.0 {
+            if !(0.0..=100.0).contains(&credits) {
                 return Err("学分必须在0-100之间".to_string());
             }
         }
@@ -106,7 +106,7 @@ impl CourseListQuery {
     }
 
     pub fn get_per_page(&self) -> i32 {
-        self.per_page.unwrap_or(20).min(100).max(1)
+        self.per_page.unwrap_or(20).clamp(1, 100)
     }
 }
 

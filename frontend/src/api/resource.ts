@@ -1,8 +1,9 @@
-import request from './request';
-import logger from '../utils/logger';
-import { getOssStatus, getStsToken, resourceUploadCallback } from './oss';
-import { uploadToOssWithSts, uploadToSignedUrl } from '../utils/oss-upload';
-import { resourceCache } from '../utils/resourceCache';
+import request from '@/api/request';
+import logger from '@/utils/logger';
+import { getServerOrigin } from '@/utils/apiUrl';
+import { getOssStatus, getStsToken, resourceUploadCallback } from '@/api/oss';
+import { uploadToOssWithSts, uploadToSignedUrl } from '@/utils/oss-upload';
+import { resourceCache } from '@/utils/resourceCache';
 import type {
   ResourceListResponse,
   ResourceListQuery,
@@ -15,19 +16,21 @@ import type {
   GetResourceRawContentResponse,
   HotResourceItem,
   RelatedResourceItem,
-  ResourceListItem
-} from '../types/resource';
+  ResourceListItem,
+} from '@/types/resource';
 
 /**
  * 获取资源列表
  * @param params 查询参数
  * @returns 资源列表
  */
-export const getResourceList = async (params?: ResourceListQuery): Promise<ResourceListResponse> => {
+export const getResourceList = async (
+  params?: ResourceListQuery
+): Promise<ResourceListResponse> => {
   return request({
     url: '/resources',
     method: 'get',
-    params
+    params,
   });
 };
 
@@ -36,11 +39,13 @@ export const getResourceList = async (params?: ResourceListQuery): Promise<Resou
  * @param params 搜索参数
  * @returns 搜索结果
  */
-export const searchResources = async (params: ResourceSearchQuery): Promise<ResourceListResponse> => {
+export const searchResources = async (
+  params: ResourceSearchQuery
+): Promise<ResourceListResponse> => {
   return request({
     url: '/resources/search',
     method: 'get',
-    params
+    params,
   });
 };
 
@@ -52,7 +57,7 @@ export const searchResources = async (params: ResourceSearchQuery): Promise<Reso
 export const getResourceDetail = async (resourceId: string): Promise<ResourceDetail> => {
   return request({
     url: `/resources/${resourceId}`,
-    method: 'get'
+    method: 'get',
   });
 };
 
@@ -65,7 +70,7 @@ export const getMyResources = async (params?: ResourceListQuery): Promise<Resour
   return request({
     url: '/resources/my',
     method: 'get',
-    params
+    params,
   });
 };
 
@@ -87,7 +92,7 @@ export const uploadResource = async (
       fileType: 'resource',
       fileName: file.name,
       fileSize: file.size,
-      contentType: file.type || undefined
+      contentType: file.type || undefined,
     });
 
     if (token.uploadMode === 'sts') {
@@ -100,20 +105,20 @@ export const uploadResource = async (
         accessKeySecret: token.accessKeySecret,
         securityToken: token.securityToken,
         file,
-        onProgress
+        onProgress,
       });
     } else {
       await uploadToSignedUrl({
         uploadUrl: token.uploadUrl,
         file,
         contentType: file.type || undefined,
-        onProgress
+        onProgress,
       });
     }
 
     return resourceUploadCallback({
       ...metadata,
-      ossKey: token.uploadKey
+      ossKey: token.uploadKey,
     });
   }
 
@@ -135,7 +140,7 @@ export const uploadResource = async (
         const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
         onProgress(percent);
       }
-    }
+    },
   });
 };
 
@@ -146,7 +151,7 @@ export const uploadResource = async (
 export const deleteResource = async (resourceId: string): Promise<void> => {
   return request({
     url: `/resources/${resourceId}`,
-    method: 'delete'
+    method: 'delete',
   });
 };
 
@@ -155,7 +160,10 @@ export const deleteResource = async (resourceId: string): Promise<void> => {
  * @param cached 缓存的资源
  * @param fileName 文件名
  */
-const downloadFromCache = (cached: { blob: Blob; fileName?: string; contentType: string }, fileName?: string): void => {
+const downloadFromCache = (
+  cached: { blob: Blob; fileName?: string; contentType: string },
+  fileName?: string
+): void => {
   const url = URL.createObjectURL(cached.blob);
   const link = document.createElement('a');
   link.href = url;
@@ -197,7 +205,8 @@ export const downloadResource = async (
       const cached = await resourceCache.get(resourceId);
       if (cached) {
         logger.info('[Resource]', `从缓存下载 | resourceId=${resourceId}, size=${cached.fileSize}`);
-        const finalFileName = downloadFileName || cached.fileName || resourceDetail?.title || 'download';
+        const finalFileName =
+          downloadFileName || cached.fileName || resourceDetail?.title || 'download';
         downloadFromCache(cached, finalFileName);
         // 记录下载（缓存下载也需要记录）
         trackResourceDownload(resourceId).catch((e) => {
@@ -209,9 +218,7 @@ export const downloadResource = async (
 
     // 2. 走正常下载流程
     logger.debug('[Resource]', `从服务器下载 | resourceId=${resourceId}`);
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
-    const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
-    const downloadUrl = `${cleanBaseUrl}/api/resources/${resourceId}/download`;
+    const downloadUrl = `${getServerOrigin()}/api/resources/${resourceId}/download`;
 
     // OSS 模式下后端会 302 到跨域预签名 URL。使用浏览器导航下载可避免 fetch 跨域重定向失败。
     const link = document.createElement('a');
@@ -233,9 +240,7 @@ export const downloadResource = async (
  * @returns 预览URL
  */
 export const getResourcePreviewUrl = (resourceId: string): string => {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
-  const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
-  return `${cleanBaseUrl}/api/resources/${resourceId}/content`;
+  return `${getServerOrigin()}/api/resources/${resourceId}/content`;
 };
 
 /**
@@ -259,14 +264,12 @@ export const getResourcePreviewInfo = async (
 ): Promise<PreviewUrlResponse> => {
   const { useCache = true } = options;
 
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
-  const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
-  const response = await fetch(
-    `${cleanBaseUrl}/api/resources/${resourceId}/preview-url`,
-    {
-      credentials: 'include',
-    }
-  );
+  // 本站接口，但需读取原始 Response（并配合下方 OSS 直链/内容流一体处理），
+  // 故保留 fetch；credentials:'include' 携带 HttpOnly Cookie 完成鉴权。
+  // eslint-disable-next-line no-restricted-globals
+  const response = await fetch(`${getServerOrigin()}/api/resources/${resourceId}/preview-url`, {
+    credentials: 'include',
+  });
 
   if (!response.ok) {
     throw new Error('获取预览链接失败');
@@ -316,9 +319,14 @@ export const getResourcePreviewContent = async (
   let blob: Blob;
   let contentType = 'application/octet-stream';
 
-  if (previewInfo.directAccess && previewInfo.storageType === 'oss' && previewInfo.previewUrl !== 'cached') {
-    // OSS 直链：直接获取
+  if (
+    previewInfo.directAccess &&
+    previewInfo.storageType === 'oss' &&
+    previewInfo.previewUrl !== 'cached'
+  ) {
+    // OSS 直链：直接获取（外部预签名 URL，非本站 API，不能走 request）
     logger.debug('[Resource]', `从OSS直链获取 | resourceId=${resourceId}`);
+    // eslint-disable-next-line no-restricted-globals
     const response = await fetch(previewInfo.previewUrl, { method: 'GET' });
     if (!response.ok) {
       throw new Error(`获取资源失败: ${response.status}`);
@@ -332,10 +340,18 @@ export const getResourcePreviewContent = async (
       return cached.blob;
     }
     // 缓存丢失，回退到 content 接口
-    return getResourceContent(resourceId, { useCache, updatedAt: previewInfo.updatedAt, resourceDetail });
+    return getResourceContent(resourceId, {
+      useCache,
+      updatedAt: previewInfo.updatedAt,
+      resourceDetail,
+    });
   } else {
     // 本地存储：通过 content 接口
-    return getResourceContent(resourceId, { useCache, updatedAt: previewInfo.updatedAt, resourceDetail });
+    return getResourceContent(resourceId, {
+      useCache,
+      updatedAt: previewInfo.updatedAt,
+      resourceDetail,
+    });
   }
 
   // 存入缓存（使用 updatedAt 作为版本标识）
@@ -356,17 +372,17 @@ export const getResourcePreviewContent = async (
  */
 const getExtensionByType = (resourceType: string): string => {
   const typeMap: Record<string, string> = {
-    'web_markdown': 'md',
-    'ppt': 'ppt',
-    'pptx': 'pptx',
-    'doc': 'doc',
-    'docx': 'docx',
-    'pdf': 'pdf',
-    'txt': 'txt',
-    'jpeg': 'jpg',
-    'jpg': 'jpg',
-    'png': 'png',
-    'zip': 'zip',
+    web_markdown: 'md',
+    ppt: 'ppt',
+    pptx: 'pptx',
+    doc: 'doc',
+    docx: 'docx',
+    pdf: 'pdf',
+    txt: 'txt',
+    jpeg: 'jpg',
+    jpg: 'jpg',
+    png: 'png',
+    zip: 'zip',
   };
   return typeMap[resourceType.toLowerCase()] || 'bin';
 };
@@ -396,7 +412,11 @@ const buildFileName = (title: string, resourceType: string): string => {
  */
 export const getResourceContent = async (
   resourceId: string,
-  options: { useCache?: boolean; updatedAt?: string; resourceDetail?: { title?: string; resourceType?: string } } = {}
+  options: {
+    useCache?: boolean;
+    updatedAt?: string;
+    resourceDetail?: { title?: string; resourceType?: string };
+  } = {}
 ): Promise<Blob> => {
   const { useCache = true, updatedAt, resourceDetail } = options;
 
@@ -410,14 +430,12 @@ export const getResourceContent = async (
   }
 
   // 2. 从服务器获取
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
-  const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
-  const response = await fetch(
-    `${cleanBaseUrl}/api/resources/${resourceId}/content`,
-    {
-      credentials: 'include', // 自动携带 HttpOnly Cookie
-    }
-  );
+  // 本站接口，但需读取响应头（content-type、X-Resource-Updated-At）与二进制 Blob，
+  // 而 request 拦截器只返回 data、丢弃响应头，故此处保留 fetch；credentials 携带 Cookie 鉴权。
+  // eslint-disable-next-line no-restricted-globals
+  const response = await fetch(`${getServerOrigin()}/api/resources/${resourceId}/content`, {
+    credentials: 'include', // 自动携带 HttpOnly Cookie
+  });
 
   if (!response.ok) {
     throw new Error('获取资源内容失败');
@@ -425,8 +443,12 @@ export const getResourceContent = async (
 
   // 获取响应的 Content-Type 和 X-Resource-Updated-At
   const contentType = response.headers.get('content-type') || 'application/octet-stream';
-  const serverUpdatedAt = response.headers.get('X-Resource-Updated-At') || updatedAt || new Date().toISOString();
-  logger.debug('[Resource]', `获取资源内容 | contentType=${contentType}, updatedAt=${serverUpdatedAt}`);
+  const serverUpdatedAt =
+    response.headers.get('X-Resource-Updated-At') || updatedAt || new Date().toISOString();
+  logger.debug(
+    '[Resource]',
+    `获取资源内容 | contentType=${contentType}, updatedAt=${serverUpdatedAt}`
+  );
 
   const blob = await response.blob();
 
@@ -447,10 +469,12 @@ export const getResourceContent = async (
  * @param resourceId 资源ID
  * @returns 原始内容响应
  */
-export const getResourceRawContent = async (resourceId: string): Promise<GetResourceRawContentResponse> => {
+export const getResourceRawContent = async (
+  resourceId: string
+): Promise<GetResourceRawContentResponse> => {
   return request({
     url: `/resources/${resourceId}/raw`,
-    method: 'get'
+    method: 'get',
   });
 };
 
@@ -467,7 +491,7 @@ export const updateResourceContent = async (
   return request({
     url: `/resources/${resourceId}/content`,
     method: 'put',
-    data
+    data,
   });
 };
 
@@ -480,7 +504,7 @@ export const getHotResources = async (limit?: number): Promise<HotResourceItem[]
   return request({
     url: '/resources/hot',
     method: 'get',
-    params: { limit }
+    params: { limit },
   });
 };
 
@@ -491,7 +515,7 @@ export const getHotResources = async (limit?: number): Promise<HotResourceItem[]
 export const getResourceCount = async (): Promise<{ total: number }> => {
   return request({
     url: '/resources/count',
-    method: 'get'
+    method: 'get',
   });
 };
 
@@ -514,8 +538,8 @@ export const searchResourcesForRelation = async (
     params: {
       q: query,
       excludeId,
-      limit
-    }
+      limit,
+    },
   });
 };
 
@@ -527,7 +551,7 @@ export const searchResourcesForRelation = async (
 export const getResourceRelations = async (resourceId: string): Promise<RelatedResourceItem[]> => {
   return request({
     url: `/resources/${resourceId}/relations`,
-    method: 'get'
+    method: 'get',
   });
 };
 
@@ -548,7 +572,7 @@ export const updateResourceRelations = async (
   return request({
     url: `/resources/${resourceId}/relations`,
     method: 'put',
-    data
+    data,
   });
 };
 
@@ -565,7 +589,7 @@ export const updateResourceDescription = async (
   return request({
     url: `/resources/${resourceId}/description`,
     method: 'put',
-    data: { description }
+    data: { description },
   });
 };
 
@@ -580,7 +604,7 @@ export const trackResourceDownload = async (
 ): Promise<{ message: string; resourceId: string }> => {
   return request({
     url: `/resources/${resourceId}/track-download`,
-    method: 'post'
+    method: 'post',
   });
 };
 
@@ -599,7 +623,7 @@ export interface PdfPreviewChallengeConfig {
 export const getPdfPreviewChallengeConfig = async (): Promise<PdfPreviewChallengeConfig> => {
   return request({
     url: '/resources/pdf-preview-challenge/config',
-    method: 'get'
+    method: 'get',
   });
 };
 
@@ -608,11 +632,13 @@ export const getPdfPreviewChallengeConfig = async (): Promise<PdfPreviewChalleng
  * @param code 用户输入的四位数字验证码
  * @returns 验证结果
  */
-export const verifyPdfPreviewChallenge = async (code: string): Promise<{ success: boolean; message: string }> => {
+export const verifyPdfPreviewChallenge = async (
+  code: string
+): Promise<{ success: boolean; message: string }> => {
   return request({
     url: '/resources/pdf-preview-challenge/verify',
     method: 'post',
-    data: { code }
+    data: { code },
   });
 };
 
@@ -622,11 +648,9 @@ export const verifyPdfPreviewChallenge = async (code: string): Promise<{ success
  * @param fileHash 文件SHA256哈希值（64位十六进制字符串）
  * @returns 相同哈希的资源列表
  */
-export const getResourcesByFileHash = async (
-  fileHash: string
-): Promise<ResourceListItem[]> => {
+export const getResourcesByFileHash = async (fileHash: string): Promise<ResourceListItem[]> => {
   return request({
     url: `/resources/by-hash/${fileHash}`,
-    method: 'get'
+    method: 'get',
   });
 };

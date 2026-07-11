@@ -9,7 +9,7 @@
         <h1>编辑 Markdown 资源</h1>
       </div>
       <div class="header-actions">
-        <el-button @click="loadDraft" v-if="hasDraft">
+        <el-button v-if="hasDraft" @click="loadDraft">
           <el-icon><Document /></el-icon>
           恢复草稿
         </el-button>
@@ -41,7 +41,9 @@
           <el-descriptions-item label="资源类型">
             <el-tag type="success">Markdown</el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="创建时间">{{ formatTime(resource?.createdAt) }}</el-descriptions-item>
+          <el-descriptions-item label="创建时间">{{
+            formatTime(resource?.createdAt)
+          }}</el-descriptions-item>
         </el-descriptions>
       </div>
 
@@ -58,12 +60,8 @@
     </template>
 
     <!-- 预览对话框 -->
-    <el-dialog
-      v-model="previewVisible"
-      title="预览"
-      width="900px"
-      destroy-on-close
-    >
+    <el-dialog v-model="previewVisible" title="预览" width="900px" destroy-on-close>
+      <!-- eslint-disable-next-line vue/no-v-html 内容经 markdown-it（html:false）渲染，原始 HTML 已转义 -->
       <div class="preview-content markdown-body" v-html="renderedContent"></div>
     </el-dialog>
   </div>
@@ -73,17 +71,13 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import {
-  ArrowLeft,
-  Check,
-  Document,
-  DocumentChecked,
-  Loading
-} from '@element-plus/icons-vue';
+import { ArrowLeft, Check, Document, DocumentChecked, Loading } from '@element-plus/icons-vue';
 import MarkdownIt from 'markdown-it';
-import MarkdownEditor from '../../components/editor/MarkdownEditor.vue';
-import { getResourceDetail, getResourceRawContent, updateResourceContent } from '../../api/resource';
-import type { ResourceDetail } from '../../types/resource';
+import MarkdownEditor from '@/components/editor/MarkdownEditor.vue';
+import { getResourceDetail, getResourceRawContent, updateResourceContent } from '@/api/resource';
+import type { ResourceDetail } from '@/types/resource';
+import { getErrorMessage, isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 const route = useRoute();
 const router = useRouter();
@@ -103,7 +97,7 @@ const md = new MarkdownIt({
   html: false,
   breaks: true,
   linkify: true,
-  typographer: true
+  typographer: true,
 });
 
 // 渲染预览内容
@@ -120,8 +114,8 @@ const loadResource = async () => {
       error.value = '只有 Markdown 类型资源可以在线编辑';
       return;
     }
-  } catch (err: any) {
-    error.value = err.message || '加载资源失败';
+  } catch (err) {
+    error.value = getErrorMessage(err, '加载资源失败');
   }
 };
 
@@ -136,8 +130,8 @@ const loadContent = async () => {
     const response = await getResourceRawContent(resourceId);
     content.value = response.content;
     checkDraft();
-  } catch (err: any) {
-    error.value = err.message || '加载内容失败';
+  } catch (err) {
+    error.value = getErrorMessage(err, '加载内容失败');
   } finally {
     loading.value = false;
   }
@@ -168,15 +162,11 @@ const loadDraft = async () => {
   const draft = localStorage.getItem(`markdown_draft_resource_${resourceId}`);
   if (draft) {
     try {
-      await ElMessageBox.confirm(
-        '确定要加载草稿吗？当前内容将被覆盖。',
-        '确认加载草稿',
-        {
-          confirmButtonText: '加载',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }
-      );
+      await ElMessageBox.confirm('确定要加载草稿吗？当前内容将被覆盖。', '确认加载草稿', {
+        confirmButtonText: '加载',
+        cancelButtonText: '取消',
+        type: 'warning',
+      });
       content.value = draft;
       ElMessage.success('草稿已加载');
     } catch {
@@ -200,7 +190,7 @@ const handleSave = async () => {
   saving.value = true;
   try {
     await updateResourceContent(resourceId, {
-      content: content.value
+      content: content.value,
     });
 
     // 清除草稿
@@ -211,21 +201,20 @@ const handleSave = async () => {
 
     // 询问是否返回详情页
     try {
-      await ElMessageBox.confirm(
-        '修改已保存，是否返回资源详情页？',
-        '保存成功',
-        {
-          confirmButtonText: '返回详情页',
-          cancelButtonText: '继续编辑',
-          type: 'success'
-        }
-      );
+      await ElMessageBox.confirm('修改已保存，是否返回资源详情页？', '保存成功', {
+        confirmButtonText: '返回详情页',
+        cancelButtonText: '继续编辑',
+        type: 'success',
+      });
       router.push(`/resources/${resourceId}`);
     } catch {
       // 用户选择继续编辑
     }
-  } catch (err: any) {
-    ElMessage.error(err.message || '保存失败');
+  } catch (err) {
+    logger.error('[EditMarkdownResource]', '保存资源失败', err);
+    if (!isHandledError(err)) {
+      ElMessage.error(getErrorMessage(err, '保存失败'));
+    }
   } finally {
     saving.value = false;
   }
@@ -234,19 +223,17 @@ const handleSave = async () => {
 // 返回上一页
 const goBack = () => {
   if (hasDraft.value) {
-    ElMessageBox.confirm(
-      '您有未保存的草稿，确定要离开吗？',
-      '确认离开',
-      {
-        confirmButtonText: '离开',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    ).then(() => {
-      router.back();
-    }).catch(() => {
-      // 用户取消
-    });
+    ElMessageBox.confirm('您有未保存的草稿，确定要离开吗？', '确认离开', {
+      confirmButtonText: '离开',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+      .then(() => {
+        router.back();
+      })
+      .catch(() => {
+        // 用户取消
+      });
   } else {
     router.back();
   }
@@ -276,7 +263,7 @@ onMounted(() => {
 <style scoped>
 .edit-markdown-page {
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   display: flex;
   flex-direction: column;
 }
@@ -303,7 +290,7 @@ onMounted(() => {
   margin: 0;
   font-size: 20px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .header-actions {
@@ -324,7 +311,7 @@ onMounted(() => {
 
 .loading-icon {
   animation: rotating 2s linear infinite;
-  color: #409eff;
+  color: var(--el-color-primary);
 }
 
 @keyframes rotating {
@@ -339,7 +326,7 @@ onMounted(() => {
 .resource-info {
   padding: 16px 24px;
   background: #fff;
-  border-bottom: 1px solid #e4e7ed;
+  border-bottom: 1px solid var(--el-border-color-light);
 }
 
 .editor-wrapper {
@@ -364,14 +351,14 @@ onMounted(() => {
 
 .markdown-body :deep(h1) {
   font-size: 2em;
-  border-bottom: 1px solid #e4e7ed;
+  border-bottom: 1px solid var(--el-border-color-light);
   padding-bottom: 0.3em;
   margin-bottom: 1em;
 }
 
 .markdown-body :deep(h2) {
   font-size: 1.5em;
-  border-bottom: 1px solid #e4e7ed;
+  border-bottom: 1px solid var(--el-border-color-light);
   padding-bottom: 0.3em;
   margin: 1.5em 0 1em;
 }
@@ -393,14 +380,14 @@ onMounted(() => {
 }
 
 .markdown-body :deep(code) {
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   padding: 0.2em 0.4em;
   border-radius: 3px;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
 }
 
 .markdown-body :deep(pre) {
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   padding: 16px;
   border-radius: 8px;
   overflow-x: auto;
@@ -412,10 +399,10 @@ onMounted(() => {
 }
 
 .markdown-body :deep(blockquote) {
-  border-left: 4px solid #409eff;
+  border-left: 4px solid var(--el-color-primary);
   padding-left: 1em;
   margin: 1em 0;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .markdown-body :deep(table) {
@@ -426,12 +413,12 @@ onMounted(() => {
 
 .markdown-body :deep(th),
 .markdown-body :deep(td) {
-  border: 1px solid #dcdfe6;
+  border: 1px solid var(--el-border-color);
   padding: 8px 12px;
   text-align: left;
 }
 
 .markdown-body :deep(th) {
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
 }
 </style>

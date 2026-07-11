@@ -1,6 +1,24 @@
 use sqlx::PgPool;
 use uuid::Uuid;
 
+/// 审计日志服务错误类型
+#[derive(Debug, thiserror::Error)]
+pub enum AuditError {
+    #[error("数据库错误: {0}")]
+    Database(#[from] sqlx::Error),
+}
+
+impl actix_web::ResponseError for AuditError {
+    fn error_response(&self) -> actix_web::HttpResponse {
+        match self {
+            AuditError::Database(e) => {
+                log::error!("[Audit] 数据库错误 | error={}", e);
+                crate::utils::internal_error("服务器内部错误")
+            }
+        }
+    }
+}
+
 /// 审计日志服务
 pub struct AuditLogService;
 
@@ -24,25 +42,26 @@ pub enum AuditAction {
     PackDownload, // 打包下载收藏夹
 }
 
-impl ToString for AuditAction {
-    fn to_string(&self) -> String {
-        match self {
-            AuditAction::Login => "login".to_string(),
-            AuditAction::Register => "register".to_string(),
-            AuditAction::UploadResource => "upload_resource".to_string(),
-            AuditAction::DownloadResource => "download_resource".to_string(),
-            AuditAction::DeleteResource => "delete_resource".to_string(),
-            AuditAction::UpdateResource => "update_resource".to_string(),
-            AuditAction::CreateComment => "create_comment".to_string(),
-            AuditAction::DeleteComment => "delete_comment".to_string(),
-            AuditAction::RateResource => "rate_resource".to_string(),
-            AuditAction::LikeResource => "like_resource".to_string(),
-            AuditAction::UnlikeResource => "unlike_resource".to_string(),
-            AuditAction::CreateFavorite => "create_favorite".to_string(),
-            AuditAction::UpdateProfile => "update_profile".to_string(),
-            AuditAction::AdminAction => "admin_action".to_string(),
-            AuditAction::PackDownload => "pack_download".to_string(),
-        }
+impl std::fmt::Display for AuditAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            AuditAction::Login => "login",
+            AuditAction::Register => "register",
+            AuditAction::UploadResource => "upload_resource",
+            AuditAction::DownloadResource => "download_resource",
+            AuditAction::DeleteResource => "delete_resource",
+            AuditAction::UpdateResource => "update_resource",
+            AuditAction::CreateComment => "create_comment",
+            AuditAction::DeleteComment => "delete_comment",
+            AuditAction::RateResource => "rate_resource",
+            AuditAction::LikeResource => "like_resource",
+            AuditAction::UnlikeResource => "unlike_resource",
+            AuditAction::CreateFavorite => "create_favorite",
+            AuditAction::UpdateProfile => "update_profile",
+            AuditAction::AdminAction => "admin_action",
+            AuditAction::PackDownload => "pack_download",
+        };
+        f.write_str(s)
     }
 }
 
@@ -56,7 +75,7 @@ impl AuditLogService {
         target_id: Option<Uuid>,
         details: Option<serde_json::Value>,
         ip_address: Option<&str>,
-    ) -> Result<(), sqlx::Error> {
+    ) -> Result<(), AuditError> {
         let action_str = action.to_string();
 
         sqlx::query(
@@ -85,7 +104,7 @@ impl AuditLogService {
         user_id: Uuid,
         username: &str,
         ip_address: Option<&str>,
-    ) -> Result<(), sqlx::Error> {
+    ) -> Result<(), AuditError> {
         let details = serde_json::json!({
             "username": username,
         });
@@ -108,7 +127,7 @@ impl AuditLogService {
         user_id: Uuid,
         username: &str,
         ip_address: Option<&str>,
-    ) -> Result<(), sqlx::Error> {
+    ) -> Result<(), AuditError> {
         let details = serde_json::json!({
             "username": username,
         });
@@ -133,7 +152,7 @@ impl AuditLogService {
         resource_title: &str,
         resource_type: &str,
         ip_address: Option<&str>,
-    ) -> Result<(), sqlx::Error> {
+    ) -> Result<(), AuditError> {
         let details = serde_json::json!({
             "title": resource_title,
             "resource_type": resource_type,
@@ -158,7 +177,7 @@ impl AuditLogService {
         resource_id: Uuid,
         resource_title: &str,
         ip_address: Option<&str>,
-    ) -> Result<(), sqlx::Error> {
+    ) -> Result<(), AuditError> {
         let details = serde_json::json!({
             "title": resource_title,
         });
@@ -182,7 +201,7 @@ impl AuditLogService {
         resource_id: Uuid,
         resource_title: &str,
         ip_address: Option<&str>,
-    ) -> Result<(), sqlx::Error> {
+    ) -> Result<(), AuditError> {
         let details = serde_json::json!({
             "title": resource_title,
         });
@@ -206,7 +225,7 @@ impl AuditLogService {
         resource_id: Uuid,
         resource_title: &str,
         ip_address: Option<&str>,
-    ) -> Result<(), sqlx::Error> {
+    ) -> Result<(), AuditError> {
         let details = serde_json::json!({
             "title": resource_title,
             "updated_at": chrono::Local::now().to_rfc3339(),
@@ -231,7 +250,7 @@ impl AuditLogService {
         favorite_id: Uuid,
         favorite_name: &str,
         ip_address: Option<&str>,
-    ) -> Result<(), sqlx::Error> {
+    ) -> Result<(), AuditError> {
         let details = serde_json::json!({
             "name": favorite_name,
         });
@@ -257,7 +276,7 @@ impl AuditLogService {
         download_size: i64,
         resource_count: usize,
         ip_address: Option<&str>,
-    ) -> Result<(), sqlx::Error> {
+    ) -> Result<(), AuditError> {
         let details = serde_json::json!({
             "favorite_name": favorite_name,
             "download_size": download_size,
@@ -282,7 +301,7 @@ impl AuditLogService {
         user_id: Uuid,
         username: &str,
         ip_address: Option<&str>,
-    ) -> Result<(), sqlx::Error> {
+    ) -> Result<(), AuditError> {
         let details = serde_json::json!({
             "username": username,
             "updated_at": chrono::Local::now().to_rfc3339(),
@@ -308,7 +327,7 @@ impl AuditLogService {
         resource_title: &str,
         overall_quality: i32,
         ip_address: Option<&str>,
-    ) -> Result<(), sqlx::Error> {
+    ) -> Result<(), AuditError> {
         let details = serde_json::json!({
             "title": resource_title,
             "overall_quality": overall_quality,
@@ -334,7 +353,7 @@ impl AuditLogService {
         resource_title: &str,
         is_like: bool, // true: 点赞, false: 取消点赞
         ip_address: Option<&str>,
-    ) -> Result<(), sqlx::Error> {
+    ) -> Result<(), AuditError> {
         let action = if is_like {
             AuditAction::LikeResource
         } else {
@@ -365,7 +384,7 @@ impl AuditLogService {
         comment_id: Uuid,
         resource_title: &str,
         ip_address: Option<&str>,
-    ) -> Result<(), sqlx::Error> {
+    ) -> Result<(), AuditError> {
         let details = serde_json::json!({
             "resource_title": resource_title,
         });
@@ -389,7 +408,7 @@ impl AuditLogService {
         comment_id: Uuid,
         is_admin: bool,
         ip_address: Option<&str>,
-    ) -> Result<(), sqlx::Error> {
+    ) -> Result<(), AuditError> {
         let details = serde_json::json!({
             "is_admin": is_admin,
             "deleted_by": if is_admin { "admin" } else { "user" },
@@ -414,7 +433,7 @@ impl AuditLogService {
         title: &str,
         recipient_count: i32,
         ip_address: Option<&str>,
-    ) -> Result<(), sqlx::Error> {
+    ) -> Result<(), AuditError> {
         let details = serde_json::json!({
             "title": title,
             "recipient_count": recipient_count,
@@ -439,7 +458,7 @@ impl AuditLogService {
         target_user_id: Uuid,
         is_active: bool,
         ip_address: Option<&str>,
-    ) -> Result<(), sqlx::Error> {
+    ) -> Result<(), AuditError> {
         let details = serde_json::json!({
             "target_user_id": target_user_id,
             "action": if is_active { "enable" } else { "disable" },
@@ -467,7 +486,7 @@ impl AuditLogService {
         target_id: Option<Uuid>,
         details: Option<serde_json::Value>,
         ip_address: Option<&str>,
-    ) -> Result<(), sqlx::Error> {
+    ) -> Result<(), AuditError> {
         let action_enum = match action {
             "delete_favorite_resources" => AuditAction::AdminAction,
             _ => AuditAction::AdminAction,

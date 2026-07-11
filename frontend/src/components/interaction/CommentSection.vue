@@ -14,10 +14,10 @@
       />
       <el-button
         type="primary"
-        @click="handleSubmit"
         :loading="submitting"
         :disabled="!newComment.trim()"
         class="submit-btn"
+        @click="handleSubmit"
       >
         发表评论
       </el-button>
@@ -66,10 +66,11 @@
 import { ref, onMounted, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Delete } from '@element-plus/icons-vue';
-import { getComments, createComment, deleteComment } from '../../api/comment';
-import { useAuthStore } from '../../stores/auth';
-import type { Comment } from '../../types/comment';
-import logger from '../../utils/logger';
+import { getComments, createComment, deleteComment } from '@/api/comment';
+import { useAuthStore } from '@/stores/auth';
+import type { Comment } from '@/types/comment';
+import logger from '@/utils/logger';
+import { getErrorMessage, isHandledError } from '@/api/request';
 
 const props = defineProps<{
   resourceId: string;
@@ -88,13 +89,14 @@ const loadComments = async () => {
   try {
     const result = await getComments(props.resourceId, {
       page: page.value,
-      perPage: perPage.value
+      perPage: perPage.value,
     });
     comments.value = result.comments;
     total.value = result.total;
-  } catch (error: any) {
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '获取评论失败');
+  } catch (error) {
+    logger.error('[CommentSection]', '获取评论失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '获取评论失败'));
     }
   }
 };
@@ -111,10 +113,13 @@ const handleSubmit = async () => {
     ElMessage.success('评论成功');
     newComment.value = '';
     loadComments();
-  } catch (error: any) {
-    logger.error('[CommentSection]', '评论提交失败', { message: error.message, data: error.response?.data });
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '评论失败');
+  } catch (error) {
+    logger.error('[CommentSection]', '评论提交失败', {
+      message: getErrorMessage(error),
+      data: error,
+    });
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '评论失败'));
     }
   } finally {
     submitting.value = false;
@@ -139,7 +144,7 @@ const handleDelete = async (comment: Comment) => {
     await ElMessageBox.confirm('确定要删除这条评论吗？', '删除确认', {
       confirmButtonText: '删除',
       cancelButtonText: '取消',
-      type: 'warning'
+      type: 'warning',
     });
 
     deleting.value = true;
@@ -150,12 +155,15 @@ const handleDelete = async (comment: Comment) => {
     logger.info('[CommentSection]', '评论删除成功');
     ElMessage.success('评论已删除');
     loadComments();
-  } catch (error: any) {
+  } catch (error) {
     if (error === 'cancel') return;
 
-    logger.error('[CommentSection]', '删除评论失败', { message: error.message, data: error.response?.data });
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '删除失败');
+    logger.error('[CommentSection]', '删除评论失败', {
+      message: getErrorMessage(error),
+      data: error,
+    });
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '删除失败'));
     }
   } finally {
     deleting.value = false;
@@ -166,10 +174,13 @@ onMounted(() => {
   loadComments();
 });
 
-watch(() => props.resourceId, () => {
-  page.value = 1;
-  loadComments();
-});
+watch(
+  () => props.resourceId,
+  () => {
+    page.value = 1;
+    loadComments();
+  }
+);
 </script>
 
 <style scoped>

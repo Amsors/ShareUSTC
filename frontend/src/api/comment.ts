@@ -1,5 +1,10 @@
-import request from './request';
-import type { Comment, CommentListResponse, CommentListQuery, CreateCommentRequest } from '../types/comment';
+import request from '@/api/request';
+import type {
+  Comment,
+  CommentListResponse,
+  CommentListQuery,
+  CreateCommentRequest,
+} from '@/types/comment';
 
 /**
  * 获取评论列表
@@ -13,7 +18,7 @@ export const getComments = async (
   return request({
     url: `/resources/${resourceId}/comments`,
     method: 'get',
-    params
+    params,
   }) as Promise<CommentListResponse>;
 };
 
@@ -29,7 +34,7 @@ export const createComment = async (
   return request({
     url: `/resources/${resourceId}/comments`,
     method: 'post',
-    data
+    data,
   }) as Promise<Comment>;
 };
 
@@ -40,6 +45,6 @@ export const createComment = async (
 export const deleteComment = async (commentId: string): Promise<void> => {
   return request({
     url: `/comments/${commentId}`,
-    method: 'delete'
+    method: 'delete',
   }) as Promise<void>;
 };

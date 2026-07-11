@@ -10,7 +10,6 @@
   >
     <div class="guide-content">
       <div class="guide-items">
-
         <div class="guide-item">
           <div class="item-number">1</div>
           <div class="item-text">
@@ -53,11 +52,13 @@
           <div class="item-text">
             <span>部分资源</span>
             <span class="highlight-text">课程划分可能有误</span>
-            <span>，请勾选所有相关课程。如选择 数学分析 课程资料时，可以同时勾选 “数学分析【未指定】”、“数学分析(B1)” 等多个选项</span>
+            <span
+              >，请勾选所有相关课程。如选择 数学分析 课程资料时，可以同时勾选
+              “数学分析【未指定】”、“数学分析(B1)” 等多个选项</span
+            >
             <!-- <span class="highlight-text red-text">这样是红色</span> -->
           </div>
         </div>
-
       </div>
 
       <div class="guide-footer-hint">
@@ -69,14 +70,10 @@
     <template #footer>
       <div class="guide-footer">
         <div class="footer-left">
-          <el-checkbox v-model="dontShowAgain" size="small">
-            不再显示
-          </el-checkbox>
+          <el-checkbox v-model="dontShowAgain" size="small"> 不再显示 </el-checkbox>
         </div>
         <div class="footer-right">
-          <el-button type="primary" @click="handleClose" size="default">
-            我知道了
-          </el-button>
+          <el-button type="primary" size="default" @click="handleClose"> 我知道了 </el-button>
         </div>
       </div>
     </template>
@@ -87,7 +84,7 @@
 import { ref, onMounted } from 'vue';
 import { Collection } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
-import logger from '../../utils/logger';
+import logger from '@/utils/logger';
 
 // 状态
 const visible = ref(false);
@@ -126,10 +123,13 @@ function handleClose() {
   // 如果勾选了"不再显示"，则保存到 localStorage
   if (dontShowAgain.value) {
     try {
-      localStorage.setItem(RESOURCE_GUIDE_MODAL_KEY, JSON.stringify({
-        permanent: true,
-        timestamp: Date.now()
-      }));
+      localStorage.setItem(
+        RESOURCE_GUIDE_MODAL_KEY,
+        JSON.stringify({
+          permanent: true,
+          timestamp: Date.now(),
+        })
+      );
       ElMessage.success('已永久关闭资源页面指南弹窗，可在设置中重新开启');
     } catch (e) {
       logger.error('[ResourceGuideModal]', 'Failed to save resource guide modal setting:', e);
@@ -156,10 +156,13 @@ function isPermanentlyClosed(): boolean {
 function setPermanentlyClosed(closed: boolean): void {
   try {
     if (closed) {
-      localStorage.setItem(RESOURCE_GUIDE_MODAL_KEY, JSON.stringify({
-        permanent: true,
-        timestamp: Date.now()
-      }));
+      localStorage.setItem(
+        RESOURCE_GUIDE_MODAL_KEY,
+        JSON.stringify({
+          permanent: true,
+          timestamp: Date.now(),
+        })
+      );
     } else {
       // 清除永久关闭设置，下次进入资源页面会显示
       localStorage.removeItem(RESOURCE_GUIDE_MODAL_KEY);
@@ -181,7 +184,7 @@ onMounted(() => {
 defineExpose({
   show,
   isPermanentlyClosed,
-  setPermanentlyClosed
+  setPermanentlyClosed,
 });
 </script>
 
@@ -225,13 +228,13 @@ defineExpose({
   align-items: flex-start;
   gap: 12px;
   padding: 8px;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   border-radius: 10px;
   transition: all 0.3s ease;
 }
 
 .guide-item:hover {
-  background-color: #ecf5ff;
+  background-color: var(--el-color-primary-light-9);
   transform: translateX(4px);
 }
 
@@ -241,7 +244,7 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #409eff 0%, #66b1ff 100%);
+  background: linear-gradient(135deg, var(--el-color-primary) 0%, #66b1ff 100%);
   color: #fff;
   font-size: 14px;
   font-weight: 600;
@@ -257,12 +260,12 @@ defineExpose({
 }
 
 .highlight-text {
-  color: #409eff;
+  color: var(--el-color-primary);
   font-weight: 600;
 }
 
 .red-text {
-  color: #f56c6c;
+  color: var(--el-color-danger);
 }
 
 .guide-footer-hint {
@@ -271,9 +274,9 @@ defineExpose({
   align-items: center;
   gap: 6px;
   padding: 5px 15px;
-  background-color: #ecf5ff;
+  background-color: var(--el-color-primary-light-9);
   border-radius: 20px;
-  color: #409eff;
+  color: var(--el-color-primary);
   font-size: 13px;
 }
 

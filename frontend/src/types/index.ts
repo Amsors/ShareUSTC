@@ -1,14 +1,9 @@
 // 全局类型定义
 
-export * from './auth';
-export * from './resource';
-export * from './image';
-export * from './preview';
-export * from './rating';
-export * from './like';
-export * from './comment';
-
-export interface HelloResponse {
-  message: string;
-  status: string;
-}
+export * from '@/types/auth';
+export * from '@/types/resource';
+export * from '@/types/image';
+export * from '@/types/preview';
+export * from '@/types/rating';
+export * from '@/types/like';
+export * from '@/types/comment';

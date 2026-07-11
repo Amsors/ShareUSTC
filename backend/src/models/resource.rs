@@ -1,103 +1,11 @@
+use crate::utils::deserialize_vec_i64;
 use chrono::NaiveDateTime;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
 
-/// 自定义反序列化函数：支持单个值、逗号分隔字符串或数组
-/// 用于处理查询参数中的数组字段
-/// 支持格式: courseSns=1,2,3 或 courseSns=1 或 courseSns[]=1&courseSns[]=2
-fn deserialize_vec_i64<'de, D>(deserializer: D) -> Result<Vec<i64>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    use serde::de::{Error, SeqAccess, Unexpected, Visitor};
-    use std::fmt;
-
-    struct VecI64Visitor;
-
-    impl<'de> Visitor<'de> for VecI64Visitor {
-        type Value = Vec<i64>;
-
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("a single value, comma-separated string, or an array of i64 values")
-        }
-
-        // 处理单个字符串值（可能是单个数字或逗号分隔）
-        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
-        where
-            E: Error,
-        {
-            // 先尝试按逗号分割
-            if value.contains(',') {
-                let mut result = Vec::new();
-                for part in value.split(',') {
-                    let trimmed = part.trim();
-                    if !trimmed.is_empty() {
-                        let num = trimmed.parse::<i64>().map_err(|_| {
-                            E::invalid_value(Unexpected::Str(value), &"comma-separated i64 numbers")
-                        })?;
-                        result.push(num);
-                    }
-                }
-                Ok(result)
-            } else {
-                // 单个值
-                let num = value
-                    .parse::<i64>()
-                    .map_err(|_| E::invalid_value(Unexpected::Str(value), &"a valid i64 number"))?;
-                Ok(vec![num])
-            }
-        }
-
-        // 处理单个整数（如 courseSns=1）
-        fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
-        where
-            E: Error,
-        {
-            Ok(vec![value])
-        }
-
-        fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
-        where
-            E: Error,
-        {
-            Ok(vec![value as i64])
-        }
-
-        // 处理字符串序列（如 courseSns[]=1&courseSns[]=2）
-        fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
-        where
-            A: SeqAccess<'de>,
-        {
-            let mut result = Vec::new();
-            while let Some(s) = seq.next_element::<String>()? {
-                // 每个元素可能是逗号分隔的
-                if s.contains(',') {
-                    for part in s.split(',') {
-                        let trimmed = part.trim();
-                        if !trimmed.is_empty() {
-                            let num = trimmed.parse::<i64>().map_err(|_| {
-                                A::Error::invalid_value(Unexpected::Str(&s), &"a valid i64 number")
-                            })?;
-                            result.push(num);
-                        }
-                    }
-                } else {
-                    let num = s.parse::<i64>().map_err(|_| {
-                        A::Error::invalid_value(Unexpected::Str(&s), &"a valid i64 number")
-                    })?;
-                    result.push(num);
-                }
-            }
-            Ok(result)
-        }
-    }
-
-    deserializer.deserialize_any(VecI64Visitor)
-}
-
 /// 资源类型枚举
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq, Default)]
 #[sqlx(type_name = "VARCHAR", rename_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
 pub enum ResourceType {
@@ -124,31 +32,27 @@ pub enum ResourceType {
     /// ZIP 压缩包（源文件）
     Zip,
     /// 其他类型
+    #[default]
     Other,
 }
 
-impl Default for ResourceType {
-    fn default() -> Self {
-        ResourceType::Other
-    }
-}
-
-impl ToString for ResourceType {
-    fn to_string(&self) -> String {
-        match self {
-            ResourceType::WebMarkdown => "web_markdown".to_string(),
-            ResourceType::Ppt => "ppt".to_string(),
-            ResourceType::Pptx => "pptx".to_string(),
-            ResourceType::Doc => "doc".to_string(),
-            ResourceType::Docx => "docx".to_string(),
-            ResourceType::Pdf => "pdf".to_string(),
-            ResourceType::Txt => "txt".to_string(),
-            ResourceType::Jpeg => "jpeg".to_string(),
-            ResourceType::Jpg => "jpg".to_string(),
-            ResourceType::Png => "png".to_string(),
-            ResourceType::Zip => "zip".to_string(),
-            ResourceType::Other => "other".to_string(),
-        }
+impl std::fmt::Display for ResourceType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            ResourceType::WebMarkdown => "web_markdown",
+            ResourceType::Ppt => "ppt",
+            ResourceType::Pptx => "pptx",
+            ResourceType::Doc => "doc",
+            ResourceType::Docx => "docx",
+            ResourceType::Pdf => "pdf",
+            ResourceType::Txt => "txt",
+            ResourceType::Jpeg => "jpeg",
+            ResourceType::Jpg => "jpg",
+            ResourceType::Png => "png",
+            ResourceType::Zip => "zip",
+            ResourceType::Other => "other",
+        };
+        f.write_str(s)
     }
 }
 
@@ -218,7 +122,7 @@ impl ResourceType {
 }
 
 /// 资源分类枚举
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq, Default)]
 #[sqlx(type_name = "VARCHAR", rename_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
 pub enum ResourceCategory {
@@ -235,35 +139,32 @@ pub enum ResourceCategory {
     /// 讲义
     Lecture,
     /// 其他
+    #[default]
     Other,
 }
 
-impl Default for ResourceCategory {
-    fn default() -> Self {
-        ResourceCategory::Other
-    }
-}
-
-impl ToString for ResourceCategory {
-    fn to_string(&self) -> String {
-        match self {
-            ResourceCategory::ExamResult => "exam_result".to_string(),
-            ResourceCategory::LearningNote => "learning_note".to_string(),
-            ResourceCategory::PastPaper => "past_paper".to_string(),
-            ResourceCategory::Note => "note".to_string(),
-            ResourceCategory::ReviewOutline => "review_outline".to_string(),
-            ResourceCategory::Lecture => "lecture".to_string(),
-            ResourceCategory::Other => "other".to_string(),
-        }
+impl std::fmt::Display for ResourceCategory {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            ResourceCategory::ExamResult => "exam_result",
+            ResourceCategory::LearningNote => "learning_note",
+            ResourceCategory::PastPaper => "past_paper",
+            ResourceCategory::Note => "note",
+            ResourceCategory::ReviewOutline => "review_outline",
+            ResourceCategory::Lecture => "lecture",
+            ResourceCategory::Other => "other",
+        };
+        f.write_str(s)
     }
 }
 
 /// 审核状态枚举
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq, Default)]
 #[sqlx(type_name = "VARCHAR", rename_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
 pub enum AuditStatus {
     /// 待审核
+    #[default]
     Pending,
     /// 已通过
     Approved,
@@ -271,19 +172,14 @@ pub enum AuditStatus {
     Rejected,
 }
 
-impl Default for AuditStatus {
-    fn default() -> Self {
-        AuditStatus::Pending
-    }
-}
-
-impl ToString for AuditStatus {
-    fn to_string(&self) -> String {
-        match self {
-            AuditStatus::Pending => "pending".to_string(),
-            AuditStatus::Approved => "approved".to_string(),
-            AuditStatus::Rejected => "rejected".to_string(),
-        }
+impl std::fmt::Display for AuditStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            AuditStatus::Pending => "pending",
+            AuditStatus::Approved => "approved",
+            AuditStatus::Rejected => "rejected",
+        };
+        f.write_str(s)
     }
 }
 
@@ -602,7 +498,7 @@ impl ResourceListQuery {
     }
 
     pub fn get_per_page(&self) -> i32 {
-        self.per_page.unwrap_or(20).min(100).max(1)
+        self.per_page.unwrap_or(20).clamp(1, 100)
     }
 }
 
@@ -612,7 +508,7 @@ impl ResourceSearchQuery {
     }
 
     pub fn get_per_page(&self) -> i32 {
-        self.per_page.unwrap_or(20).min(100).max(1)
+        self.per_page.unwrap_or(20).clamp(1, 100)
     }
 }
 

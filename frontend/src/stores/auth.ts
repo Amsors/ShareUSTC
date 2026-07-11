@@ -1,17 +1,14 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { login, register, refreshToken, logout } from '../api/auth';
+import { login, register, refreshToken, logout } from '@/api/auth';
+import { getCurrentUser } from '@/api/user';
+import { getErrorMessage, isHandledError } from '@/api/request';
 import axios from 'axios';
-import type {
-  User,
-  LoginRequest,
-  RegisterRequest,
-  AuthResponse
-} from '../types/auth';
-import { UserRole } from '../types/auth';
+import type { User, LoginRequest, RegisterRequest } from '@/types/auth';
+import { UserRole } from '@/types/auth';
 import { ElMessage } from 'element-plus';
-import logger from '../utils/logger';
-import { clearDefaultFavoriteStorage } from '../composables/useDefaultFavorite';
+import logger from '@/utils/logger';
+import { clearDefaultFavoriteStorage } from '@/composables/useDefaultFavorite';
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -31,53 +28,36 @@ export const useAuthStore = defineStore('auth', () => {
 
   // 初始化（验证会话状态并获取用户信息）
   const initialize = async (): Promise<boolean> => {
+    // 统一走 src/api/request.ts，并用 skipAuthError 跳过拦截器的自动刷新/跳转，
+    // 由本函数手动处理 401 → 刷新 → 重取，避免匿名访问时弹窗和跳转登录页
     try {
-      // 使用独立的 axios 实例进行验证，跳过主请求拦截器的错误处理
-      // 这样 401 不会触发弹窗和跳转
-      const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
-      const response = await axios.get(`${baseURL}/users/me`, {
-        withCredentials: true,
-        timeout: 5000,
-        // 标记此请求跳过认证错误处理
-        skipAuthError: true,
-      } as any);
-
-      const userData = response.data;
+      const userData = await getCurrentUser({ skipAuthError: true, timeout: 5000 });
       if (userData) {
         user.value = userData;
         logger.info('[Auth]', `会话验证成功 | username=${userData.username}`);
         isAuthChecked.value = true;
         return true;
       }
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        // Token 过期，尝试刷新（刷新请求也跳过错误处理）
+    } catch (error) {
+      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+      if (status === 401) {
+        // Access Token 过期或缺失，尝试静默刷新后重新获取用户信息
         logger.warn('[Auth]', 'Access Token 已过期，尝试刷新...');
         try {
-          const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
-          await axios.post(`${baseURL}/auth/refresh`, {}, {
-            withCredentials: true,
-            timeout: 5000,
-            skipAuthError: true,
-          } as any);
-
-          // 刷新成功，重新获取用户信息
-          const response = await axios.get(`${baseURL}/users/me`, {
-            withCredentials: true,
-            timeout: 5000,
-            skipAuthError: true,
-          } as any);
-
-          const userData = response.data;
+          await refreshToken({ skipAuthError: true, timeout: 5000 });
+          const userData = await getCurrentUser({ skipAuthError: true, timeout: 5000 });
           user.value = userData;
           logger.info('[Auth]', `Token 刷新成功 | username=${userData.username}`);
           isAuthChecked.value = true;
           return true;
-        } catch (refreshError) {
+        } catch {
           logger.warn('[Auth]', 'Token 刷新失败或用户未登录');
         }
       } else {
-        logger.warn('[Auth]', `会话验证失败 | error=${error.message || error}`);
+        logger.warn(
+          '[Auth]',
+          `会话验证失败 | error=${error instanceof Error ? error.message : error}`
+        );
       }
     }
 
@@ -95,11 +75,11 @@ export const useAuthStore = defineStore('auth', () => {
       setAuthData(response);
       ElMessage.success('登录成功');
       return true;
-    } catch (error: any) {
+    } catch (error) {
       logger.error('[Auth]', '登录失败', error);
       // 如果错误已经被拦截器处理（显示过消息），则不再显示
-      if (!error.isHandled) {
-        ElMessage.error(error.message || '登录失败');
+      if (!isHandledError(error)) {
+        ElMessage.error(getErrorMessage(error, '登录失败'));
       }
       return false;
     } finally {
@@ -115,11 +95,11 @@ export const useAuthStore = defineStore('auth', () => {
       setAuthData(response);
       ElMessage.success('注册成功');
       return true;
-    } catch (error: any) {
+    } catch (error) {
       logger.error('[Auth]', '注册失败', error);
       // 如果错误已经被拦截器处理（显示过消息），则不再显示
-      if (!error.isHandled) {
-        ElMessage.error(error.message || '注册失败');
+      if (!isHandledError(error)) {
+        ElMessage.error(getErrorMessage(error, '注册失败'));
       }
       return false;
     } finally {
@@ -131,7 +111,8 @@ export const useAuthStore = defineStore('auth', () => {
   const refreshAccessToken = async (): Promise<boolean> => {
     try {
       // 后端从 HttpOnly Cookie 中读取 refresh_token
-      await refreshToken();
+      // skipAuthError：刷新失败保持静默，由调用方按返回值决定跳转/提示，避免重复弹窗
+      await refreshToken({ skipAuthError: true });
       logger.info('[Auth]', 'Token 刷新成功');
       return true;
     } catch (error) {
@@ -153,8 +134,8 @@ export const useAuthStore = defineStore('auth', () => {
   };
 
   // 设置认证数据
-  // 注意：AuthResponse 类型已定义为 User 的别名，API 直接返回用户信息
-  const setAuthData = (response: AuthResponse) => {
+  // 注意：API 直接返回 User 对象
+  const setAuthData = (response: User) => {
     // 设置用户信息
     user.value = response;
 
@@ -194,6 +175,6 @@ export const useAuthStore = defineStore('auth', () => {
     logoutUser,
     clearAuth,
     setAuthData,
-    updateUserInfo
+    updateUserInfo,
   };
 });

@@ -69,7 +69,13 @@
           />
         </el-select>
 
-        <el-select v-model="filterType" placeholder="资源类型" clearable class="filter-item" :disabled="loading">
+        <el-select
+          v-model="filterType"
+          placeholder="资源类型"
+          clearable
+          class="filter-item"
+          :disabled="loading"
+        >
           <el-option
             v-for="(label, value) in ResourceTypeFilterLabels"
             :key="value"
@@ -78,7 +84,13 @@
           />
         </el-select>
 
-        <el-select v-model="filterCategory" placeholder="资源分类" clearable class="filter-item" :disabled="loading">
+        <el-select
+          v-model="filterCategory"
+          placeholder="资源分类"
+          clearable
+          class="filter-item"
+          :disabled="loading"
+        >
           <el-option
             v-for="(label, value) in ResourceCategoryLabels"
             :key="value"
@@ -102,7 +114,14 @@
           <div class="switch-label" :class="{ active: !enableQuickAdd }">点击查看资源</div>
           <el-switch
             v-model="enableQuickAdd"
-            @change="(val: boolean) => { if (!val) { favoriteLocked = false; selectedFavoriteId = ''; } }"
+            @change="
+              (val: boolean) => {
+                if (!val) {
+                  favoriteLocked = false;
+                  selectedFavoriteId = '';
+                }
+              }
+            "
           />
           <div class="switch-label" :class="{ active: enableQuickAdd }">点击加入收藏夹</div>
 
@@ -130,12 +149,7 @@
               选择收藏夹
             </el-button>
 
-            <el-button
-              v-if="favoriteLocked"
-              @click="handleChangeFavorite"
-            >
-              重新选择
-            </el-button>
+            <el-button v-if="favoriteLocked" @click="handleChangeFavorite"> 重新选择 </el-button>
 
             <el-button
               v-if="favoriteLocked"
@@ -150,7 +164,11 @@
 
         <div v-if="enableQuickAdd" class="quick-add-hint">
           <el-alert
-            :title="favoriteLocked ? '左键点击资源卡片即可加入收藏夹' : '请先选择收藏夹并点击「选择收藏夹」按钮锁定'"
+            :title="
+              favoriteLocked
+                ? '左键点击资源卡片即可加入收藏夹'
+                : '请先选择收藏夹并点击「选择收藏夹」按钮锁定'
+            "
             :type="favoriteLocked ? 'success' : 'info'"
             :closable="false"
             show-icon
@@ -180,7 +198,7 @@
         :key="resource.id"
         :href="`/resources/${resource.id}`"
         class="resource-card-link"
-        :class="{ 'quick-add-mode': enableQuickAdd, 'adding': addingResourceId === resource.id }"
+        :class="{ 'quick-add-mode': enableQuickAdd, adding: addingResourceId === resource.id }"
         @click.prevent="handleResourceCardClick(resource)"
       >
         <el-card class="resource-card" shadow="hover">
@@ -190,10 +208,16 @@
           </div>
           <div class="resource-header">
             <el-tag size="small" :type="getResourceTypeTagType(resource.resourceType)">
-              {{ ResourceTypeLabels[resource.resourceType as keyof typeof ResourceTypeLabels] || resource.resourceType }}
+              {{
+                ResourceTypeLabels[resource.resourceType as keyof typeof ResourceTypeLabels] ||
+                resource.resourceType
+              }}
             </el-tag>
             <el-tag size="small" type="info">
-              {{ ResourceCategoryLabels[resource.category as ResourceCategoryType] || resource.category }}
+              {{
+                ResourceCategoryLabels[resource.category as ResourceCategoryType] ||
+                resource.category
+              }}
             </el-tag>
           </div>
 
@@ -217,7 +241,9 @@
               >
                 {{ tag }}
               </el-tag>
-              <span v-if="resource.tags.length > 3" class="more-tags">+{{ resource.tags.length - 3 }}</span>
+              <span v-if="resource.tags.length > 3" class="more-tags"
+                >+{{ resource.tags.length - 3 }}</span
+              >
             </template>
             <span v-else class="placeholder">&nbsp;</span>
           </div>
@@ -265,23 +291,24 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { Search, Upload, Reading, View, Download, Star, Loading } from '@element-plus/icons-vue';
-import { getResourceList, searchResources } from '../../api/resource';
-import { getTeachers } from '../../api/teacher';
-import { getCourses } from '../../api/course';
+import { getResourceList, searchResources } from '@/api/resource';
+import { getTeachers } from '@/api/teacher';
+import { getCourses } from '@/api/course';
 import {
   ResourceTypeLabels,
   ResourceTypeFilterLabels,
   ResourceCategoryLabels,
   type ResourceListItem,
-  type ResourceCategoryType
-} from '../../types/resource';
-import type { Teacher } from '../../types/teacher';
-import type { Course } from '../../types/course';
-import { useFavoriteStore } from '../../stores/favorite';
-import { useAuthStore } from '../../stores/auth';
-import type { Favorite } from '../../types/favorite';
-import logger from '../../utils/logger';
-import ResourceGuideModal from '../../components/common/ResourceGuideModal.vue';
+  type ResourceCategoryType,
+} from '@/types/resource';
+import type { Teacher } from '@/types/teacher';
+import type { Course } from '@/types/course';
+import { useFavoriteStore } from '@/stores/favorite';
+import { useAuthStore } from '@/stores/auth';
+import type { Favorite } from '@/types/favorite';
+import logger from '@/utils/logger';
+import ResourceGuideModal from '@/components/common/ResourceGuideModal.vue';
+import { getErrorMessage, isHandledError } from '@/api/request';
 
 const router = useRouter();
 const route = useRoute();
@@ -335,7 +362,7 @@ const loadFavorites = async () => {
 
 // 获取选中的收藏夹信息
 const selectedFavorite = computed(() => {
-  return favoritesWithCount.value.find(f => f.id === selectedFavoriteId.value);
+  return favoritesWithCount.value.find((f) => f.id === selectedFavoriteId.value);
 });
 
 // 处理收藏夹选择确认
@@ -363,13 +390,16 @@ const handleAddAllCurrentPage = async () => {
   try {
     for (const resource of resources.value) {
       try {
-        const added = await favoriteStore.addResourceToFavorite(selectedFavoriteId.value, resource.id);
+        const added = await favoriteStore.addResourceToFavorite(
+          selectedFavoriteId.value,
+          resource.id
+        );
         if (added) {
           successCount++;
         } else {
           existCount++;
         }
-      } catch (error: any) {
+      } catch (error) {
         failCount++;
         logger.error('[ResourceList]', `批量添加资源失败: ${resource.id}`, error);
       }
@@ -387,9 +417,11 @@ const handleAddAllCurrentPage = async () => {
     } else if (failCount > 0) {
       ElMessage.error(`添加失败，${failCount} 份资源未能加入收藏夹`);
     }
-  } catch (error: any) {
-    ElMessage.error('批量添加失败，请稍后重试');
+  } catch (error) {
     logger.error('[ResourceList]', '批量添加所有资源失败:', error);
+    if (!isHandledError(error)) {
+      ElMessage.error('批量添加失败，请稍后重试');
+    }
   } finally {
     batchAddingAll.value = false;
   }
@@ -421,10 +453,13 @@ const handleResourceCardClick = async (resource: ResourceListItem) => {
       // 资源已存在，显示黄色提示
       ElMessage.warning('该资源已在收藏夹中');
     }
-  } catch (error: any) {
+  } catch (error) {
+    logger.error('[ResourceList]', '添加资源到收藏夹失败', error);
     // 只有非业务错误才显示错误弹窗
-    const errorMessage = error.response?.data?.message || error.message || '添加失败';
-    ElMessage.error(errorMessage);
+    if (!isHandledError(error)) {
+      const errorMessage = getErrorMessage(error, '添加失败');
+      ElMessage.error(errorMessage);
+    }
   } finally {
     addingResourceId.value = null;
   }
@@ -439,7 +474,7 @@ const getResourceTypeTagType = (type: string) => {
     doc: 'primary',
     docx: 'primary',
     web_markdown: 'success',
-    zip: 'info'
+    zip: 'info',
   };
   return typeMap[type] || 'info';
 };
@@ -477,7 +512,7 @@ const formatTime = (time: string) => {
   return date.toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: '2-digit',
-    day: '2-digit'
+    day: '2-digit',
   });
 };
 
@@ -505,7 +540,7 @@ const loadTeachers = async () => {
     const withResourcesOnly = getFilterSetting();
     const teachers = await getTeachers(withResourcesOnly);
     teacherList.value = teachers;
-  } catch (error: any) {
+  } catch (error) {
     logger.error('[ResourceList]', '加载教师列表失败:', error);
   } finally {
     loadingTeachers.value = false;
@@ -519,7 +554,7 @@ const loadCourses = async () => {
     const withResourcesOnly = getFilterSetting();
     const courses = await getCourses(withResourcesOnly);
     courseList.value = courses;
-  } catch (error: any) {
+  } catch (error) {
     logger.error('[ResourceList]', '加载课程列表失败:', error);
   } finally {
     loadingCourses.value = false;
@@ -544,7 +579,7 @@ const loadResources = async () => {
         resourceType: filterType.value || undefined,
         category: filterCategory.value || undefined,
         teacherSns,
-        courseSns
+        courseSns,
       });
     } else {
       response = await getResourceList({
@@ -555,15 +590,16 @@ const loadResources = async () => {
         sortBy: sortBy.value,
         sortOrder: 'desc',
         teacherSns,
-        courseSns
+        courseSns,
       });
     }
 
     resources.value = response.resources;
     total.value = response.total;
-  } catch (error: any) {
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '加载资源列表失败');
+  } catch (error) {
+    logger.error('[ResourceList]', '加载资源列表失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '加载资源列表失败'));
     }
   } finally {
     loading.value = false;
@@ -595,10 +631,14 @@ const goToUpload = () => {
 };
 
 // 监听筛选条件变化
-watch([filterType, filterCategory, sortBy, filterTeacherSns, filterCourseSns], () => {
-  currentPage.value = 1;
-  loadResources();
-}, { deep: true });
+watch(
+  [filterType, filterCategory, sortBy, filterTeacherSns, filterCourseSns],
+  () => {
+    currentPage.value = 1;
+    loadResources();
+  },
+  { deep: true }
+);
 
 // 页面加载时获取资源列表
 onMounted(() => {

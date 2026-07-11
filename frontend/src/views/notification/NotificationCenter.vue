@@ -2,15 +2,15 @@
   <div class="notification-center">
     <div class="page-header">
       <h1 class="page-title">通知中心</h1>
-      <div class="header-actions" v-if="notificationStore.hasUnread">
-        <el-button type="primary" @click="handleMarkAllRead" :loading="markingAllRead">
+      <div v-if="notificationStore.hasUnread" class="header-actions">
+        <el-button type="primary" :loading="markingAllRead" @click="handleMarkAllRead">
           <el-icon><Check /></el-icon>
           全部标记为已读
         </el-button>
       </div>
     </div>
 
-    <el-card class="notification-card" v-loading="notificationStore.loading">
+    <el-card v-loading="notificationStore.loading" class="notification-card">
       <el-tabs v-model="activeTab" @tab-change="handleTabChange">
         <el-tab-pane label="全部通知" name="all">
           <NotificationList
@@ -29,7 +29,10 @@
       </el-tabs>
 
       <!-- 空状态 -->
-      <el-empty v-if="filteredNotifications.length === 0 && !notificationStore.loading" description="暂无通知">
+      <el-empty
+        v-if="filteredNotifications.length === 0 && !notificationStore.loading"
+        description="暂无通知"
+      >
         <template #image>
           <el-icon :size="64" class="empty-icon">
             <Bell />
@@ -38,7 +41,7 @@
       </el-empty>
 
       <!-- 分页 -->
-      <div class="pagination-wrapper" v-if="notificationStore.total > notificationStore.perPage">
+      <div v-if="notificationStore.total > notificationStore.perPage" class="pagination-wrapper">
         <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
@@ -57,10 +60,12 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { Bell, Check } from '@element-plus/icons-vue';
-import { useNotificationStore } from '../../stores/notification';
-import type { Notification } from '../../types/notification';
-import NotificationList from '../../components/notification/NotificationList.vue';
+import { useNotificationStore } from '@/stores/notification';
+import type { Notification } from '@/types/notification';
+import NotificationList from '@/components/notification/NotificationList.vue';
 import { ElMessage } from 'element-plus';
+import { isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
 
 const router = useRouter();
 const notificationStore = useNotificationStore();
@@ -86,7 +91,7 @@ async function fetchNotifications() {
   await notificationStore.fetchNotifications({
     page: currentPage.value,
     perPage: pageSize.value,
-    unreadOnly: activeTab.value === 'unread'
+    unreadOnly: activeTab.value === 'unread',
   });
 }
 
@@ -101,8 +106,9 @@ async function handleMarkAsRead(notification: Notification) {
   try {
     await notificationStore.markNotificationAsRead(notification.id);
     ElMessage.success('已标记为已读');
-  } catch (error: any) {
-    if (!error.isHandled) {
+  } catch (error) {
+    logger.error('[NotificationCenter]', '标记已读失败', error);
+    if (!isHandledError(error)) {
       ElMessage.error('操作失败');
     }
   }
@@ -113,8 +119,9 @@ async function handleMarkAllRead() {
   try {
     await notificationStore.markAllNotificationsAsRead();
     ElMessage.success('已全部标记为已读');
-  } catch (error: any) {
-    if (!error.isHandled) {
+  } catch (error) {
+    logger.error('[NotificationCenter]', '标记全部已读失败', error);
+    if (!isHandledError(error)) {
       ElMessage.error('操作失败');
     }
   } finally {
@@ -151,9 +158,12 @@ onMounted(() => {
 });
 
 // 监听 store 中的分页变化
-watch(() => notificationStore.page, (newPage) => {
-  currentPage.value = newPage;
-});
+watch(
+  () => notificationStore.page,
+  (newPage) => {
+    currentPage.value = newPage;
+  }
+);
 </script>
 
 <style scoped>

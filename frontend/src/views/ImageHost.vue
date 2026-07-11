@@ -54,11 +54,7 @@
           <div class="link-section">
             <div class="link-item">
               <span class="link-label">图片链接：</span>
-              <el-input
-                v-model="lastUploadedImage.url"
-                readonly
-                class="link-input"
-              >
+              <el-input v-model="lastUploadedImage.url" readonly class="link-input">
                 <template #append>
                   <el-button @click="copyUrl(lastUploadedImage.url)">
                     <el-icon><CopyDocument /></el-icon>
@@ -69,11 +65,7 @@
 
             <div class="link-item">
               <span class="link-label">Markdown：</span>
-              <el-input
-                v-model="lastUploadedImage.markdownLink"
-                readonly
-                class="link-input"
-              >
+              <el-input v-model="lastUploadedImage.markdownLink" readonly class="link-input">
                 <template #append>
                   <el-button @click="copyMarkdown(lastUploadedImage.markdownLink)">
                     <el-icon><CopyDocument /></el-icon>
@@ -90,7 +82,7 @@
         <template #header>
           <div class="gallery-header">
             <span>我的图片</span>
-            <el-button type="primary" size="small" @click="loadImages" :loading="loading">
+            <el-button type="primary" size="small" :loading="loading" @click="loadImages">
               <el-icon><Refresh /></el-icon>
               刷新
             </el-button>
@@ -125,18 +117,15 @@
                 >
                   <el-icon><CopyDocument /></el-icon>
                 </el-button>
-                <el-button
-                  type="danger"
-                  circle
-                  size="small"
-                  @click.stop="confirmDelete(image)"
-                >
+                <el-button type="danger" circle size="small" @click.stop="confirmDelete(image)">
                   <el-icon><Delete /></el-icon>
                 </el-button>
               </div>
             </div>
             <div class="image-info">
-              <p class="image-name" :title="image.originalName">{{ image.originalName || '未命名' }}</p>
+              <p class="image-name" :title="image.originalName">
+                {{ image.originalName || '未命名' }}
+              </p>
               <p class="image-meta">
                 {{ formatFileSize(image.fileSize) }} · {{ formatDate(image.createdAt) }}
               </p>
@@ -163,18 +152,14 @@
     </div>
 
     <!-- 图片详情对话框 -->
-    <el-dialog
-      v-model="detailDialogVisible"
-      title="图片详情"
-      width="600px"
-      destroy-on-close
-    >
+    <el-dialog v-model="detailDialogVisible" title="图片详情" width="600px" destroy-on-close>
       <div v-if="selectedImage" class="image-detail">
         <img :src="selectedImage.url" alt="详情" class="detail-image" />
         <div class="detail-info">
           <p><strong>文件名：</strong>{{ selectedImage.originalName || '未命名' }}</p>
           <p><strong>大小：</strong>{{ formatFileSize(selectedImage.fileSize) }}</p>
-          <p><strong>存储位置：</strong>
+          <p>
+            <strong>存储位置：</strong>
             <el-tag :type="selectedImage.storageType === 'oss' ? 'success' : 'info'" size="small">
               {{ StorageTypeLabels[selectedImage.storageType] || '本地存储' }}
             </el-tag>
@@ -207,17 +192,13 @@ import {
   getMyImages,
   deleteImage,
   copyToClipboard,
-  formatFileSize
-} from '../api/imageHost';
-import type { Image, ImageUploadResponse } from '../types/image';
-import { StorageTypeLabels } from '../types/resource';
-import {
-  Picture,
-  Upload,
-  CopyDocument,
-  Refresh,
-  Delete
-} from '@element-plus/icons-vue';
+  formatFileSize,
+} from '@/api/imageHost';
+import type { Image, ImageUploadResponse } from '@/types/image';
+import { getErrorMessage, isHandledError } from '@/api/request';
+import logger from '@/utils/logger';
+import { StorageTypeLabels } from '@/types/resource';
+import { Picture, Upload, CopyDocument, Refresh, Delete } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 
 // 上传相关
@@ -289,9 +270,10 @@ const uploadFile = async (file: File) => {
 
     // 刷新图片列表
     await loadImages();
-  } catch (error: any) {
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '上传失败');
+  } catch (error) {
+    logger.error('[ImageHost]', '上传图片失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '上传失败'));
     }
   } finally {
     uploading.value = false;
@@ -304,13 +286,14 @@ const loadImages = async () => {
   try {
     const result = await getMyImages({
       page: currentPage.value,
-      perPage: pageSize.value
+      perPage: pageSize.value,
     });
     images.value = result.images;
     total.value = result.total;
-  } catch (error: any) {
-    if (!error.isHandled) {
-      ElMessage.error(error.message || '加载图片列表失败');
+  } catch (error) {
+    logger.error('[ImageHost]', '加载图片列表失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error(getErrorMessage(error, '加载图片列表失败'));
     }
   } finally {
     loading.value = false;
@@ -337,7 +320,7 @@ const confirmDelete = async (image: Image) => {
       {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
-        type: 'warning'
+        type: 'warning',
       }
     );
 
@@ -350,9 +333,12 @@ const confirmDelete = async (image: Image) => {
     }
 
     await loadImages();
-  } catch (error: any) {
-    if (error !== 'cancel' && !error.isHandled) {
-      ElMessage.error(error.message || '删除失败');
+  } catch (error) {
+    if (error !== 'cancel') {
+      logger.error('[ImageHost]', '删除图片失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error(getErrorMessage(error, '删除失败'));
+      }
     }
   }
 };
@@ -401,7 +387,7 @@ onMounted(() => {
 <style scoped>
 .image-host-page {
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
 }
 
 .image-host-container {
@@ -416,13 +402,13 @@ onMounted(() => {
   justify-content: center;
   gap: 12px;
   margin: 0 0 8px;
-  color: #303133;
+  color: var(--el-text-color-primary);
   font-size: 28px;
 }
 
 .page-subtitle {
   text-align: center;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin: 0 0 24px;
 }
 
@@ -431,7 +417,7 @@ onMounted(() => {
 }
 
 .upload-area {
-  border: 2px dashed #dcdfe6;
+  border: 2px dashed var(--el-border-color);
   border-radius: 8px;
   padding: 40px 20px;
   text-align: center;
@@ -441,17 +427,17 @@ onMounted(() => {
 
 .upload-area:hover,
 .upload-area.is-dragover {
-  border-color: #409eff;
-  background-color: #f5f7fa;
+  border-color: var(--el-color-primary);
+  background-color: var(--el-fill-color-light);
 }
 
 .upload-area h3 {
   margin: 16px 0 8px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .upload-hint {
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 14px;
   margin: 0;
 }
@@ -485,7 +471,7 @@ onMounted(() => {
   max-height: 200px;
   object-fit: contain;
   border-radius: 4px;
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--el-border-color-lighter);
 }
 
 .link-section {
@@ -504,7 +490,7 @@ onMounted(() => {
 .link-label {
   display: block;
   margin-bottom: 8px;
-  color: #606266;
+  color: var(--el-text-color-regular);
   font-size: 14px;
 }
 
@@ -525,7 +511,7 @@ onMounted(() => {
 }
 
 .loading-text {
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 14px;
 }
 
@@ -540,7 +526,7 @@ onMounted(() => {
   border-radius: 8px;
   overflow: hidden;
   background-color: #fff;
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--el-border-color-lighter);
   transition: box-shadow 0.3s;
 }
 
@@ -552,7 +538,7 @@ onMounted(() => {
   position: relative;
   width: 100%;
   height: 150px;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   overflow: hidden;
 }
 
@@ -588,7 +574,7 @@ onMounted(() => {
 .image-name {
   margin: 0 0 4px;
   font-size: 14px;
-  color: #303133;
+  color: var(--el-text-color-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -597,7 +583,7 @@ onMounted(() => {
 .image-meta {
   margin: 0;
   font-size: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 .image-storage {
@@ -624,7 +610,7 @@ onMounted(() => {
 
 .detail-info {
   text-align: left;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   padding: 16px;
   border-radius: 4px;
   margin-bottom: 16px;
@@ -632,7 +618,7 @@ onMounted(() => {
 
 .detail-info p {
   margin: 8px 0;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .detail-links {

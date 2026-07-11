@@ -211,18 +211,18 @@ async fn resource_upload_callback(
     user: web::ReqData<CurrentUser>,
     req: HttpRequest,
     payload: web::Json<ResourceUploadCallbackRequest>,
-) -> impl Responder {
+) -> Result<HttpResponse, ResourceError> {
     if state.storage.backend_type() != StorageBackendType::Oss {
-        return internal_error("当前未启用OSS存储模式");
+        return Ok(internal_error("当前未启用OSS存储模式"));
     }
 
     if !key_in_scope(&payload.oss_key, "resources") {
-        return forbidden("ossKey 不在允许路径范围（resources）");
+        return Ok(forbidden("ossKey 不在允许路径范围（resources）"));
     }
 
     let metadata = match head_file_with_retry(&state, &payload.oss_key, user.id, "资源").await {
         Ok(meta) => meta,
-        Err(msg) => return bad_request(&format!("上传文件不存在或不可访问: {}", msg)),
+        Err(msg) => return Ok(bad_request(&format!("上传文件不存在或不可访问: {}", msg))),
     };
 
     let upload_request = UploadResourceRequest {
@@ -237,7 +237,7 @@ async fn resource_upload_callback(
         related_resource_ids: payload.related_resource_ids.clone(),
     };
 
-    match ResourceService::create_resource_from_oss_callback(
+    let response = ResourceService::create_resource_from_oss_callback(
         &state.pool,
         &user,
         &state.storage,
@@ -245,35 +245,19 @@ async fn resource_upload_callback(
         &payload.oss_key,
         metadata,
     )
-    .await
-    {
-        Ok(response) => {
-            let ip_address = req.peer_addr().map(|addr| addr.ip().to_string());
-            let _ = AuditLogService::log_upload_resource(
-                &state.pool,
-                user.id,
-                response.id,
-                &response.title,
-                &response.resource_type,
-                ip_address.as_deref(),
-            )
-            .await;
-            created(response)
-        }
-        Err(e) => match e {
-            ResourceError::ValidationError(msg) => bad_request(&msg),
-            ResourceError::Unauthorized(msg) => forbidden(&msg),
-            _ => {
-                log::error!(
-                    "[OSS] 资源回调处理失败 | user_id={}, key={}, error={}",
-                    user.id,
-                    payload.oss_key,
-                    e
-                );
-                internal_error("资源回调处理失败")
-            }
-        },
-    }
+    .await?;
+
+    let ip_address = req.peer_addr().map(|addr| addr.ip().to_string());
+    let _ = AuditLogService::log_upload_resource(
+        &state.pool,
+        user.id,
+        response.id,
+        &response.title,
+        &response.resource_type,
+        ip_address.as_deref(),
+    )
+    .await;
+    Ok(created(response))
 }
 
 #[post("/oss/callback/image")]
@@ -281,24 +265,24 @@ async fn image_upload_callback(
     state: web::Data<AppState>,
     user: web::ReqData<CurrentUser>,
     payload: web::Json<ImageUploadCallbackRequest>,
-) -> impl Responder {
+) -> Result<HttpResponse, ImageError> {
     if state.storage.backend_type() != StorageBackendType::Oss {
-        return internal_error("当前未启用OSS存储模式");
+        return Ok(internal_error("当前未启用OSS存储模式"));
     }
 
     if !key_in_scope(&payload.oss_key, "images") {
-        return forbidden("ossKey 不在允许路径范围（images）");
+        return Ok(forbidden("ossKey 不在允许路径范围（images）"));
     }
 
     let metadata: StorageFileMetadata =
         match head_file_with_retry(&state, &payload.oss_key, user.id, "图片").await {
             Ok(meta) => meta,
-            Err(msg) => return bad_request(&format!("上传图片不存在或不可访问: {}", msg)),
+            Err(msg) => return Ok(bad_request(&format!("上传图片不存在或不可访问: {}", msg))),
         };
 
     // 加载配置用于生成图片 URL
     let config = Config::from_env();
-    match ImageService::create_image_from_oss_callback(
+    let response = ImageService::create_image_from_oss_callback(
         &state.pool,
         &user,
         &state.storage,
@@ -307,23 +291,8 @@ async fn image_upload_callback(
         payload.original_name.as_deref(),
         metadata,
     )
-    .await
-    {
-        Ok(response) => created(response),
-        Err(e) => match e {
-            ImageError::ValidationError(msg) => bad_request(&msg),
-            ImageError::Unauthorized(msg) => forbidden(&msg),
-            _ => {
-                log::error!(
-                    "[OSS] 图片回调处理失败 | user_id={}, key={}, error={}",
-                    user.id,
-                    payload.oss_key,
-                    e
-                );
-                internal_error("图片回调处理失败")
-            }
-        },
-    }
+    .await?;
+    Ok(created(response))
 }
 
 fn key_in_scope(key: &str, scope: &str) -> bool {
@@ -339,11 +308,9 @@ fn key_in_scope(key: &str, scope: &str) -> bool {
     let path = std::path::Path::new(normalized);
 
     // 获取路径的第一个组件
-    if let Some(first_component) = path.components().next() {
-        if let std::path::Component::Normal(first) = first_component {
-            if let Some(first_str) = first.to_str() {
-                return first_str == scope;
-            }
+    if let Some(std::path::Component::Normal(first)) = path.components().next() {
+        if let Some(first_str) = first.to_str() {
+            return first_str == scope;
         }
     }
 

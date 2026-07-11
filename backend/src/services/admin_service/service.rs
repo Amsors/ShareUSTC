@@ -23,6 +23,9 @@ impl AdminService {
         let admin_set: std::collections::HashSet<&str> =
             admin_usernames.iter().map(|s| s.as_str()).collect();
 
+        // 角色同步是一个逻辑整体（赋予 + 取消），使用事务保证要么全部生效要么全部回滚
+        let mut tx = pool.begin().await.map_err(AdminError::Database)?;
+
         // 1. 将配置中的管理员用户设置为 admin
         let mut granted_count = 0usize;
         for username in admin_usernames {
@@ -33,9 +36,9 @@ impl AdminService {
                 "UPDATE users SET role = 'admin', updated_at = NOW() WHERE username = $1 AND role != 'admin'"
             )
             .bind(username)
-            .execute(pool)
+            .execute(&mut *tx)
             .await
-            .map_err(|e| AdminError::DatabaseError(format!("更新管理员权限失败: {}", e)))?;
+            .map_err(AdminError::Database)?;
 
             if result.rows_affected() > 0 {
                 log::info!("已为用户 '{}' 赋予管理员权限", username);
@@ -46,9 +49,9 @@ impl AdminService {
         // 2. 获取所有当前是 admin 的用户
         let current_admins: Vec<(String,)> =
             sqlx::query_as("SELECT username FROM users WHERE role = 'admin'")
-                .fetch_all(pool)
+                .fetch_all(&mut *tx)
                 .await
-                .map_err(|e| AdminError::DatabaseError(format!("查询当前管理员失败: {}", e)))?;
+                .map_err(AdminError::Database)?;
 
         // 3. 取消不在配置中的管理员权限
         let mut revoked_count = 0usize;
@@ -58,9 +61,9 @@ impl AdminService {
                     "UPDATE users SET role = 'user', updated_at = NOW() WHERE username = $1",
                 )
                 .bind(&username)
-                .execute(pool)
+                .execute(&mut *tx)
                 .await
-                .map_err(|e| AdminError::DatabaseError(format!("取消管理员权限失败: {}", e)))?;
+                .map_err(AdminError::Database)?;
 
                 if result.rows_affected() > 0 {
                     log::info!("已取消用户 '{}' 的管理员权限", username);
@@ -68,6 +71,8 @@ impl AdminService {
                 }
             }
         }
+
+        tx.commit().await.map_err(AdminError::Database)?;
 
         log::info!(
             "管理员权限同步完成: 赋予 {} 个, 取消 {} 个",
@@ -85,49 +90,42 @@ impl AdminService {
         let total_users: i64 =
             sqlx::query_scalar("SELECT COUNT(*) FROM users WHERE is_active = true")
                 .fetch_one(pool)
-                .await
-                .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+                .await?;
 
         // 资源总数
         let total_resources: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM resources")
             .fetch_one(pool)
-            .await
-            .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+            .await?;
 
         // 总下载量
         let total_downloads: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM download_logs")
             .fetch_one(pool)
-            .await
-            .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+            .await?;
 
         // 待审核资源数
         let pending_resources: i64 =
             sqlx::query_scalar("SELECT COUNT(*) FROM resources WHERE audit_status = 'pending'")
                 .fetch_one(pool)
-                .await
-                .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+                .await?;
 
         // 待审核评论数
         let pending_comments: i64 =
             sqlx::query_scalar("SELECT COUNT(*) FROM comments WHERE audit_status = 'pending'")
                 .fetch_one(pool)
-                .await
-                .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+                .await?;
 
         // 今日新增用户
         let today_new_users: i64 =
             sqlx::query_scalar("SELECT COUNT(*) FROM users WHERE DATE(created_at) = CURRENT_DATE")
                 .fetch_one(pool)
-                .await
-                .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+                .await?;
 
         // 今日新增资源
         let today_new_resources: i64 = sqlx::query_scalar(
             "SELECT COUNT(*) FROM resources WHERE DATE(created_at) = CURRENT_DATE",
         )
         .fetch_one(pool)
-        .await
-        .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+        .await?;
 
         Ok(DashboardStats {
             total_users,
@@ -168,14 +166,12 @@ impl AdminService {
         .bind(per_page as i64)
         .bind(offset as i64)
         .fetch_all(pool)
-        .await
-        .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+        .await?;
 
         // 获取总数
         let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users")
             .fetch_one(pool)
-            .await
-            .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+            .await?;
 
         Ok(AdminUserListResponse {
             users,
@@ -196,8 +192,7 @@ impl AdminService {
                 .bind(is_active)
                 .bind(user_id)
                 .execute(pool)
-                .await
-                .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+                .await?;
 
         if result.rows_affected() == 0 {
             return Err(AdminError::NotFound("用户不存在".to_string()));
@@ -237,15 +232,13 @@ impl AdminService {
         .bind(per_page as i64)
         .bind(offset as i64)
         .fetch_all(pool)
-        .await
-        .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+        .await?;
 
         // 获取总数
         let total: i64 =
             sqlx::query_scalar("SELECT COUNT(*) FROM resources WHERE audit_status = 'pending'")
                 .fetch_one(pool)
-                .await
-                .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+                .await?;
 
         Ok(PendingResourceListResponse {
             resources,
@@ -282,8 +275,7 @@ impl AdminService {
         .bind(reason)
         .bind(resource_id)
         .execute(pool)
-        .await
-        .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+        .await?;
 
         if result.rows_affected() == 0 {
             return Err(AdminError::NotFound("资源不存在".to_string()));
@@ -337,15 +329,13 @@ impl AdminService {
                 .bind(offset as i64)
                 .bind(status)
                 .fetch_all(pool)
-                .await
-                .map_err(|e| AdminError::DatabaseError(e.to_string()))?
+                .await?
         } else {
             sqlx::query_as(&query)
                 .bind(per_page as i64)
                 .bind(offset as i64)
                 .fetch_all(pool)
-                .await
-                .map_err(|e| AdminError::DatabaseError(e.to_string()))?
+                .await?
         };
 
         // 获取总数
@@ -353,13 +343,9 @@ impl AdminService {
             sqlx::query_scalar(&count_query)
                 .bind(status)
                 .fetch_one(pool)
-                .await
-                .map_err(|e| AdminError::DatabaseError(e.to_string()))?
+                .await?
         } else {
-            sqlx::query_scalar(&count_query)
-                .fetch_one(pool)
-                .await
-                .map_err(|e| AdminError::DatabaseError(e.to_string()))?
+            sqlx::query_scalar(&count_query).fetch_one(pool).await?
         };
 
         Ok(AdminCommentListResponse {
@@ -375,8 +361,7 @@ impl AdminService {
         let result = sqlx::query("DELETE FROM comments WHERE id = $1")
             .bind(comment_id)
             .execute(pool)
-            .await
-            .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+            .await?;
 
         if result.rows_affected() == 0 {
             return Err(AdminError::NotFound("评论不存在".to_string()));
@@ -402,8 +387,7 @@ impl AdminService {
             .bind(&status)
             .bind(comment_id)
             .execute(pool)
-            .await
-            .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+            .await?;
 
         if result.rows_affected() == 0 {
             return Err(AdminError::NotFound("评论不存在".to_string()));
@@ -445,8 +429,7 @@ impl AdminService {
                 .bind(&request.priority)
                 .bind(request.link_url)
                 .execute(pool)
-                .await
-                .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+                .await?;
             }
             NotificationTarget::Specific(user_id) => {
                 // 检查用户是否存在
@@ -454,8 +437,7 @@ impl AdminService {
                     sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)")
                         .bind(user_id)
                         .fetch_one(pool)
-                        .await
-                        .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+                        .await?;
 
                 if !user_exists {
                     return Err(AdminError::NotFound("指定用户不存在".to_string()));
@@ -477,8 +459,7 @@ impl AdminService {
                 .bind(&request.priority)
                 .bind(request.link_url)
                 .execute(pool)
-                .await
-                .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+                .await?;
             }
         }
 
@@ -496,52 +477,44 @@ impl AdminService {
         let total_users: i64 =
             sqlx::query_scalar("SELECT COUNT(*) FROM users WHERE is_active = true")
                 .fetch_one(pool)
-                .await
-                .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+                .await?;
 
         let new_users_today: i64 =
             sqlx::query_scalar("SELECT COUNT(*) FROM users WHERE DATE(created_at) = CURRENT_DATE")
                 .fetch_one(pool)
-                .await
-                .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+                .await?;
 
         let new_users_week: i64 = sqlx::query_scalar(
             "SELECT COUNT(*) FROM users WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'",
         )
         .fetch_one(pool)
-        .await
-        .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+        .await?;
 
         let new_users_month: i64 = sqlx::query_scalar(
             "SELECT COUNT(*) FROM users WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'",
         )
         .fetch_one(pool)
-        .await
-        .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+        .await?;
 
         // 资源统计
         let total_resources: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM resources")
             .fetch_one(pool)
-            .await
-            .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+            .await?;
 
         let pending_resources: i64 =
             sqlx::query_scalar("SELECT COUNT(*) FROM resources WHERE audit_status = 'pending'")
                 .fetch_one(pool)
-                .await
-                .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+                .await?;
 
         let approved_resources: i64 =
             sqlx::query_scalar("SELECT COUNT(*) FROM resources WHERE audit_status = 'approved'")
                 .fetch_one(pool)
-                .await
-                .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+                .await?;
 
         let rejected_resources: i64 =
             sqlx::query_scalar("SELECT COUNT(*) FROM resources WHERE audit_status = 'rejected'")
                 .fetch_one(pool)
-                .await
-                .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+                .await?;
 
         // 资源类型分布
         let resource_type_distribution: Vec<ResourceTypeStat> = sqlx::query_as(
@@ -553,28 +526,24 @@ impl AdminService {
             "#,
         )
         .fetch_all(pool)
-        .await
-        .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+        .await?;
 
         // 下载统计
         let total_downloads: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM download_logs")
             .fetch_one(pool)
-            .await
-            .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+            .await?;
 
         let downloads_today: i64 = sqlx::query_scalar(
             "SELECT COUNT(*) FROM download_logs WHERE DATE(downloaded_at) = CURRENT_DATE",
         )
         .fetch_one(pool)
-        .await
-        .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+        .await?;
 
         let downloads_week: i64 = sqlx::query_scalar(
             "SELECT COUNT(*) FROM download_logs WHERE downloaded_at >= CURRENT_DATE - INTERVAL '7 days'"
         )
         .fetch_one(pool)
-        .await
-        .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+        .await?;
 
         // 热门资源排行（前10）
         let top_resources: Vec<TopResource> = sqlx::query_as(
@@ -591,24 +560,20 @@ impl AdminService {
             "#,
         )
         .fetch_all(pool)
-        .await
-        .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+        .await?;
 
         // 互动统计
         let total_comments: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM comments")
             .fetch_one(pool)
-            .await
-            .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+            .await?;
 
         let total_ratings: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM ratings")
             .fetch_one(pool)
-            .await
-            .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+            .await?;
 
         let total_likes: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM likes")
             .fetch_one(pool)
-            .await
-            .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+            .await?;
 
         // 评分分布 - 使用5个维度的平均值
         let rating_distribution: Vec<RatingDistribution> = sqlx::query_as(
@@ -628,8 +593,7 @@ impl AdminService {
             "#
         )
         .fetch_all(pool)
-        .await
-        .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+        .await?;
 
         Ok(DetailedStats {
             user_stats: UserStats {
@@ -834,7 +798,7 @@ impl AdminService {
                 .fetch_one(pool)
                 .await
         }
-        .map_err(|e| AdminError::DatabaseError(format!("查询总数失败: {}", e)))?;
+        .map_err(AdminError::Database)?;
 
         // 获取日志列表（使用参数化查询）
         let logs: Vec<AuditLogItem> = if let Some(ref action) = query.action {
@@ -1188,7 +1152,7 @@ impl AdminService {
             .fetch_all(pool)
             .await
         }
-        .map_err(|e| AdminError::DatabaseError(format!("查询日志列表失败: {}", e)))?;
+        .map_err(AdminError::Database)?;
 
         // 转换为响应格式（处理日期序列化）
         let logs: Vec<AuditLogItemResponse> =
@@ -1241,8 +1205,7 @@ impl AdminService {
                 let total: i64 = sqlx::query_scalar(&count_query)
                     .bind(&search_pattern)
                     .fetch_one(pool)
-                    .await
-                    .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+                    .await?;
 
                 // 获取资源列表
                 let resources: Vec<AdminResourceListItem> = sqlx::query_as(&format!(
@@ -1253,8 +1216,7 @@ impl AdminService {
                 .bind(offset as i64)
                 .bind(search_pattern)
                 .fetch_all(pool)
-                .await
-                .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+                .await?;
 
                 return Ok(AdminResourceListResponse {
                     resources,
@@ -1266,10 +1228,7 @@ impl AdminService {
         }
 
         // 获取总数（不带关键词）
-        let total: i64 = sqlx::query_scalar(&count_query)
-            .fetch_one(pool)
-            .await
-            .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+        let total: i64 = sqlx::query_scalar(&count_query).fetch_one(pool).await?;
 
         // 获取资源列表
         let resources: Vec<AdminResourceListItem> = sqlx::query_as(&format!(
@@ -1279,8 +1238,7 @@ impl AdminService {
         .bind(per_page as i64)
         .bind(offset as i64)
         .fetch_all(pool)
-        .await
-        .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+        .await?;
 
         Ok(AdminResourceListResponse {
             resources,
@@ -1304,8 +1262,9 @@ impl AdminService {
         let favorite_detail = FavoriteService::get_favorite_detail(pool, favorite_id, user.id)
             .await
             .map_err(|e| match e {
-                crate::services::ResourceError::NotFound(msg) => AdminError::NotFound(msg),
-                _ => AdminError::DatabaseError(e.to_string()),
+                crate::services::FavoriteError::NotFound(msg) => AdminError::NotFound(msg),
+                crate::services::FavoriteError::Database(db) => AdminError::Database(db),
+                other => AdminError::Internal(other.to_string()),
             })?;
 
         let resource_count = favorite_detail.resources.len() as i64;
@@ -1373,8 +1332,7 @@ impl AdminService {
             sqlx::query_as("SELECT * FROM resources WHERE id = $1")
                 .bind(resource_id)
                 .fetch_optional(pool)
-                .await
-                .map_err(|e| AdminError::DatabaseError(e.to_string()))?
+                .await?
                 .ok_or_else(|| AdminError::NotFound(format!("资源 {} 不存在", resource_id)))?;
 
         let old_hash = resource.file_hash.clone();
@@ -1401,20 +1359,18 @@ impl AdminService {
                     _ => return Err(AdminError::ValidationError("无法访问 OSS 存储".to_string())),
                 }
             }
+        } else if storage.backend_type() == StorageBackendType::Local {
+            storage.clone()
         } else {
-            if storage.backend_type() == StorageBackendType::Local {
-                storage.clone()
-            } else {
-                // 当前是 OSS 模式，但需要读取本地文件
-                let config = Config::from_env();
-                match crate::services::create_local_storage(&config) {
-                    Ok(local_storage) => local_storage,
-                    Err(e) => {
-                        return Err(AdminError::ValidationError(format!(
-                            "无法访问本地存储: {}",
-                            e
-                        )))
-                    }
+            // 当前是 OSS 模式，但需要读取本地文件
+            let config = Config::from_env();
+            match crate::services::create_local_storage(&config) {
+                Ok(local_storage) => local_storage,
+                Err(e) => {
+                    return Err(AdminError::ValidationError(format!(
+                        "无法访问本地存储: {}",
+                        e
+                    )))
                 }
             }
         };
@@ -1429,7 +1385,7 @@ impl AdminService {
                     file_path,
                     e
                 );
-                return Err(AdminError::DatabaseError(format!("读取文件失败: {}", e)));
+                return Err(AdminError::Internal(format!("读取文件失败: {}", e)));
             }
         };
 
@@ -1444,11 +1400,10 @@ impl AdminService {
                 .bind(new_size)
                 .bind(resource_id)
                 .execute(pool)
-                .await
-                .map_err(|e| AdminError::DatabaseError(e.to_string()))?;
+                .await?;
 
         if updated.rows_affected() == 0 {
-            return Err(AdminError::DatabaseError(
+            return Err(AdminError::NotFound(
                 "更新hash失败，资源可能已被删除".to_string(),
             ));
         }
@@ -1481,7 +1436,7 @@ impl AdminService {
                 .bind(user_id)
                 .fetch_optional(pool)
                 .await
-                .map_err(|e| AdminError::DatabaseError(format!("查询用户实名信息失败: {}", e)))?
+                .map_err(AdminError::Database)?
                 .ok_or_else(|| AdminError::NotFound("用户不存在".to_string()))?;
 
         let (username, is_verified, real_info_json) = row;
@@ -1538,7 +1493,7 @@ impl AdminService {
         .await
         .map_err(|e| {
             log::error!("[AdminService] 查询重复hash失败 | error={}", e);
-            AdminError::DatabaseError(e.to_string())
+            AdminError::Database(e)
         })?;
 
         let total_groups = records.len() as i64;
@@ -1578,7 +1533,7 @@ impl AdminService {
                     file_hash,
                     e
                 );
-                AdminError::DatabaseError(e.to_string())
+                AdminError::Database(e)
             })?;
 
             let total_file_size: i64 = resources.iter().map(|r| r.file_size.unwrap_or(0)).sum();

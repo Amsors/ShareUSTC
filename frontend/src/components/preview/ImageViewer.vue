@@ -17,20 +17,10 @@
         @click="toggleFullscreen"
       />
       <div class="image-overlay">
-        <el-button
-          circle
-          size="small"
-          @click.stop="zoomIn"
-          :disabled="scale >= 3"
-        >
+        <el-button circle size="small" :disabled="scale >= 3" @click.stop="zoomIn">
           <el-icon><ZoomIn /></el-icon>
         </el-button>
-        <el-button
-          circle
-          size="small"
-          @click.stop="zoomOut"
-          :disabled="scale <= 0.5"
-        >
+        <el-button circle size="small" :disabled="scale <= 0.5" @click.stop="zoomOut">
           <el-icon><ZoomOut /></el-icon>
         </el-button>
         <el-button circle size="small" @click.stop="toggleFullscreen">
@@ -55,8 +45,12 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { ZoomIn, ZoomOut, FullScreen } from '@element-plus/icons-vue';
-import { getResourcePreviewInfo, getResourcePreviewContent, type PreviewUrlResponse } from '../../api/resource';
-import logger from '../../utils/logger';
+import {
+  getResourcePreviewInfo,
+  getResourcePreviewContent,
+  type PreviewUrlResponse,
+} from '@/api/resource';
+import logger from '@/utils/logger';
 
 const props = defineProps<{
   resourceId: string;
@@ -79,14 +73,20 @@ const loadImage = async () => {
 
     // 获取预览信息
     const previewInfo: PreviewUrlResponse = await getResourcePreviewInfo(props.resourceId);
-    logger.debug('[ImageViewer]', `获取到预览信息 | storageType=${previewInfo.storageType}, directAccess=${previewInfo.directAccess}`);
+    logger.debug(
+      '[ImageViewer]',
+      `获取到预览信息 | storageType=${previewInfo.storageType}, directAccess=${previewInfo.directAccess}`
+    );
 
     // 获取内容（会自动使用缓存）
     const blob = await getResourcePreviewContent(props.resourceId, previewInfo, {
-      resourceDetail: props.resourceTitle && props.resourceType ? {
-        title: props.resourceTitle,
-        resourceType: props.resourceType
-      } : undefined
+      resourceDetail:
+        props.resourceTitle && props.resourceType
+          ? {
+              title: props.resourceTitle,
+              resourceType: props.resourceType,
+            }
+          : undefined,
     });
     logger.debug('[ImageViewer]', `获取到blob | type=${blob.type}, size=${blob.size}`);
 
@@ -109,7 +109,7 @@ const loadImage = async () => {
     // Blob URL 已创建，可以结束 loading 状态，让 <img> 标签渲染
     // <img> 标签的 @load 事件会再次确认加载完成
     loading.value = false;
-  } catch (err: any) {
+  } catch (err) {
     logger.error('[ImageViewer]', '加载图片失败', err);
     error.value = true;
     loading.value = false;
@@ -142,12 +142,16 @@ const toggleFullscreen = () => {
 };
 
 // 监听resourceId变化重新加载
-watch(() => props.resourceId, () => {
-  if (imageUrl.value) {
-    URL.revokeObjectURL(imageUrl.value);
-  }
-  loadImage();
-}, { immediate: true });
+watch(
+  () => props.resourceId,
+  () => {
+    if (imageUrl.value) {
+      URL.revokeObjectURL(imageUrl.value);
+    }
+    loadImage();
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>
@@ -163,7 +167,7 @@ watch(() => props.resourceId, () => {
 }
 
 .loading-text {
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 14px;
 }
 

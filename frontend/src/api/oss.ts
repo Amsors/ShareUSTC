@@ -1,6 +1,6 @@
-import request from './request';
-import type { UploadResourceRequest, UploadResourceResponse } from '../types/resource';
-import type { ImageUploadResponse } from '../types/image';
+import request from '@/api/request';
+import type { UploadResourceRequest, UploadResourceResponse } from '@/types/resource';
+import type { ImageUploadResponse } from '@/types/image';
 
 export interface OssStatusResponse {
   storageBackend: 'local' | 'oss';
@@ -52,7 +52,7 @@ export interface ImageUploadCallbackRequest {
 export const getOssStatus = async (): Promise<OssStatusResponse> => {
   return request({
     url: '/oss/status',
-    method: 'get'
+    method: 'get',
   }) as Promise<OssStatusResponse>;
 };
 
@@ -60,7 +60,7 @@ export const getStsToken = async (data: OssStsTokenRequest): Promise<OssStsToken
   return request({
     url: '/oss/sts-token',
     method: 'post',
-    data
+    data,
   }) as Promise<OssStsTokenResponse>;
 };
 
@@ -70,7 +70,7 @@ export const resourceUploadCallback = async (
   return request({
     url: '/oss/callback/resource',
     method: 'post',
-    data
+    data,
   }) as Promise<UploadResourceResponse>;
 };
 
@@ -80,6 +80,6 @@ export const imageUploadCallback = async (
   return request({
     url: '/oss/callback/image',
     method: 'post',
-    data
+    data,
   }) as Promise<ImageUploadResponse>;
 };

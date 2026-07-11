@@ -14,9 +14,7 @@
           <div class="setting-item">
             <div class="setting-info">
               <div class="setting-label">首页用户指南弹窗</div>
-              <div class="setting-desc">
-                进入首页时显示用户指南
-              </div>
+              <div class="setting-desc">进入首页时显示用户指南</div>
             </div>
             <div class="setting-control">
               <el-switch
@@ -31,9 +29,7 @@
           <div class="setting-item">
             <div class="setting-info">
               <div class="setting-label">资源页面指南弹窗</div>
-              <div class="setting-desc">
-                进入资源列表页面时显示使用指南
-              </div>
+              <div class="setting-desc">进入资源列表页面时显示使用指南</div>
             </div>
             <div class="setting-control">
               <el-switch
@@ -52,9 +48,7 @@
                 <template v-if="pdfPreviewVerified">
                   通过检测后，可自动加载 PDF 预览以提升体验
                 </template>
-                <template v-else>
-                  需要通过检测才能启用此功能
-                </template>
+                <template v-else> 需要通过检测才能启用此功能 </template>
               </div>
             </div>
             <div class="setting-control">
@@ -66,19 +60,18 @@
                 @change="handleAutoLoadPdfPreviewChange"
               />
               <div v-if="!pdfPreviewVerified" class="setting-hint">
-                <el-link type="primary" @click="goToPdfPreviewChallenge">
-                  前往检测
-                </el-link>
+                <el-link type="primary" @click="goToPdfPreviewChallenge"> 前往检测 </el-link>
               </div>
             </div>
           </div>
 
-          <div v-if="pdfPreviewVerified && autoLoadPdfPreview" class="setting-item threshold-setting">
+          <div
+            v-if="pdfPreviewVerified && autoLoadPdfPreview"
+            class="setting-item threshold-setting"
+          >
             <div class="setting-info">
               <div class="setting-label">自动加载大小阈值</div>
-              <div class="setting-desc">
-                超过此大小的 PDF 不会自动加载，需要手动点击加载
-              </div>
+              <div class="setting-desc">超过此大小的 PDF 不会自动加载，需要手动点击加载</div>
             </div>
             <div class="setting-control">
               <el-input-number
@@ -144,8 +137,8 @@
               <el-button
                 type="primary"
                 :disabled="cacheStats.totalEntries === 0"
-                @click="handleClearExpired"
                 :loading="clearingExpired"
+                @click="handleClearExpired"
               >
                 <el-icon><Timer /></el-icon>
                 清理过期缓存
@@ -155,14 +148,14 @@
                 type="danger"
                 plain
                 :disabled="cacheStats.totalEntries === 0"
-                @click="handleClearAll"
                 :loading="clearingAll"
+                @click="handleClearAll"
               >
                 <el-icon><Delete /></el-icon>
                 清空所有缓存
               </el-button>
 
-              <el-button @click="refreshStats" :loading="loading">
+              <el-button :loading="loading" @click="refreshStats">
                 <el-icon><Refresh /></el-icon>
                 刷新
               </el-button>
@@ -184,7 +177,6 @@
         </section>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -193,8 +185,9 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { Collection, Timer, Delete, Refresh, Setting } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { resourceCache, type CacheStats } from '../utils/resourceCache';
-import logger from '../utils/logger';
+import { resourceCache, type CacheStats } from '@/utils/resourceCache';
+import logger from '@/utils/logger';
+import { isHandledError } from '@/api/request';
 
 const router = useRouter();
 
@@ -250,7 +243,10 @@ const refreshStats = async () => {
   try {
     cacheStats.value = await resourceCache.getStats();
   } catch (error) {
-    ElMessage.error('获取缓存信息失败');
+    logger.error('[Settings]', '获取缓存信息失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error('获取缓存信息失败');
+    }
   } finally {
     loading.value = false;
   }
@@ -264,7 +260,10 @@ const handleClearExpired = async () => {
     ElMessage.success(`已清理 ${count} 个过期缓存`);
     await refreshStats();
   } catch (error) {
-    ElMessage.error('清理失败');
+    logger.error('[Settings]', '清理过期缓存失败', error);
+    if (!isHandledError(error)) {
+      ElMessage.error('清理失败');
+    }
   } finally {
     clearingExpired.value = false;
   }
@@ -287,9 +286,12 @@ const handleClearAll = async () => {
     await resourceCache.clearAll();
     ElMessage.success('已清空所有缓存');
     await refreshStats();
-  } catch (error: any) {
+  } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('清空失败');
+      logger.error('[Settings]', '清空缓存失败', error);
+      if (!isHandledError(error)) {
+        ElMessage.error('清空失败');
+      }
     }
   } finally {
     clearingAll.value = false;
@@ -359,16 +361,22 @@ const loadPdfPreviewSettings = () => {
 // 处理 PDF 预览自动加载设置变化
 const handleAutoLoadPdfPreviewChange = (value: boolean) => {
   try {
-    localStorage.setItem(PDF_PREVIEW_AUTO_LOAD_KEY, JSON.stringify({
-      enabled: value,
-      timestamp: Date.now()
-    }));
+    localStorage.setItem(
+      PDF_PREVIEW_AUTO_LOAD_KEY,
+      JSON.stringify({
+        enabled: value,
+        timestamp: Date.now(),
+      })
+    );
 
     // 同时更新用户启用状态
-    localStorage.setItem(PDF_PREVIEW_USER_ENABLED_KEY, JSON.stringify({
-      enabled: true,
-      timestamp: Date.now()
-    }));
+    localStorage.setItem(
+      PDF_PREVIEW_USER_ENABLED_KEY,
+      JSON.stringify({
+        enabled: true,
+        timestamp: Date.now(),
+      })
+    );
 
     if (value) {
       ElMessage.success('已开启自动加载 PDF 预览');
@@ -377,7 +385,9 @@ const handleAutoLoadPdfPreviewChange = (value: boolean) => {
     }
   } catch (e) {
     logger.error('[Settings]', 'Failed to save PDF preview setting:', e);
-    ElMessage.error('设置保存失败');
+    if (!isHandledError(e)) {
+      ElMessage.error('设置保存失败');
+    }
   }
 };
 
@@ -389,14 +399,19 @@ const goToPdfPreviewChallenge = () => {
 // 处理阈值变化
 const handleThresholdChange = (value: number) => {
   try {
-    localStorage.setItem('pdfPreviewSizeThreshold', JSON.stringify({
-      value: value,
-      timestamp: Date.now()
-    }));
+    localStorage.setItem(
+      'pdfPreviewSizeThreshold',
+      JSON.stringify({
+        value: value,
+        timestamp: Date.now(),
+      })
+    );
     ElMessage.success(`已设置自动加载阈值：${value}MB`);
   } catch (e) {
     logger.error('[Settings]', 'Failed to save threshold setting:', e);
-    ElMessage.error('设置保存失败');
+    if (!isHandledError(e)) {
+      ElMessage.error('设置保存失败');
+    }
   }
 };
 
@@ -445,15 +460,20 @@ const handleUserGuideChange = (value: boolean) => {
       ElMessage.success('已开启首页用户指南弹窗');
     } else {
       // 关闭显示：设置永久关闭
-      localStorage.setItem(GUIDE_MODAL_KEY, JSON.stringify({
-        permanent: true,
-        timestamp: Date.now()
-      }));
+      localStorage.setItem(
+        GUIDE_MODAL_KEY,
+        JSON.stringify({
+          permanent: true,
+          timestamp: Date.now(),
+        })
+      );
       ElMessage.success('已永久关闭首页用户指南弹窗');
     }
   } catch (e) {
     logger.error('[Settings]', 'Failed to save user guide modal setting:', e);
-    ElMessage.error('设置保存失败');
+    if (!isHandledError(e)) {
+      ElMessage.error('设置保存失败');
+    }
   }
 };
 
@@ -466,15 +486,20 @@ const handleResourceGuideChange = (value: boolean) => {
       ElMessage.success('已开启资源页面指南弹窗');
     } else {
       // 关闭显示：设置永久关闭
-      localStorage.setItem(RESOURCE_GUIDE_MODAL_KEY, JSON.stringify({
-        permanent: true,
-        timestamp: Date.now()
-      }));
+      localStorage.setItem(
+        RESOURCE_GUIDE_MODAL_KEY,
+        JSON.stringify({
+          permanent: true,
+          timestamp: Date.now(),
+        })
+      );
       ElMessage.success('已永久关闭资源页面指南弹窗');
     }
   } catch (e) {
     logger.error('[Settings]', 'Failed to save resource guide modal setting:', e);
-    ElMessage.error('设置保存失败');
+    if (!isHandledError(e)) {
+      ElMessage.error('设置保存失败');
+    }
   }
 };
 
@@ -499,10 +524,13 @@ const loadFilterEmptyResourcesSetting = () => {
 // 处理搜索页面过滤空资源设置变化
 const handleFilterEmptyResourcesChange = (value: boolean) => {
   try {
-    localStorage.setItem(FILTER_EMPTY_RESOURCES_KEY, JSON.stringify({
-      enabled: value,
-      timestamp: Date.now()
-    }));
+    localStorage.setItem(
+      FILTER_EMPTY_RESOURCES_KEY,
+      JSON.stringify({
+        enabled: value,
+        timestamp: Date.now(),
+      })
+    );
 
     if (value) {
       ElMessage.success('已开启搜索页面过滤，只显示有资源的课程/教师');
@@ -511,7 +539,9 @@ const handleFilterEmptyResourcesChange = (value: boolean) => {
     }
   } catch (e) {
     logger.error('[Settings]', 'Failed to save filter empty resources setting:', e);
-    ElMessage.error('设置保存失败');
+    if (!isHandledError(e)) {
+      ElMessage.error('设置保存失败');
+    }
   }
 };
 </script>
@@ -519,7 +549,7 @@ const handleFilterEmptyResourcesChange = (value: boolean) => {
 <style scoped>
 .settings-page {
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   padding: 40px 20px;
 }
 
@@ -531,7 +561,7 @@ const handleFilterEmptyResourcesChange = (value: boolean) => {
 .page-title {
   margin: 0 0 32px;
   font-size: 28px;
-  color: #303133;
+  color: var(--el-text-color-primary);
   font-weight: 600;
 }
 
@@ -551,16 +581,16 @@ const handleFilterEmptyResourcesChange = (value: boolean) => {
 .section-title {
   margin: 0 0 24px;
   font-size: 18px;
-  color: #303133;
+  color: var(--el-text-color-primary);
   display: flex;
   align-items: center;
   gap: 8px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #ebeef5;
+  border-bottom: 1px solid var(--el-border-color-lighter);
 }
 
 .section-title .el-icon {
-  color: #409eff;
+  color: var(--el-color-primary);
 }
 
 .section-title .el-tag {
@@ -574,7 +604,7 @@ const handleFilterEmptyResourcesChange = (value: boolean) => {
   justify-content: space-between;
   align-items: center;
   padding: 16px 0;
-  border-bottom: 1px solid #ebeef5;
+  border-bottom: 1px solid var(--el-border-color-lighter);
 }
 
 .setting-item:last-child {
@@ -589,13 +619,13 @@ const handleFilterEmptyResourcesChange = (value: boolean) => {
 .setting-label {
   font-size: 15px;
   font-weight: 500;
-  color: #303133;
+  color: var(--el-text-color-primary);
   margin-bottom: 6px;
 }
 
 .setting-desc {
   font-size: 13px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   line-height: 1.5;
 }
 
@@ -609,13 +639,13 @@ const handleFilterEmptyResourcesChange = (value: boolean) => {
 
 .setting-hint {
   font-size: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-top: 4px;
 }
 
 /* 阈值设置样式 */
 .threshold-setting {
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   border-radius: 8px;
   margin-top: 8px;
   padding: 16px 20px;
@@ -636,7 +666,7 @@ const handleFilterEmptyResourcesChange = (value: boolean) => {
   gap: 24px;
   margin-bottom: 24px;
   padding: 20px;
-  background-color: #f5f7fa;
+  background-color: var(--el-fill-color-light);
   border-radius: 8px;
 }
 
@@ -648,13 +678,13 @@ const handleFilterEmptyResourcesChange = (value: boolean) => {
 .stat-value {
   font-size: 28px;
   font-weight: 600;
-  color: #409eff;
+  color: var(--el-color-primary);
   margin-bottom: 4px;
 }
 
 .stat-label {
   font-size: 13px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 /* 操作按钮 */
@@ -678,7 +708,7 @@ const handleFilterEmptyResourcesChange = (value: boolean) => {
 .cache-info li {
   margin: 4px 0;
   line-height: 1.6;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 /* 响应式 */
