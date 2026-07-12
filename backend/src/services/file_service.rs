@@ -22,6 +22,9 @@ pub struct FileService;
 
 impl FileService {
     /// 最大文件大小 (100MB)
+    ///
+    /// 该上限为代码常量，不通过环境变量配置（旧的 MAX_FILE_SIZE 从未被 Config 解析，
+    /// 已从 .env.example 移除）。使用 nginx 反代时其 client_max_body_size 需与此保持一致。
     pub const MAX_FILE_SIZE: usize = 100 * 1024 * 1024;
 
     /// 计算文件 SHA-256 哈希

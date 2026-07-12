@@ -25,6 +25,20 @@ export default defineConfig({
       '@': resolve(__dirname, 'src'),
     },
   },
+  // 开发服务器代理：把 /api 与 /images 转发到本地后端，使开发与生产统一走同域相对路径，
+  // 本机开发不再依赖后端 CORS 放行 5173 端口。
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+      '/images': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+    },
+  },
   test: {
     environment: 'happy-dom',
     setupFiles: ['./src/test/setup.ts'],

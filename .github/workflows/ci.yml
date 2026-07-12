@@ -67,3 +67,13 @@ jobs:
         run: npm run typecheck
       - name: test
         run: npm run test
+
+  # Dockerfile 回归保护：构建两个镜像（不 push），确保容器化改造后 Dockerfile 持续可构建
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: build backend image
+        run: docker build -t shareustc-backend:ci ./backend
+      - name: build frontend image
+        run: docker build -t shareustc-frontend:ci ./frontend

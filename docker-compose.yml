@@ -1,0 +1,62 @@
+# ShareUSTC 三容器一键部署：postgres + backend + frontend(nginx)
+# 用法：cp deploy/.env.example deploy/.env 并填好密钥后，执行：
+#   docker compose up -d --build
+# 密钥仅存于宿主机 deploy/.env（已 gitignore），不写入本文件、不进镜像。
+# 详见 docs/deploy_guide.md「容器部署」章节。
+
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    # 从宿主机 deploy/.env 注入 POSTGRES_DB / POSTGRES_USER / POSTGRES_PASSWORD
+    env_file:
+      - deploy/.env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # 用容器内 env 展开用户名/库名（$$ 转义为容器内 $）
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    # 连接池 acquire timeout 仅 3s，必须等库就绪再启动
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # 密钥与站点配置由 deploy/.env 注入（DATABASE_URL / JWT_SECRET / IMAGE_BASE_URL /
+    # CORS_ALLOWED_ORIGINS / COOKIE_SECURE / ADMIN_USERNAMES / STORAGE_BACKEND / OSS_* 等）
+    env_file:
+      - deploy/.env
+    # 固定的非敏感运行参数（覆盖/补充 env_file）
+    environment:
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: '8080'
+      FILE_UPLOAD_PATH: /data/uploads
+    volumes:
+      - uploads:/data/uploads
+    healthcheck:
+      # readiness 探测数据库；curl 已装入运行镜像
+      test: ['CMD', 'curl', '-fsS', 'http://localhost:8080/api/health/ready']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    # 对外暴露 80；HTTPS 由宿主机层/外层网关终结（此时后端 COOKIE_SECURE=true）
+    ports:
+      - '80:80'
+
+volumes:
+  pgdata:
+  uploads:

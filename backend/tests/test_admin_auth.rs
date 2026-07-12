@@ -12,7 +12,7 @@ use backend::utils::generate_access_token;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use common::MemoryStorage;
+use common::{test_app_config, MemoryStorage};
 
 const JWT_SECRET: &str = "stage6-admin-boundary-secret";
 
@@ -28,6 +28,7 @@ async fn non_admin_access_to_admin_api_returns_403(pool: PgPool) {
     .expect("应生成测试 token");
     let state = web::Data::new(AppState::new(
         pool,
+        test_app_config(),
         JWT_SECRET.to_string(),
         false,
         MemoryStorage::shared(),

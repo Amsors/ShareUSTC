@@ -10,7 +10,7 @@ use backend::models::{LoginRequest, RegisterRequest};
 use backend::services::{AuthError, AuthService};
 use sqlx::PgPool;
 
-use common::{MemoryStorage, JWT_SECRET};
+use common::{test_app_config, MemoryStorage, JWT_SECRET};
 
 #[sqlx::test(migrations = "./migrations")]
 async fn auth_register_login_refresh_logout_and_failures(pool: PgPool) {
@@ -19,7 +19,7 @@ async fn auth_register_login_refresh_logout_and_failures(pool: PgPool) {
         password: "correct-password".to_string(),
         email: Some("auth@example.com".to_string()),
     };
-    let registered = AuthService::register(&pool, JWT_SECRET, register, true)
+    let registered = AuthService::register(&pool, JWT_SECRET, register, true, &[])
         .await
         .expect("注册应成功");
 
@@ -32,6 +32,7 @@ async fn auth_register_login_refresh_logout_and_failures(pool: PgPool) {
             email: Some("other@example.com".to_string()),
         },
         true,
+        &[],
     )
     .await;
     assert!(matches!(duplicate, Err(AuthError::UserExists(_))));
@@ -68,6 +69,7 @@ async fn auth_register_login_refresh_logout_and_failures(pool: PgPool) {
 
     let state = web::Data::new(AppState::new(
         pool,
+        test_app_config(),
         JWT_SECRET.to_string(),
         false,
         MemoryStorage::shared(),

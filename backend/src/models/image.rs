@@ -66,7 +66,8 @@ impl Image {
 }
 
 impl ImageInfoResponse {
-    /// 从 Image 创建响应，需要传入 base_url
+    /// 从 Image 创建响应，`base_url` 由调用方从 `Config::image_base_url` 传入。
+    /// 不提供 `From<Image>`（会诱导散点读取环境变量），统一走本方法显式传参。
     pub fn from_image_with_base_url(image: Image, base_url: &str) -> Self {
         ImageInfoResponse {
             id: image.id,
@@ -82,17 +83,5 @@ impl ImageInfoResponse {
                 .clone()
                 .unwrap_or_else(|| "local".to_string()),
         }
-    }
-}
-
-// 保留 From 实现，使用默认的 base_url（用于向后兼容）
-impl From<Image> for ImageInfoResponse {
-    fn from(image: Image) -> Self {
-        // 尝试从环境变量获取，否则使用默认值
-        // 注意：这个实现保留用于向后兼容，新代码应该使用 from_image_with_base_url
-        let base_url =
-            std::env::var("IMAGE_BASE_URL").unwrap_or_else(|_| "http://localhost:8080".to_string());
-
-        Self::from_image_with_base_url(image, &base_url)
     }
 }

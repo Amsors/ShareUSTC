@@ -2,8 +2,107 @@
 
 > 状态：生效
 > 创建日期：2026-02-06
-> 最后更新：2026-02-18
+> 最后更新：2026-07-11
 > 适用范围：部署与运维
+
+本项目支持两种部署方式：
+
+- **容器部署（推荐）**：`docker compose` 一键拉起 postgres + backend + frontend(nginx) 三容器。
+- **裸机部署（备选）**：手动安装 Node/Rust/PostgreSQL 并分别启动。
+
+---
+
+## 容器部署（推荐）
+
+三容器架构：浏览器经 `frontend` 容器（nginx）访问，nginx 托管前端 `dist` 并把 `/api`、`/images`
+反代到 `backend` 容器；`backend` 连接 `postgres` 容器，上传文件落在 named volume。前端走同域相对
+路径，无需构建时注入 API 地址，镜像可跨环境复用。
+
+### 前置
+
+宿主机安装 Docker 与 Docker Compose 插件（`docker compose version` 可用即可）。
+
+### 步骤
+
+```bash
+# 1. 准备部署密钥文件（已 gitignore，不入库）
+cp deploy/.env.example deploy/.env
+
+# 2. 生成并填写 JWT_SECRET（高强度随机）
+openssl rand -base64 48   # 将输出填入 deploy/.env 的 JWT_SECRET
+
+# 3. 编辑 deploy/.env，至少设置：
+#    - POSTGRES_PASSWORD，并让 DATABASE_URL 中的密码与之一致
+#    - IMAGE_BASE_URL / CORS_ALLOWED_ORIGINS 为站点公开地址
+#    - COOKIE_SECURE（经 HTTPS 对外时为 true）
+
+# 4. 一键构建并启动
+docker compose up -d --build
+
+# 5. 查看状态与日志
+docker compose ps
+docker compose logs -f backend
+```
+
+启动后浏览器访问宿主机 **80 端口**即可（注册/登录/上传/下载/图片外链全流程同域完成）。
+数据库建库由 `postgres` 镜像按 `POSTGRES_*` 自动完成，表结构迁移由后端启动时自动执行，无需手动建表。
+
+### 必填环境变量清单（deploy/.env）
+
+| 变量 | 说明 |
+|------|------|
+| `POSTGRES_DB` / `POSTGRES_USER` / `POSTGRES_PASSWORD` | postgres 容器初始化的库名/用户/密码 |
+| `DATABASE_URL` | 后端连接串，主机名为服务名 `postgres`；用户名/密码/库名须与上面一致 |
+| `JWT_SECRET` | 高强度随机串，长度 ≥16，拒绝空串与占位值（否则后端拒绝启动） |
+| `IMAGE_BASE_URL` | 图床外链前缀，同域部署即站点公开 origin（不含末尾 `/images`） |
+| `CORS_ALLOWED_ORIGINS` | 允许来源，配为站点 origin；**生产禁止 `*`** |
+| `COOKIE_SECURE` | 经 HTTPS 对外时必须 `true` |
+| `ADMIN_USERNAMES` | 管理员用户名列表（逗号分隔） |
+
+### HTTPS 与 COOKIE_SECURE
+
+`frontend` 容器对外暴露 80 端口的 HTTP。生产环境应在其外层再放一层网关（宿主机 nginx / Caddy /
+云负载均衡）终结 HTTPS 并转发到容器 80 端口。启用 HTTPS 后，`deploy/.env` 中 `COOKIE_SECURE=true`
+才能让认证 Cookie 正常下发（否则浏览器会因 Secure 标志在 HTTP 下丢弃 Cookie）。
+
+### 存储与单副本约束
+
+- 上传文件挂在 named volume `uploads`（容器内 `/data/uploads`，其下 `images/`、`resources/` 子目录由后端派生）。
+- **local 存储模式下后端仅支持单副本**，不支持多实例共享本地卷（NFS 共享卷方案明确不采用）。
+  需要多副本/弹性伸缩时先切换到对象存储（OSS），见 `docs/oss_setup.md` 与容器化改造记录中的「路线 B」。
+
+### 卷备份与恢复
+
+上传文件卷（`shareustc_uploads`，实际卷名以 `docker volume ls` 为准，通常为 `<项目名>_uploads`）：
+
+```bash
+# 备份
+docker run --rm -v shareustc_uploads:/data -v "$(pwd)":/backup alpine \
+  tar czf /backup/uploads_$(date +%F).tar.gz -C /data .
+# 恢复
+docker run --rm -v shareustc_uploads:/data -v "$(pwd)":/backup alpine \
+  sh -c "cd /data && tar xzf /backup/uploads_YYYY-MM-DD.tar.gz"
+```
+
+数据库卷（`shareustc_pgdata`）建议用 `pg_dump` 逻辑备份：
+
+```bash
+docker compose exec postgres pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" > backup_$(date +%F).sql
+# 恢复：docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" < backup_YYYY-MM-DD.sql
+```
+
+### 排障
+
+- 后端启动即退出并 crashloop：多为关键环境变量缺失/过弱（`DATABASE_URL` / `JWT_SECRET` /
+  `IMAGE_BASE_URL`）或数据库未就绪。入口 `docker compose logs backend`，错误日志会指明缺失项。
+- 健康检查：liveness `GET /api/health`（恒 200）；readiness `GET /api/health/ready`
+  （数据库不可达返回 503）。compose 已用 readiness 作为 backend 的 healthcheck。
+- 数据/文件是否持久：`docker compose down && docker compose up -d` 后上传文件与数据库数据应仍在
+  （分别存于 `uploads`、`pgdata` 卷）；仅 `docker compose down -v` 才会删卷。
+
+---
+
+## 裸机部署（备选）
 
 以 Ubuntu 为例。
 
@@ -113,7 +212,9 @@ cd backend
 cp .env.example .env
 ```
 
-按实际环境修改 `.env`（至少包括 `DATABASE_URL`、`JWT_SECRET`、`CORS_ALLOWED_ORIGINS`）。
+按实际环境修改 `.env`。其中 `DATABASE_URL`、`JWT_SECRET`、`IMAGE_BASE_URL` 为**必填项**
+（缺失或为占位值时后端拒绝启动）；`CORS_ALLOWED_ORIGINS` 有默认值，生产环境建议显式配为站点 origin。
+直接 `cp .env.example .env` 已预填可用的开发默认值。
 
 ### 5.2 前端
 
@@ -122,7 +223,9 @@ cd frontend
 cp .env.example .env
 ```
 
-按实际域名修改 `VITE_API_BASE_URL`。
+前端默认走同域相对路径 `/api`：开发模式由 `vite` 的 `server.proxy` 把 `/api`、`/images`
+代理到本地后端（`http://localhost:8080`），**无需设置 `VITE_API_BASE_URL`**。仅当前后端分域名
+部署时才设置该变量（值需含 `/api` 后缀）。
 
 ## 6. 启动服务（开发模式）
 

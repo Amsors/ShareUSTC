@@ -1,7 +1,6 @@
 use actix_web::{delete, get, post, put, web, HttpRequest, HttpResponse};
 use uuid::Uuid;
 
-use crate::config::Config;
 use crate::db::AppState;
 use crate::models::{
     AddToFavoriteRequest, CreateFavoriteRequest, CurrentUser, UpdateFavoriteRequest,
@@ -224,12 +223,11 @@ pub async fn download_favorite(
     let resource_count = favorite_detail.resource_count as usize;
 
     // 打包下载
-    // 加载配置用于创建存储后端（支持混合存储）
-    let config = Config::from_env();
+    // 使用注入的配置创建存储后端（支持混合存储，不再每请求解析环境变量）
     let (zip_data, filename) = FavoriteService::pack_favorite_resources(
         &state.pool,
         &state.storage,
-        &config,
+        &state.config,
         favorite_id,
         user.id,
         &favorite_name,

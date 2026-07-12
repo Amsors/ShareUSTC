@@ -271,6 +271,7 @@ impl ImageService {
         user_id: Uuid,
         page: i32,
         per_page: i32,
+        base_url: &str,
     ) -> Result<ImageListResponse, ImageError> {
         let offset = (page - 1) * per_page;
 
@@ -294,8 +295,10 @@ impl ImageService {
         .fetch_all(pool)
         .await?;
 
-        let image_responses: Vec<ImageInfoResponse> =
-            images.into_iter().map(ImageInfoResponse::from).collect();
+        let image_responses: Vec<ImageInfoResponse> = images
+            .into_iter()
+            .map(|image| ImageInfoResponse::from_image_with_base_url(image, base_url))
+            .collect();
 
         Ok(ImageListResponse {
             images: image_responses,
@@ -308,6 +311,7 @@ impl ImageService {
     pub async fn get_image_by_id(
         pool: &PgPool,
         image_id: Uuid,
+        base_url: &str,
     ) -> Result<ImageInfoResponse, ImageError> {
         let image: Image = sqlx::query_as::<_, Image>("SELECT * FROM images WHERE id = $1")
             .bind(image_id)
@@ -315,7 +319,7 @@ impl ImageService {
             .await?
             .ok_or_else(|| ImageError::NotFound(format!("图片 {} 不存在", image_id)))?;
 
-        Ok(ImageInfoResponse::from(image))
+        Ok(ImageInfoResponse::from_image_with_base_url(image, base_url))
     }
 
     pub async fn delete_image(

@@ -156,8 +156,13 @@ async fn admin_recalculate_resource_hash(
         resource_id
     );
 
-    let result =
-        AdminService::recalculate_resource_hash(&data.pool, &data.storage, resource_id).await?;
+    let result = AdminService::recalculate_resource_hash(
+        &data.pool,
+        &data.storage,
+        &data.config,
+        resource_id,
+    )
+    .await?;
     log::info!(
         "[Admin] 资源hash重新计算成功 | admin_id={}, resource_id={}, new_hash={}",
         user.id,

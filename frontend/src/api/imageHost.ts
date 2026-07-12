@@ -1,5 +1,6 @@
 import request from '@/api/request';
 import logger from '@/utils/logger';
+import { getServerOrigin } from '@/utils/apiUrl';
 import { getOssStatus, getStsToken, imageUploadCallback } from '@/api/oss';
 import { uploadToOssWithSts, uploadToSignedUrl } from '@/utils/oss-upload';
 import type { Image, ImageUploadResponse, ImageListResponse, ImageListQuery } from '@/types/image';
@@ -107,12 +108,15 @@ export const deleteImage = async (imageId: string): Promise<void> => {
 
 /**
  * 生成图片访问URL
+ *
+ * 后端图片路由为 `/images/{id}`（不含 `/api` 前缀），故复用 `getServerOrigin()` 拼接服务源，
+ * 而非直接使用 `VITE_API_BASE_URL`（其含 `/api`，会错拼成 `/api/images/{id}`）。
+ * 同域部署时 `getServerOrigin()` 返回空串，结果为相对路径 `/images/{id}`。
  * @param imageId 图片ID
- * @returns 完整URL
+ * @returns 图片访问 URL
  */
 export const getImageUrl = (imageId: string): string => {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-  return `${baseUrl}/images/${imageId}`;
+  return `${getServerOrigin()}/images/${imageId}`;
 };
 
 /**

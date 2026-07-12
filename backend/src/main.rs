@@ -6,7 +6,7 @@ use serde::Serialize;
 use uuid::Uuid;
 
 use backend::api;
-use backend::config::{self, Config};
+use backend::config::Config;
 use backend::db::{self, AppState};
 use backend::middleware::{JwtAuth, PublicPathRule};
 use backend::services::{self, StorageBackendType};
@@ -37,12 +37,33 @@ async fn hello(data: web::Data<AppState>) -> impl Responder {
     })
 }
 
+/// Liveness 探针：仅表示进程存活，不探测依赖。恒定返回 200。
 #[get("/api/health")]
 async fn health_check(config: web::Data<AppState>) -> impl Responder {
     HttpResponse::Ok().json(serde_json::json!({
         "status": "healthy",
         "service": config.brand.service_name
     }))
+}
+
+/// Readiness 探针：探测数据库可用性（`SELECT 1`）。
+/// 就绪返回 200，数据库不可达返回 503（错误体遵循 api_design.md 的 `{error, message}`）。
+/// compose / K8s 的 healthcheck 指向本端点。
+#[get("/api/health/ready")]
+async fn readiness_check(data: web::Data<AppState>) -> impl Responder {
+    match sqlx::query("SELECT 1").execute(&data.pool).await {
+        Ok(_) => HttpResponse::Ok().json(serde_json::json!({
+            "status": "ready",
+            "service": data.brand.service_name
+        })),
+        Err(e) => {
+            log::warn!("[Health] readiness 探测失败：数据库不可达 | error={}", e);
+            HttpResponse::ServiceUnavailable().json(serde_json::json!({
+                "error": "ServiceUnavailable",
+                "message": "数据库不可达"
+            }))
+        }
+    }
 }
 
 /// 获取图片文件（公开访问）
@@ -63,9 +84,8 @@ async fn serve_image(data: web::Data<AppState>, path: web::Path<Uuid>) -> impl R
                 if data.storage.backend_type() == StorageBackendType::Oss {
                     data.storage.read_file(&file_path).await
                 } else {
-                    // 当前是 local 模式，但需要读取 OSS 文件
-                    let config = config::Config::from_env();
-                    match services::create_storage_backend(&config) {
+                    // 当前是 local 模式，但需要读取 OSS 文件（使用注入的配置，不再每请求解析环境变量）
+                    match services::create_storage_backend(&data.config) {
                         Ok(oss_storage)
                             if oss_storage.backend_type() == StorageBackendType::Oss =>
                         {
@@ -85,9 +105,8 @@ async fn serve_image(data: web::Data<AppState>, path: web::Path<Uuid>) -> impl R
                 if data.storage.backend_type() == StorageBackendType::Local {
                     data.storage.read_file(&file_path).await
                 } else {
-                    // 当前是 OSS 模式，但需要读取本地文件
-                    let config = config::Config::from_env();
-                    match services::create_local_storage(&config) {
+                    // 当前是 OSS 模式，但需要读取本地文件（使用注入的配置）
+                    match services::create_local_storage(&data.config) {
                         Ok(local_storage) => local_storage.read_file(&file_path).await,
                         Err(e) => {
                             log::error!("[Image] 创建本地存储失败 | error={}", e);
@@ -136,21 +155,23 @@ async fn main() -> std::io::Result<()> {
     // 加载环境变量
     dotenvy::dotenv().ok();
 
-    // 加载配置
-    let config = Config::from_env();
-
-    // 初始化日志系统
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(&config.log_level))
+    // 先初始化日志系统，确保 Config::from_env() 的必填项校验失败信息可见。
+    // 未设置 RUST_LOG 时使用与开发环境一致的默认过滤器。
+    const DEFAULT_LOG_FILTER: &str = "backend=debug,actix_web=info,sqlx=warn";
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(DEFAULT_LOG_FILTER))
         .init();
+
+    // 加载配置（DATABASE_URL / JWT_SECRET / IMAGE_BASE_URL 等关键项缺失时会在此打印错误并退出）
+    let config = Config::from_env();
 
     // 构建服务器地址
     let server_addr = format!("{}:{}", config.server_host, config.server_port);
 
-    // 确保上传目录存在
-    std::fs::create_dir_all(&config.image_upload_path).unwrap_or_else(|e| {
+    // 确保上传目录存在（子目录由上传根路径派生）
+    std::fs::create_dir_all(config.image_upload_path()).unwrap_or_else(|e| {
         log::warn!("[System] 创建图片上传目录失败 | error={}", e);
     });
-    std::fs::create_dir_all(&config.resource_upload_path).unwrap_or_else(|e| {
+    std::fs::create_dir_all(config.resource_upload_path()).unwrap_or_else(|e| {
         log::warn!("[System] 创建资源上传目录失败 | error={}", e);
     });
 
@@ -158,11 +179,11 @@ async fn main() -> std::io::Result<()> {
     log::info!("[System] Server address: http://{}", server_addr);
     log::info!(
         "[System] Image upload directory: {}",
-        config.image_upload_path
+        config.image_upload_path()
     );
     log::info!(
         "[System] Resource upload directory: {}",
-        config.resource_upload_path
+        config.resource_upload_path()
     );
 
     // 创建数据库连接池
@@ -244,6 +265,7 @@ async fn main() -> std::io::Result<()> {
     // 创建应用状态
     let app_state = web::Data::new(AppState::new(
         pool.clone(),
+        config.clone(),
         config.jwt_secret.clone(),
         config.cookie_secure,
         storage.clone(),
@@ -255,11 +277,13 @@ async fn main() -> std::io::Result<()> {
         config.pdf_preview_challenge_code.clone(),
     ));
 
-    // 启动文件哈希计算后台任务
-    tasks::file_hash_task::start_file_hash_task(pool.clone(), storage.clone()).await;
+    // 启动文件哈希计算后台任务（注入配置，避免任务内重复解析环境变量）
+    tasks::file_hash_task::start_file_hash_task(pool.clone(), storage.clone(), config.clone())
+        .await;
 
-    // 启动孤立文件扫描后台任务
-    tasks::orphan_file_task::start_orphan_file_task(pool.clone(), storage.clone()).await;
+    // 启动孤立文件扫描后台任务（注入配置）
+    tasks::orphan_file_task::start_orphan_file_task(pool.clone(), storage.clone(), config.clone())
+        .await;
 
     log::info!("[System] Server starting at http://{}", server_addr);
     log::debug!("[System] Debug logging enabled");
@@ -381,9 +405,12 @@ async fn main() -> std::io::Result<()> {
             // 独立的公开服务（非 /api 前缀）
             .service(serve_image)
             .service(health_check)
+            .service(readiness_check)
             .service(hello)
     })
     .bind(&server_addr)?
+    // 显式优雅停机超时：docker stop（SIGTERM）后给在途请求（尤其大文件下载）最多 30s 完成
+    .shutdown_timeout(30)
     .run()
     .await
 }

@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 use tokio::time::{sleep, Duration};
 use uuid::Uuid;
 
-use crate::config::Config;
 use crate::db::AppState;
 use crate::models::{resource::ResourceType, resource::UploadResourceRequest, CurrentUser};
 use crate::services::{
@@ -280,13 +279,12 @@ async fn image_upload_callback(
             Err(msg) => return Ok(bad_request(&format!("上传图片不存在或不可访问: {}", msg))),
         };
 
-    // 加载配置用于生成图片 URL
-    let config = Config::from_env();
+    // 使用注入的配置生成图片 URL（不再每请求解析环境变量）
     let response = ImageService::create_image_from_oss_callback(
         &state.pool,
         &user,
         &state.storage,
-        &config,
+        &state.config,
         &payload.oss_key,
         payload.original_name.as_deref(),
         metadata,

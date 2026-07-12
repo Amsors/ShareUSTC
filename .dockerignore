@@ -1,0 +1,29 @@
+# 构建镜像时排除的文件，避免密钥/本机产物/无关目录进入镜像层
+# 说明见 dev_docs/records/containerization_remediation_guide.md 阶段 1.2
+
+# 环境变量文件（含真实密钥，绝不能进镜像）
+**/.env
+**/.env.*
+!**/.env.example
+
+# 后端构建产物与本机测试上传数据
+backend/target/
+backend/uploads/
+
+# 前端依赖与旧构建产物（强制镜像内重新构建）
+frontend/node_modules/
+frontend/dist/
+
+# 版本控制与文档
+.git/
+.gitignore
+dev_docs/
+docs/
+code_review/
+aliyun/
+
+# 编辑器 / 工具
+.idea/
+.vscode/
+.claude/
+*.log
