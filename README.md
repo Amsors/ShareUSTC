@@ -127,9 +127,18 @@ ShareUSTC/
 
 ## 快速开始
 
+### 容器部署（推荐）
+
+```bash
+cp deploy/.env.example deploy/.env   # 填好 JWT_SECRET / 数据库密码 / 站点地址等
+docker compose up -d --build         # 一键拉起 postgres + backend + frontend(nginx)
+```
+
+启动后访问宿主机 80 端口即可。必填环境变量、卷备份、HTTPS/排障详见部署指南。
+
 ### 部署指南
 
- 见[docs/deploy_guide.md](./docs/deploy_guide.md)
+见 [docs/deploy_guide.md](./docs/deploy_guide.md)（含容器部署与裸机部署两种方式）。
 
 
 
@@ -156,7 +165,8 @@ ShareUSTC/
 - [ ] 实名认证（接入学校API或邮箱验证）
 - [ ] 资源、评论的审核
 - [ ] Redis 缓存
-- [ ] CI/CD
+- [x] Docker 容器化部署（Docker + Docker Compose + Nginx）
+- [x] CI（lint/test/docker build 门禁，见 .github/workflows/ci.yml）；CD 待接入
 - [ ] 邮件通知功能
 
 ### TODO List

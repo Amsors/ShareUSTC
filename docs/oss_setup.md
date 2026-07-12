@@ -2,7 +2,7 @@
 
 > 状态：生效
 > 创建日期：2026-02-18
-> 最后更新：2026-02-18
+> 最后更新：2026-07-12
 > 适用范围：部署与运维
 
 本文档用于在 ShareUSTC 中启用阿里云 OSS 存储。OSS 是可选项，不配置时系统默认使用本地存储（`STORAGE_BACKEND=local`）。
@@ -98,11 +98,16 @@ OSS_SIGNED_URL_EXPIRY=600
 
 ## 6. 前端配置
 
-前端一般只需保证 `VITE_API_BASE_URL` 指向后端 API：
+存储后端切换是纯后端行为，前端无需为启用 OSS 做任何改动。
+
+前端默认走**同域相对路径 `/api`**（生产由前端容器 nginx 反代、开发由 vite proxy 代理到后端），**无需设置 `VITE_API_BASE_URL`**。仅「前后端分域名部署」时才设置该变量，且值需含 `/api` 后缀：
 
 ```env
+# 仅前后端分域名部署时需要
 VITE_API_BASE_URL=https://api.yourdomain.com/api
 ```
+
+详见 `frontend/.env.example` 与 `docs/deploy_guide.md`。
 
 ## 7. 启动与验证
 

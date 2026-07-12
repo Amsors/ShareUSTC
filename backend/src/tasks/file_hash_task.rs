@@ -29,7 +29,7 @@ const STREAM_BUFFER_SIZE: usize = 64 * 1024;
 /// 在服务启动时调用，会：
 /// 1. 立即执行一次全量扫描（分批处理直到全部完成）
 /// 2. 之后每24小时执行一次扫描
-pub async fn start_file_hash_task(pool: PgPool, storage: Arc<dyn StorageBackend>) {
+pub async fn start_file_hash_task(pool: PgPool, storage: Arc<dyn StorageBackend>, config: Config) {
     // 首次运行：启动时立即执行一次
     tokio::spawn(async move {
         log::info!("[FileHashTask] 启动文件哈希计算任务");
@@ -38,7 +38,7 @@ pub async fn start_file_hash_task(pool: PgPool, storage: Arc<dyn StorageBackend>
         tokio::time::sleep(Duration::from_secs(5)).await;
 
         // 执行首次全量扫描（分批处理直到全部完成）
-        process_all_missing_hashes(&pool, &storage).await;
+        process_all_missing_hashes(&pool, &storage, &config).await;
 
         // 设置定时器：每24小时执行一次
         let mut ticker = interval(Duration::from_secs(24 * 60 * 60));
@@ -47,20 +47,25 @@ pub async fn start_file_hash_task(pool: PgPool, storage: Arc<dyn StorageBackend>
         loop {
             ticker.tick().await;
             log::info!("[FileHashTask] 开始定期扫描缺失的哈希值");
-            process_all_missing_hashes(&pool, &storage).await;
+            process_all_missing_hashes(&pool, &storage, &config).await;
         }
     });
 }
 
 /// 处理所有缺失哈希的资源记录（分批处理直到全部完成）
-async fn process_all_missing_hashes(pool: &PgPool, storage: &Arc<dyn StorageBackend>) {
+async fn process_all_missing_hashes(
+    pool: &PgPool,
+    storage: &Arc<dyn StorageBackend>,
+    config: &Config,
+) {
     let mut total_success = 0;
     let mut total_fail = 0;
     let mut batch_count = 0;
 
     loop {
         batch_count += 1;
-        let (success, fail, processed) = process_hash_batch(pool, storage, BATCH_SIZE).await;
+        let (success, fail, processed) =
+            process_hash_batch(pool, storage, config, BATCH_SIZE).await;
 
         total_success += success;
         total_fail += fail;
@@ -92,6 +97,7 @@ async fn process_all_missing_hashes(pool: &PgPool, storage: &Arc<dyn StorageBack
 async fn process_hash_batch(
     pool: &PgPool,
     storage: &Arc<dyn StorageBackend>,
+    config: &Config,
     batch_size: i64,
 ) -> (i32, i32, i32) {
     // 查询待处理的资源数量（用于告警）
@@ -169,8 +175,14 @@ async fn process_hash_batch(
         }
 
         // 尝试计算哈希（带指数退避重试）
-        match calculate_hash_with_exponential_backoff(pool, storage, &file_path, file_size as usize)
-            .await
+        match calculate_hash_with_exponential_backoff(
+            pool,
+            storage,
+            config,
+            &file_path,
+            file_size as usize,
+        )
+        .await
         {
             Ok(hash) => {
                 // 更新数据库（使用乐观锁防止并发修改）
@@ -236,6 +248,7 @@ async fn process_hash_batch(
 async fn calculate_hash_with_exponential_backoff(
     pool: &PgPool,
     storage: &Arc<dyn StorageBackend>,
+    config: &Config,
     file_path: &str,
     file_size: usize,
 ) -> Result<String, String> {
@@ -262,7 +275,7 @@ async fn calculate_hash_with_exponential_backoff(
         }
 
         // 尝试计算hash
-        match try_calculate_hash(pool, storage, file_path, file_size).await {
+        match try_calculate_hash(pool, storage, config, file_path, file_size).await {
             Ok(hash) => return Ok(hash),
             Err(e) => {
                 log::warn!(
@@ -284,6 +297,7 @@ async fn calculate_hash_with_exponential_backoff(
 async fn try_calculate_hash(
     pool: &PgPool,
     storage: &Arc<dyn StorageBackend>,
+    config: &Config,
     file_path: &str,
     _file_size: usize,
 ) -> Result<String, String> {
@@ -316,9 +330,8 @@ async fn try_calculate_hash(
 
             if let Some(st) = storage_type {
                 if st == "oss" && storage.backend_type() != StorageBackendType::Oss {
-                    // 当前是 local 模式，但资源在 OSS
-                    let config = Config::from_env();
-                    match crate::services::create_storage_backend(&config) {
+                    // 当前是 local 模式，但资源在 OSS（使用注入的配置）
+                    match crate::services::create_storage_backend(config) {
                         Ok(oss_storage)
                             if oss_storage.backend_type() == StorageBackendType::Oss =>
                         {
@@ -335,9 +348,8 @@ async fn try_calculate_hash(
                         _ => {}
                     }
                 } else if st == "local" && storage.backend_type() != StorageBackendType::Local {
-                    // 当前是 OSS 模式，但资源在本地
-                    let config = Config::from_env();
-                    match crate::services::create_local_storage(&config) {
+                    // 当前是 OSS 模式，但资源在本地（使用注入的配置）
+                    match crate::services::create_local_storage(config) {
                         Ok(local_storage) => match local_storage.read_file(file_path).await {
                             Ok(data) => {
                                 let hash = FileService::calculate_hash(&data);

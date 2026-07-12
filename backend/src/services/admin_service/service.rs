@@ -1322,9 +1322,9 @@ impl AdminService {
     pub async fn recalculate_resource_hash(
         pool: &PgPool,
         storage: &Arc<dyn crate::services::StorageBackend>,
+        config: &crate::config::Config,
         resource_id: Uuid,
     ) -> Result<RecalculateHashResult, AdminError> {
-        use crate::config::Config;
         use crate::services::{FileService, StorageBackendType};
 
         // 获取资源信息
@@ -1350,9 +1350,8 @@ impl AdminService {
             if storage.backend_type() == StorageBackendType::Oss {
                 storage.clone()
             } else {
-                // 当前是 local 模式，但需要读取 OSS 文件
-                let config = Config::from_env();
-                match crate::services::create_storage_backend(&config) {
+                // 当前是 local 模式，但需要读取 OSS 文件（使用注入的配置）
+                match crate::services::create_storage_backend(config) {
                     Ok(oss_storage) if oss_storage.backend_type() == StorageBackendType::Oss => {
                         oss_storage
                     }
@@ -1362,9 +1361,8 @@ impl AdminService {
         } else if storage.backend_type() == StorageBackendType::Local {
             storage.clone()
         } else {
-            // 当前是 OSS 模式，但需要读取本地文件
-            let config = Config::from_env();
-            match crate::services::create_local_storage(&config) {
+            // 当前是 OSS 模式，但需要读取本地文件（使用注入的配置）
+            match crate::services::create_local_storage(config) {
                 Ok(local_storage) => local_storage,
                 Err(e) => {
                     return Err(AdminError::ValidationError(format!(

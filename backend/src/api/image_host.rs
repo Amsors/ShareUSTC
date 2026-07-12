@@ -3,7 +3,6 @@ use actix_web::{delete, get, post, web, HttpResponse};
 use futures_util::StreamExt;
 use uuid::Uuid;
 
-use crate::config::Config;
 use crate::db::AppState;
 use crate::models::CurrentUser;
 use crate::services::{ImageError, ImageService};
@@ -62,14 +61,12 @@ pub async fn upload_image(
         return Ok(bad_request("请选择要上传的图片"));
     };
 
-    // 加载配置用于生成图片 URL
-    let config = Config::from_env();
-    // 调用服务上传图片
+    // 调用服务上传图片（使用注入的配置生成图片 URL，不再每请求解析环境变量）
     let response = ImageService::upload_image(
         &state.pool,
         &user,
         &state.storage,
-        &config,
+        &state.config,
         &filename,
         data,
         mime_type.as_deref(),
@@ -88,7 +85,14 @@ pub async fn get_my_images(
     let page = query.page.unwrap_or(1);
     let per_page = query.per_page.unwrap_or(20).min(100);
 
-    let response = ImageService::get_user_images(&state.pool, user.id, page, per_page).await?;
+    let response = ImageService::get_user_images(
+        &state.pool,
+        user.id,
+        page,
+        per_page,
+        &state.config.image_base_url,
+    )
+    .await?;
     Ok(HttpResponse::Ok().json(response))
 }
 
@@ -100,7 +104,8 @@ pub async fn get_image_info(
 ) -> Result<HttpResponse, ImageError> {
     let image_id = path.into_inner();
 
-    let response = ImageService::get_image_by_id(&state.pool, image_id).await?;
+    let response =
+        ImageService::get_image_by_id(&state.pool, image_id, &state.config.image_base_url).await?;
     Ok(HttpResponse::Ok().json(response))
 }
 

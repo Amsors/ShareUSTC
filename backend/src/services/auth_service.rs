@@ -66,6 +66,7 @@ impl AuthService {
         jwt_secret: &str,
         req: RegisterRequest,
         require_email: bool,
+        admin_usernames: &[String],
     ) -> Result<AuthResponse, AuthError> {
         // 检查是否强制要求邮箱
         if require_email && req.email.is_none() {
@@ -93,14 +94,8 @@ impl AuthService {
 
         // 创建用户
         let user_id = Uuid::new_v4();
-        // 检查用户名是否在ADMIN_USERNAMES环境变量列表中，如果是则赋予admin角色
-        let admin_usernames = std::env::var("ADMIN_USERNAMES").unwrap_or_default();
-        let admin_list: Vec<String> = admin_usernames
-            .split(',')
-            .map(|s| s.trim().to_string())
-            .filter(|s| !s.is_empty())
-            .collect();
-        let role = if admin_list.contains(&req.username) {
+        // 检查用户名是否在管理员名单中（由调用方从 Config::admin_usernames 传入），如是则赋予 admin 角色
+        let role = if admin_usernames.iter().any(|name| name == &req.username) {
             "admin"
         } else {
             "user"

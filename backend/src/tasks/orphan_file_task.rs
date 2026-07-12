@@ -25,7 +25,11 @@ const SCAN_BATCH_SIZE: usize = 100;
 /// 在服务启动时调用，会：
 /// 1. 立即执行一次全量扫描
 /// 2. 之后每24小时执行一次扫描
-pub async fn start_orphan_file_task(pool: PgPool, storage: Arc<dyn StorageBackend>) {
+pub async fn start_orphan_file_task(
+    pool: PgPool,
+    storage: Arc<dyn StorageBackend>,
+    config: Config,
+) {
     tokio::spawn(async move {
         log::info!("[OrphanFileTask] 启动孤立文件扫描任务");
 
@@ -33,7 +37,7 @@ pub async fn start_orphan_file_task(pool: PgPool, storage: Arc<dyn StorageBacken
         tokio::time::sleep(Duration::from_secs(10)).await;
 
         // 执行首次扫描
-        scan_orphan_files(&pool, &storage).await;
+        scan_orphan_files(&pool, &storage, &config).await;
 
         // 设置定时器：每24小时执行一次
         let mut ticker = interval(Duration::from_secs(24 * 60 * 60));
@@ -42,13 +46,13 @@ pub async fn start_orphan_file_task(pool: PgPool, storage: Arc<dyn StorageBacken
         loop {
             ticker.tick().await;
             log::info!("[OrphanFileTask] 开始定期扫描孤立文件");
-            scan_orphan_files(&pool, &storage).await;
+            scan_orphan_files(&pool, &storage, &config).await;
         }
     });
 }
 
 /// 扫描孤立文件
-async fn scan_orphan_files(pool: &PgPool, storage: &Arc<dyn StorageBackend>) {
+async fn scan_orphan_files(pool: &PgPool, storage: &Arc<dyn StorageBackend>, config: &Config) {
     log::info!("[OrphanFileTask] 开始扫描孤立文件...");
 
     // 获取所有数据库中的文件路径（包含存储类型信息）
@@ -88,22 +92,18 @@ async fn scan_orphan_files(pool: &PgPool, storage: &Arc<dyn StorageBackend>) {
         db_oss_files.len()
     );
 
-    let config = Config::from_env();
-
     // 总是扫描本地目录（即使当前使用 OSS，也可能有历史遗留的本地文件）
+    // 上传子目录由根路径派生（config.*_upload_path() 方法）
+    let resource_dir = config.resource_upload_path();
+    let image_dir = config.image_upload_path();
     log::info!("[OrphanFileTask] 开始扫描本地目录...");
-    scan_local_directory(&config.resource_upload_path, "resources", &db_local_files).await;
-    scan_local_directory(&config.image_upload_path, "images", &db_local_files).await;
+    scan_local_directory(&resource_dir, "resources", &db_local_files).await;
+    scan_local_directory(&image_dir, "images", &db_local_files).await;
 
     // 如果当前是 OSS 模式，检查数据库中标记为 OSS 的文件是否需要从本地清理
     if storage.backend_type() == StorageBackendType::Oss {
         log::info!("[OrphanFileTask] 当前使用 OSS 存储，检查本地是否存在已迁移到 OSS 的文件...");
-        check_local_files_migrated_to_oss(
-            &config.resource_upload_path,
-            &config.image_upload_path,
-            &db_oss_files,
-        )
-        .await;
+        check_local_files_migrated_to_oss(&resource_dir, &image_dir, &db_oss_files).await;
     }
 
     log::info!("[OrphanFileTask] 孤立文件扫描完成");

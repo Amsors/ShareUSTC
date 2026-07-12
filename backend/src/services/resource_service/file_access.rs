@@ -1,5 +1,6 @@
 //! 资源文件访问相关功能
 
+use crate::config::Config;
 use crate::models::{resource::Resource, CurrentUser};
 use crate::services::{storage_service::StorageBackend, ResourceError};
 use sqlx::PgPool;
@@ -144,6 +145,7 @@ pub async fn record_download_event(
 pub async fn get_resource_content_raw(
     pool: &PgPool,
     storage: &Arc<dyn StorageBackend>,
+    config: &Config,
     user: &CurrentUser,
     resource_id: Uuid,
 ) -> Result<String, ResourceError> {
@@ -168,9 +170,8 @@ pub async fn get_resource_content_raw(
         if storage.backend_type() == crate::services::StorageBackendType::Oss {
             storage.read_file(&resource.file_path).await?
         } else {
-            // 当前是 local 模式，但需要读取 OSS 文件
-            let config = crate::config::Config::from_env();
-            match crate::services::create_storage_backend(&config) {
+            // 当前是 local 模式，但需要读取 OSS 文件（使用注入的配置）
+            match crate::services::create_storage_backend(config) {
                 Ok(oss_storage)
                     if oss_storage.backend_type() == crate::services::StorageBackendType::Oss =>
                 {
@@ -184,9 +185,8 @@ pub async fn get_resource_content_raw(
         if storage.backend_type() == crate::services::StorageBackendType::Local {
             storage.read_file(&resource.file_path).await?
         } else {
-            // 当前是 OSS 模式，但需要读取本地文件
-            let config = crate::config::Config::from_env();
-            match crate::services::create_local_storage(&config) {
+            // 当前是 OSS 模式，但需要读取本地文件（使用注入的配置）
+            match crate::services::create_local_storage(config) {
                 Ok(local_storage) => local_storage.read_file(&resource.file_path).await?,
                 Err(e) => return Err(ResourceError::FileError(format!("无法访问本地存储: {}", e))),
             }

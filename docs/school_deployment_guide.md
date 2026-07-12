@@ -2,7 +2,7 @@
 
 > 状态：生效
 > 创建日期：2026-03-14
-> 最后更新：2026-03-14
+> 最后更新：2026-07-12
 > 适用范围：部署与运维
 
 本文档说明如何将本项目迁移到其他学校部署。
@@ -10,6 +10,13 @@
 ## 概述
 
 项目已经将学校相关的配置提取到配置文件中，迁移时只需要修改配置文件中的内容，然后重新构建前端和后端即可。
+
+> **两种部署方式下"重新构建"的做法不同**（部署方式本身见 [deploy_guide.md](./deploy_guide.md)）：
+>
+> - **容器部署（推荐）**：改完配置后在**仓库根**执行 `docker compose up -d --build`，构建在镜像内完成，本机无需安装 Node/Rust。只改了前端品牌配置时可只重建前端：`docker compose build frontend && docker compose up -d frontend`。
+> - **裸机部署（备选）**：按下文分别执行 `npm run build` / `cargo build --release`。
+>
+> 本文下述"构建步骤"以裸机命令示例；**需要修改的配置文件位置在两种方式下完全相同**，容器部署时把对应构建命令替换为上面的 `docker compose ... --build` 即可。后端服务名在容器部署下写入 `deploy/.env`（而非 `backend/.env`），见下文「后端配置」。
 
 ## 前端配置
 
@@ -135,9 +142,13 @@ export const cacheConfig = {
 修改配置后，重新构建前端：
 
 ```bash
+# 裸机部署
 cd frontend
 npm install
 npm run build
+
+# 容器部署（仓库根执行）：重建前端镜像并重启，nginx 会托管新的 dist
+docker compose build frontend && docker compose up -d frontend
 ```
 
 ### 3. 图标替换
@@ -148,9 +159,9 @@ npm run build
 
 ### 1. 服务名称配置
 
-后端的服务名称通过 `.env` 文件配置：
+后端的服务名称通过环境变量配置：
 
-**配置文件：** `backend/.env`
+**配置文件：** 裸机部署写入 `backend/.env`；**容器部署写入 `deploy/.env`**（compose 通过 `env_file` 注入 backend 容器）。
 
 **配置项：**
 ```bash
@@ -173,8 +184,12 @@ SERVICE_NAME="ShareXYZ Backend"
 ### 2. 构建步骤
 
 ```bash
+# 裸机部署
 cd backend
 cargo build --release
+
+# 容器部署（仓库根执行）：重建后端镜像并重启
+docker compose build backend && docker compose up -d backend
 ```
 
 ## 迁移清单
@@ -214,8 +229,8 @@ cargo build --release
 
 ### 数据库
 
-- [ ] 创建新的数据库（如果需要）
-- [ ] 运行数据库迁移脚本
+- [ ] 创建新的数据库（如果需要）——容器部署由 postgres 镜像按 `deploy/.env` 的 `POSTGRES_*` 自动建库
+- [ ] 表结构迁移：后端启动时自动执行（`backend/migrations/`），一般无需手动运行迁移脚本；裸机建库脚本见 [deploy_guide.md](./deploy_guide.md)
 
 ## 注意事项
 
@@ -262,19 +277,27 @@ export const platformConfig = {
 
 ### 后端配置修改
 
-设置环境变量：
+裸机部署：写入 `backend/.env`（或临时 `export`）：
 ```bash
-export SERVICE_NAME="ShareXYZ Backend"
+SERVICE_NAME="ShareXYZ Backend"
+```
+
+容器部署：写入 `deploy/.env`：
+```bash
+SERVICE_NAME=ShareXYZ Backend
 ```
 
 ### 构建和部署
 
 ```bash
+# —— 容器部署（推荐）：改完配置后在仓库根一键重建三容器 ——
+docker compose up -d --build
+
+# —— 裸机部署（备选）——
 # 前端
 cd frontend
 npm install
 npm run build
-
 # 后端
 cd ../backend
 cargo build --release

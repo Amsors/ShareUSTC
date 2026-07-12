@@ -6,6 +6,9 @@ ShareUSTC 数据库初始化脚本
 
 表结构已统一由 sqlx 迁移管理（backend/migrations/），本脚本的建表步骤
 调用 `sqlx migrate run`，不再内嵌建表 SQL。后端进程启动时也会自动执行迁移。
+
+适用范围：仅裸机部署。容器部署时建库由 postgres 镜像的 POSTGRES_* 环境变量自动完成、
+迁移由后端启动时自动执行，无需运行本脚本（见 docs/deploy_guide.md「容器部署」）。
 """
 
 import subprocess

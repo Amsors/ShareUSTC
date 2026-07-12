@@ -1,0 +1,14 @@
+# 后端镜像构建上下文（context = ./backend）排除项
+# 注意：不要排除 .sqlx —— 离线编译（SQLX_OFFLINE=true）依赖它
+
+# 密钥（含真实 OSS AccessKey，绝不能进镜像）
+.env
+.env.*
+!.env.example
+
+# 构建产物与本机测试上传数据
+target/
+uploads/
+
+# 其他
+*.log

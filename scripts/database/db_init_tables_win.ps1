@@ -6,6 +6,9 @@
 # 前置：数据库与用户已创建（见 db_create_system_win.ps1 或 docs/deploy_guide.md）。
 #
 # 说明：后端进程启动时也会自动执行迁移（见 backend/src/main.rs）。
+#
+# 适用范围：仅裸机部署。容器部署时迁移由后端启动自动执行，无需运行本脚本
+# （见 docs/deploy_guide.md「容器部署」）。
 # ============================================
 
 # 配置变量（应与 db_create_system_win.ps1 保持一致）

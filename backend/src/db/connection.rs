@@ -2,7 +2,7 @@ use sqlx::postgres::{PgPool, PgPoolOptions};
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::config::BrandConfig;
+use crate::config::{BrandConfig, Config};
 use crate::services::StorageBackend;
 
 /// 创建数据库连接池
@@ -34,6 +34,10 @@ pub async fn create_pool(database_url: &str) -> Result<PgPool, sqlx::Error> {
 #[derive(Clone)]
 pub struct AppState {
     pub pool: PgPool,
+    /// 完整解析后的配置。供需要访问存储/OSS 等细节的处理器使用
+    /// （如 `serve_image` 的跨后端读取、`register` 的管理员名单）；
+    /// 其余高频字段仍单独展开，便于处理器快速访问。
+    pub config: Config,
     pub jwt_secret: String,
     pub cookie_secure: bool,
     pub storage: Arc<dyn StorageBackend>,
@@ -56,6 +60,7 @@ impl AppState {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         pool: PgPool,
+        config: Config,
         jwt_secret: String,
         cookie_secure: bool,
         storage: Arc<dyn StorageBackend>,
@@ -68,6 +73,7 @@ impl AppState {
     ) -> Self {
         Self {
             pool,
+            config,
             jwt_secret,
             cookie_secure,
             storage,
@@ -110,11 +116,12 @@ mod tests {
     /// 将 AppState::new 绑定为对应签名的函数指针，若签名变动则本测试编译失败。
     #[test]
     fn test_app_state_signature() {
-        use crate::config::BrandConfig;
+        use crate::config::{BrandConfig, Config};
 
         #[allow(clippy::type_complexity)]
         let _new: fn(
             PgPool,
+            Config,
             String,
             bool,
             Arc<dyn StorageBackend>,

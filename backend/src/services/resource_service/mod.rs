@@ -20,6 +20,7 @@ pub use error::ResourceError;
 
 // 为了保持向后兼容，保留 ResourceService 结构体
 // 所有方法都委托给具体的函数
+use crate::config::Config;
 use crate::models::{resource::*, CurrentUser, UpdateResourceContentResponse};
 use crate::services::storage_service::{StorageBackend, StorageFileMetadata};
 use sqlx::PgPool;
@@ -153,20 +154,22 @@ impl ResourceService {
         pool: &PgPool,
         user: &CurrentUser,
         storage: &Arc<dyn StorageBackend>,
+        config: &Config,
         resource_id: Uuid,
         content: String,
     ) -> Result<UpdateResourceContentResponse, ResourceError> {
-        modify::update_resource_content(pool, user, storage, resource_id, content).await
+        modify::update_resource_content(pool, user, storage, config, resource_id, content).await
     }
 
     /// 获取资源原始内容
     pub async fn get_resource_content_raw(
         pool: &PgPool,
         storage: &Arc<dyn StorageBackend>,
+        config: &Config,
         user: &CurrentUser,
         resource_id: Uuid,
     ) -> Result<String, ResourceError> {
-        file_access::get_resource_content_raw(pool, storage, user, resource_id).await
+        file_access::get_resource_content_raw(pool, storage, config, user, resource_id).await
     }
 
     /// 获取热门资源列表

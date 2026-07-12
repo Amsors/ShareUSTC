@@ -59,9 +59,8 @@ pub async fn download_resource(
             }
         }
     } else {
-        // 本地存储：需要创建本地存储实例来读取文件
-        let config = crate::config::Config::from_env();
-        match crate::services::create_local_storage(&config) {
+        // 本地存储：使用注入的配置创建本地存储实例读取文件
+        match crate::services::create_local_storage(&state.config) {
             Ok(local_storage) => match local_storage.read_file(&file_path).await {
                 Ok(file_content) => {
                     record_download_events(&state, resource_id, user_id, &title, &req).await;
@@ -206,9 +205,8 @@ pub async fn get_resource_content(
             state.storage.read_file(&file_path).await
         } else {
             // 当前是 local 模式，但需要读取 OSS 文件
-            // 创建临时 OSS 存储实例
-            let config = crate::config::Config::from_env();
-            match crate::services::create_storage_backend(&config) {
+            // 使用注入的配置创建临时 OSS 存储实例
+            match crate::services::create_storage_backend(&state.config) {
                 Ok(oss_storage) if oss_storage.backend_type() == StorageBackendType::Oss => {
                     oss_storage.read_file(&file_path).await
                 }
@@ -226,9 +224,8 @@ pub async fn get_resource_content(
         if state.storage.backend_type() == StorageBackendType::Local {
             state.storage.read_file(&file_path).await
         } else {
-            // 当前是 OSS 模式，但需要读取本地文件
-            let config = crate::config::Config::from_env();
-            match crate::services::create_local_storage(&config) {
+            // 当前是 OSS 模式，但需要读取本地文件（使用注入的配置）
+            match crate::services::create_local_storage(&state.config) {
                 Ok(local_storage) => local_storage.read_file(&file_path).await,
                 Err(e) => {
                     log::error!("[Resource] 创建本地存储失败 | error={}", e);
@@ -288,9 +285,14 @@ pub async fn get_resource_raw_content(
 ) -> Result<HttpResponse, crate::services::ResourceError> {
     let resource_id = path.into_inner();
 
-    let content =
-        ResourceService::get_resource_content_raw(&state.pool, &state.storage, &user, resource_id)
-            .await?;
+    let content = ResourceService::get_resource_content_raw(
+        &state.pool,
+        &state.storage,
+        &state.config,
+        &user,
+        resource_id,
+    )
+    .await?;
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "content": content
     })))
@@ -322,6 +324,7 @@ pub async fn update_resource_content(
         &state.pool,
         &user,
         &state.storage,
+        &state.config,
         resource_id,
         request.content.clone(),
     )

@@ -21,6 +21,7 @@ pub async fn register(
         &state.jwt_secret,
         req.into_inner(),
         state.require_email_on_register,
+        &state.config.admin_usernames,
     )
     .await?;
 

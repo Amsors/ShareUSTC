@@ -32,9 +32,6 @@ pub struct Config {
     pub jwt_secret: String,
     pub server_host: String,
     pub server_port: u16,
-    pub log_level: String,
-    pub image_upload_path: String,
-    pub resource_upload_path: String,
     pub cors_allowed_origins: Vec<String>,
     pub admin_usernames: Vec<String>,
     pub cookie_secure: bool,
@@ -78,6 +75,19 @@ impl Config {
             })
         };
 
+        // 必填环境变量：缺失或为空时立即退出（容器里漏配应快速失败而非静默用错误默认值）。
+        // 注意：调用方需在此之前初始化日志系统，否则错误信息无法输出。
+        let required_env = |name: &str| -> String {
+            match env::var(name) {
+                Ok(value) if !value.trim().is_empty() => value.trim().to_string(),
+                _ => {
+                    log::error!("[Config] 缺少必填环境变量 {name}，无法启动");
+                    log::warn!("[Config] 请在 .env 或部署环境（compose secrets / deploy/.env）中设置 {name}");
+                    std::process::exit(1);
+                }
+            }
+        };
+
         // 解析 CORS 允许的域名列表
         let cors_origins = env::var("CORS_ALLOWED_ORIGINS")
             .unwrap_or_else(|_| "http://localhost:5173,http://127.0.0.1:5173".to_string())
@@ -103,36 +113,41 @@ impl Config {
             _ => "local".to_string(),
         };
 
+        // JWT_SECRET：必填且校验强度，拒绝空串、过短与已知占位值
+        let jwt_secret = required_env("JWT_SECRET");
+        const JWT_SECRET_PLACEHOLDERS: &[&str] = &[
+            "your-secret-key",
+            "change_me",
+            "changeme",
+            "secret",
+            "your-super-secret-jwt-key-change-this-in-production",
+        ];
+        if jwt_secret.len() < 16 || JWT_SECRET_PLACEHOLDERS.contains(&jwt_secret.as_str()) {
+            log::error!(
+                "[Config] JWT_SECRET 过弱或使用了占位值，请设置为长度不少于 16 的高强度随机字符串"
+            );
+            std::process::exit(1);
+        }
+
         Self {
-            database_url: env::var("DATABASE_URL")
-                .unwrap_or_else(|_| "postgres://postgres:postgres@localhost/shareustc".to_string()),
-            jwt_secret: env::var("JWT_SECRET").unwrap_or_else(|_| "your-secret-key".to_string()),
-            server_host: env::var("SERVER_HOST").unwrap_or_else(|_| "127.0.0.1".to_string()),
+            // DATABASE_URL：容器中主机名应为 compose 服务名（如 postgres），不能用 localhost
+            database_url: required_env("DATABASE_URL"),
+            jwt_secret,
+            // 默认 0.0.0.0：容器内通常不显式配置，loopback 会导致端口映射后不可访问；
+            // 本机开发在 .env 中显式写值不受影响
+            server_host: env::var("SERVER_HOST").unwrap_or_else(|_| "0.0.0.0".to_string()),
             server_port: env::var("SERVER_PORT")
                 .ok()
                 .and_then(|p| p.parse().ok())
                 .unwrap_or(8080),
-            log_level: env::var("RUST_LOG")
-                .unwrap_or_else(|_| "backend=debug,actix_web=info,sqlx=warn".to_string()),
-            image_upload_path: env::var("IMAGE_UPLOAD_PATH")
-                .unwrap_or_else(|_| "./uploads/images".to_string()),
-            resource_upload_path: env::var("RESOURCE_UPLOAD_PATH")
-                .unwrap_or_else(|_| "./uploads/resources".to_string()),
             cors_allowed_origins: cors_origins,
             admin_usernames,
             cookie_secure: env::var("COOKIE_SECURE")
                 .map(|v| v == "true" || v == "1")
                 .unwrap_or(false),
-            image_base_url: env::var("IMAGE_BASE_URL").unwrap_or_else(|_| {
-                format!(
-                    "http://{}:{}",
-                    env::var("SERVER_HOST").unwrap_or_else(|_| "127.0.0.1".to_string()),
-                    env::var("SERVER_PORT")
-                        .ok()
-                        .and_then(|p| p.parse().ok())
-                        .unwrap_or(8080)
-                )
-            }),
+            // IMAGE_BASE_URL：图床外链功能依赖，必填。生成的图片/Markdown 链接以此为前缀，
+            // 同域反代部署时应设为站点公开 origin（如 https://shareustc.example.com）
+            image_base_url: required_env("IMAGE_BASE_URL"),
             file_upload_path: env::var("FILE_UPLOAD_PATH")
                 .unwrap_or_else(|_| "./uploads".to_string()),
             storage_backend,
@@ -167,5 +182,26 @@ impl Config {
             pdf_preview_challenge_uuid: optional_env("PDF_PREVIEW_CHALLENGE_UUID"),
             pdf_preview_challenge_code: optional_env("PDF_PREVIEW_CHALLENGE_CODE"),
         }
+    }
+
+    /// 图片上传子目录（由上传根路径 `file_upload_path` 派生，不再单独配置环境变量）。
+    /// 与存储层 key 结构（`images/{uuid}`）一致，容器内单卷即可覆盖全部上传文件。
+    pub fn image_upload_path(&self) -> String {
+        derive_upload_subdir(&self.file_upload_path, "images")
+    }
+
+    /// 资源上传子目录（由上传根路径 `file_upload_path` 派生，不再单独配置环境变量）。
+    pub fn resource_upload_path(&self) -> String {
+        derive_upload_subdir(&self.file_upload_path, "resources")
+    }
+}
+
+/// 在上传根路径下派生子目录，统一去除根路径末尾多余的 `/`
+fn derive_upload_subdir(root: &str, sub: &str) -> String {
+    let trimmed = root.trim_end_matches('/');
+    if trimmed.is_empty() {
+        sub.to_string()
+    } else {
+        format!("{trimmed}/{sub}")
     }
 }

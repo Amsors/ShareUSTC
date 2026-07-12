@@ -3,6 +3,8 @@ use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use uuid::Uuid;
 
+// Token 有效期为代码常量，不通过环境变量配置（旧的 JWT_EXPIRATION / JWT_REFRESH_EXPIRATION
+// 从未被 Config 解析，已从 .env.example 移除以免误导运维）。如需调整周期在此修改。
 /// Access Token 有效期：60分钟（1小时）
 const ACCESS_TOKEN_EXPIRE_MINUTES: i64 = 60;
 /// Refresh Token 有效期：7天

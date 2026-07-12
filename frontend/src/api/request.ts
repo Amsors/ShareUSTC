@@ -21,7 +21,9 @@ interface ErrorResponseData {
 }
 
 // 创建 axios 实例
-const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+// 默认走同域相对路径 /api：生产由前端容器 nginx 反代到后端，开发由 vite server.proxy 代理。
+// 仅分域名部署时通过 VITE_API_BASE_URL 覆盖（形如 https://api.example.com/api）。
+const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
 logger.info('[API]', 'Base URL:', baseURL);
 
 const request: AxiosInstance = axios.create({

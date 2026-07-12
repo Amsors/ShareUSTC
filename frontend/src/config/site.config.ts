@@ -239,3 +239,10 @@ export const contactConfig = {
   // QQ 群号
   qqGroup: '1084014548',
 };
+
+// 开发版标识配置
+export const devConfig = {
+  // 是否在导航栏品牌名旁显示「开发版」徽标；正式部署应设为 false。
+  // 由原 VITE_DEV_MODE 环境变量迁入此处，改后需重新构建前端才能生效。
+  showDevBadge: false,
+};

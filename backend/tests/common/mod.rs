@@ -3,6 +3,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+use backend::config::{BrandConfig, Config};
 use backend::models::{
     CurrentUser, RegisterRequest, ResourceCategory, ResourceType, UploadResourceRequest, UserRole,
 };
@@ -14,6 +15,38 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 pub const JWT_SECRET: &str = "stage6-test-secret-with-sufficient-length";
+
+/// 构造测试用配置。集成测试不经过 `Config::from_env()`（其对缺失必填项会退出进程），
+/// 这里给出一份合法的本地/内存存储配置，供 `AppState::new` 使用。
+pub fn test_app_config() -> Config {
+    Config {
+        database_url: "postgres://test:test@localhost/shareustc_test".to_string(),
+        jwt_secret: JWT_SECRET.to_string(),
+        server_host: "127.0.0.1".to_string(),
+        server_port: 8080,
+        cors_allowed_origins: vec!["http://localhost:5173".to_string()],
+        admin_usernames: vec![],
+        cookie_secure: false,
+        image_base_url: "http://localhost:8080".to_string(),
+        file_upload_path: "./uploads".to_string(),
+        storage_backend: "local".to_string(),
+        oss_access_key_id: None,
+        oss_access_key_secret: None,
+        oss_endpoint: None,
+        oss_bucket: None,
+        oss_region: None,
+        oss_sts_role_arn: None,
+        oss_sts_session_duration: 900,
+        oss_key_prefix: String::new(),
+        oss_signed_url_expiry: 600,
+        require_email_on_register: false,
+        allow_username_change: true,
+        allow_email_change: true,
+        brand: BrandConfig::default(),
+        pdf_preview_challenge_uuid: None,
+        pdf_preview_challenge_code: None,
+    }
+}
 
 #[derive(Default)]
 pub struct MemoryStorage {
@@ -140,6 +173,7 @@ pub async fn create_user(pool: &PgPool, username: &str) -> CurrentUser {
             email: Some(format!("{username}@example.com")),
         },
         true,
+        &[],
     )
     .await
     .expect("测试用户应创建成功");
