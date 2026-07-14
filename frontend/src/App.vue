@@ -15,11 +15,11 @@ const route = useRoute();
 const authStore = useAuthStore();
 const priorityModalRef = ref<InstanceType<typeof PriorityModal> | null>(null);
 
-// 监听路由变化，在首页且已登录时检查高优先级通知
+// 监听路由变化，在首页（资源页）且已登录时检查高优先级通知
 watch(
   () => route.path,
   async (newPath) => {
-    if (newPath === '/' && authStore.isAuthenticated) {
+    if (newPath === '/resources' && authStore.isAuthenticated) {
       // 短暂延迟确保组件已挂载
       setTimeout(() => {
         priorityModalRef.value?.checkAndShowPriorityNotifications();

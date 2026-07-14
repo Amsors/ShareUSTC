@@ -7,7 +7,6 @@
       </h1>
     </div>
     <div class="nav-links">
-      <router-link to="/">首页</router-link>
       <router-link to="/resources">资源</router-link>
       <router-link to="/leaderboard">榜单</router-link>
       <router-link to="/about">关于</router-link>

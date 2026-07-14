@@ -1,31 +1,32 @@
 <template>
   <div class="resource-list-page">
-    <!-- 资源页面指南弹窗 -->
+    <!-- 引导弹窗：首访先弹「用户指南」，关闭后再弹「资源页面使用指南」 -->
+    <UserGuideModal ref="userGuideModalRef" @closed="handleUserGuideClosed" />
     <ResourceGuideModal ref="resourceGuideModalRef" />
-    <div class="page-header">
-      <h1>资源列表</h1>
-      <p class="subtitle">发现和下载优质学习资源</p>
-    </div>
+
+    <!-- 品牌介绍横幅：仅在未检索时显示，检索后以动画隐去 -->
+    <transition name="banner-collapse">
+      <div v-if="!hasSearched" class="banner-wrapper">
+        <ResourcePageBanner :total="totalResourceCount" />
+      </div>
+    </transition>
 
     <!-- 搜索和筛选 -->
-    <el-card class="filter-card" shadow="never">
+    <el-card class="filter-card" :class="{ 'filter-card--landing': !hasSearched }" shadow="never">
       <div class="search-bar">
         <el-input
           v-model="searchQuery"
           placeholder="搜索资源标题或课程名称"
           class="search-input"
+          size="large"
           clearable
           @keyup.enter="handleSearch"
+          @clear="handleClearSearch"
         >
           <template #append>
             <el-button :icon="Search" @click="handleSearch" />
           </template>
         </el-input>
-
-        <el-button type="primary" @click="goToUpload">
-          <el-icon><Upload /></el-icon>
-          上传资源
-        </el-button>
       </div>
 
       <div class="filter-row">
@@ -38,6 +39,7 @@
           collapse-tags
           collapse-tags-tooltip
           class="filter-item red-placeholder"
+          size="large"
           :disabled="loading || loadingCourses"
           :loading="loadingCourses"
         >
@@ -58,6 +60,7 @@
           collapse-tags
           collapse-tags-tooltip
           class="filter-item red-placeholder"
+          size="large"
           :disabled="loading || loadingTeachers"
           :loading="loadingTeachers"
         >
@@ -74,6 +77,7 @@
           placeholder="资源类型"
           clearable
           class="filter-item"
+          size="large"
           :disabled="loading"
         >
           <el-option
@@ -89,6 +93,7 @@
           placeholder="资源分类"
           clearable
           class="filter-item"
+          size="large"
           :disabled="loading"
         >
           <el-option
@@ -99,7 +104,13 @@
           />
         </el-select>
 
-        <el-select v-model="sortBy" placeholder="排序方式" class="filter-item" :disabled="loading">
+        <el-select
+          v-model="sortBy"
+          placeholder="排序方式"
+          class="filter-item"
+          size="large"
+          :disabled="loading"
+        >
           <el-option label="最新上传" value="created_at" />
           <el-option label="最多下载" value="downloads" />
           <el-option label="最多点赞" value="likes" />
@@ -108,8 +119,8 @@
         </el-select>
       </div>
 
-      <!-- 批量收藏控制区（仅登录用户显示） -->
-      <div v-if="authStore.isAuthenticated" class="quick-add-section">
+      <!-- 批量收藏控制区（仅登录用户、且已进入检索结果视图时显示） -->
+      <div v-if="authStore.isAuthenticated && hasSearched" class="quick-add-section">
         <div class="quick-add-row">
           <div class="switch-label" :class="{ active: !enableQuickAdd }">点击查看资源</div>
           <el-switch
@@ -177,112 +188,145 @@
       </div>
     </el-card>
 
-    <!-- 资源列表 -->
-    <!-- 加载中遮罩层 -->
-    <div v-if="loading" class="resource-loading-overlay">
-      <div class="loading-content">
-        <el-icon class="loading-spinner"><Loading /></el-icon>
-        <p class="loading-text">加载中...</p>
+    <!-- 着陆态快捷入口：仅在未检索时显示 -->
+    <transition name="fade">
+      <div v-if="!hasSearched" class="landing-actions">
+        <div class="action-card" @click="goToUpload">
+          <div class="action-icon">
+            <el-icon><Upload /></el-icon>
+          </div>
+          <div class="action-text">
+            <h3>上传资源</h3>
+            <p>分享你的课程笔记、往年试卷、复习资料，帮助更多同学</p>
+          </div>
+          <el-icon class="action-arrow"><ArrowRight /></el-icon>
+        </div>
+
+        <div class="action-card" @click="goToAccount">
+          <div class="action-icon">
+            <el-icon><User /></el-icon>
+          </div>
+          <div class="action-text">
+            <h3>{{ authStore.isAuthenticated ? '个人中心' : '注册 / 登录' }}</h3>
+            <p>
+              {{
+                authStore.isAuthenticated
+                  ? '查看个人资料、我的资源与账号信息'
+                  : '登录后可收藏、上传与管理学习资源'
+              }}
+            </p>
+          </div>
+          <el-icon class="action-arrow"><ArrowRight /></el-icon>
+        </div>
       </div>
-    </div>
+    </transition>
 
-    <div v-else-if="resources.length === 0" class="resource-empty">
-      <el-empty description="暂无资源">
-        <el-button type="primary" @click="goToUpload">上传第一个资源</el-button>
-      </el-empty>
-    </div>
+    <!-- 资源列表：仅在用户发起检索后显示 -->
+    <template v-if="hasSearched">
+      <!-- 加载中遮罩层 -->
+      <div v-if="loading" class="resource-loading-overlay">
+        <div class="loading-content">
+          <el-icon class="loading-spinner"><Loading /></el-icon>
+          <p class="loading-text">加载中...</p>
+        </div>
+      </div>
 
-    <div v-else class="resource-grid">
-      <a
-        v-for="resource in resources"
-        :key="resource.id"
-        :href="`/resources/${resource.id}`"
-        class="resource-card-link"
-        :class="{ 'quick-add-mode': enableQuickAdd, adding: addingResourceId === resource.id }"
-        @click.prevent="handleResourceCardClick(resource)"
-      >
-        <el-card class="resource-card" shadow="hover">
-          <!-- 批量添加状态遮罩 -->
-          <div v-if="addingResourceId === resource.id" class="adding-overlay">
-            <el-icon class="adding-icon"><Loading /></el-icon>
-          </div>
-          <div class="resource-header">
-            <el-tag size="small" :type="getResourceTypeTagType(resource.resourceType)">
-              {{
-                ResourceTypeLabels[resource.resourceType as keyof typeof ResourceTypeLabels] ||
-                resource.resourceType
-              }}
-            </el-tag>
-            <el-tag size="small" type="info">
-              {{
-                ResourceCategoryLabels[resource.category as ResourceCategoryType] ||
-                resource.category
-              }}
-            </el-tag>
-          </div>
+      <div v-else-if="resources.length === 0" class="resource-empty">
+        <el-empty description="没有找到匹配的资源，试试调整关键词或筛选条件" />
+      </div>
 
-          <h3 class="resource-title">{{ resource.title }}</h3>
-
-          <p class="resource-course">
-            <template v-if="resource.courseName">
-              <el-icon><Reading /></el-icon>
-              {{ resource.courseName }}
-            </template>
-            <span v-else class="placeholder">&nbsp;</span>
-          </p>
-
-          <div class="resource-tags">
-            <template v-if="resource.tags && resource.tags.length > 0">
-              <el-tag
-                v-for="tag in resource.tags.slice(0, 3)"
-                :key="tag"
-                size="small"
-                effect="plain"
-              >
-                {{ tag }}
+      <div v-else class="resource-grid">
+        <a
+          v-for="resource in resources"
+          :key="resource.id"
+          :href="`/resources/${resource.id}`"
+          class="resource-card-link"
+          :class="{ 'quick-add-mode': enableQuickAdd, adding: addingResourceId === resource.id }"
+          @click.prevent="handleResourceCardClick(resource)"
+        >
+          <el-card class="resource-card" shadow="hover">
+            <!-- 批量添加状态遮罩 -->
+            <div v-if="addingResourceId === resource.id" class="adding-overlay">
+              <el-icon class="adding-icon"><Loading /></el-icon>
+            </div>
+            <div class="resource-header">
+              <el-tag size="small" :type="getResourceTypeTagType(resource.resourceType)">
+                {{
+                  ResourceTypeLabels[resource.resourceType as keyof typeof ResourceTypeLabels] ||
+                  resource.resourceType
+                }}
               </el-tag>
-              <span v-if="resource.tags.length > 3" class="more-tags"
-                >+{{ resource.tags.length - 3 }}</span
-              >
-            </template>
-            <span v-else class="placeholder">&nbsp;</span>
-          </div>
+              <el-tag size="small" type="info">
+                {{
+                  ResourceCategoryLabels[resource.category as ResourceCategoryType] ||
+                  resource.category
+                }}
+              </el-tag>
+            </div>
 
-          <div class="resource-stats">
-            <span class="stat-item">
-              <el-icon><View /></el-icon>
-              {{ resource.stats.views }}
-            </span>
-            <span class="stat-item">
-              <el-icon><Download /></el-icon>
-              {{ resource.stats.downloads }}
-            </span>
-            <span class="stat-item">
-              <el-icon><Star /></el-icon>
-              {{ resource.stats.likes }}
-            </span>
-          </div>
+            <h3 class="resource-title">{{ resource.title }}</h3>
 
-          <div class="resource-footer">
-            <span class="uploader">{{ resource.uploaderName || '未知用户' }}</span>
-            <span class="upload-time">{{ formatTime(resource.createdAt) }}</span>
-          </div>
-        </el-card>
-      </a>
-    </div>
+            <p class="resource-course">
+              <template v-if="resource.courseName">
+                <el-icon><Reading /></el-icon>
+                {{ resource.courseName }}
+              </template>
+              <span v-else class="placeholder">&nbsp;</span>
+            </p>
 
-    <!-- 分页 -->
-    <div v-if="total > 0" class="pagination-container">
-      <el-pagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :page-sizes="[12, 24, 36, 48]"
-        :total="total"
-        layout="total, sizes, prev, pager, next"
-        @size-change="handleSizeChange"
-        @current-change="handlePageChange"
-      />
-    </div>
+            <div class="resource-tags">
+              <template v-if="resource.tags && resource.tags.length > 0">
+                <el-tag
+                  v-for="tag in resource.tags.slice(0, 3)"
+                  :key="tag"
+                  size="small"
+                  effect="plain"
+                >
+                  {{ tag }}
+                </el-tag>
+                <span v-if="resource.tags.length > 3" class="more-tags"
+                  >+{{ resource.tags.length - 3 }}</span
+                >
+              </template>
+              <span v-else class="placeholder">&nbsp;</span>
+            </div>
+
+            <div class="resource-stats">
+              <span class="stat-item">
+                <el-icon><View /></el-icon>
+                {{ resource.stats.views }}
+              </span>
+              <span class="stat-item">
+                <el-icon><Download /></el-icon>
+                {{ resource.stats.downloads }}
+              </span>
+              <span class="stat-item">
+                <el-icon><Star /></el-icon>
+                {{ resource.stats.likes }}
+              </span>
+            </div>
+
+            <div class="resource-footer">
+              <span class="uploader">{{ resource.uploaderName || '未知用户' }}</span>
+              <span class="upload-time">{{ formatTime(resource.createdAt) }}</span>
+            </div>
+          </el-card>
+        </a>
+      </div>
+
+      <!-- 分页 -->
+      <div v-if="total > 0" class="pagination-container">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[12, 24, 36, 48]"
+          :total="total"
+          layout="total, sizes, prev, pager, next"
+          @size-change="handleSizeChange"
+          @current-change="handlePageChange"
+        />
+      </div>
+    </template>
   </div>
 </template>
 
@@ -290,8 +334,18 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import { Search, Upload, Reading, View, Download, Star, Loading } from '@element-plus/icons-vue';
-import { getResourceList, searchResources } from '@/api/resource';
+import {
+  Search,
+  Upload,
+  Reading,
+  View,
+  Download,
+  Star,
+  Loading,
+  ArrowRight,
+  User,
+} from '@element-plus/icons-vue';
+import { getResourceList, searchResources, getResourceCount } from '@/api/resource';
 import { getTeachers } from '@/api/teacher';
 import { getCourses } from '@/api/course';
 import {
@@ -307,13 +361,19 @@ import { useFavoriteStore } from '@/stores/favorite';
 import { useAuthStore } from '@/stores/auth';
 import type { Favorite } from '@/types/favorite';
 import logger from '@/utils/logger';
+import UserGuideModal from '@/components/common/UserGuideModal.vue';
 import ResourceGuideModal from '@/components/common/ResourceGuideModal.vue';
+import ResourcePageBanner from '@/components/resource/ResourcePageBanner.vue';
 import { getErrorMessage, isHandledError } from '@/api/request';
 
 const router = useRouter();
 const route = useRoute();
 const favoriteStore = useFavoriteStore();
 const authStore = useAuthStore();
+
+// 引导弹窗引用（首访依次弹出，由本页编排）
+const userGuideModalRef = ref<InstanceType<typeof UserGuideModal> | null>(null);
+const resourceGuideModalRef = ref<InstanceType<typeof ResourceGuideModal> | null>(null);
 
 // 状态
 const loading = ref(false);
@@ -322,6 +382,12 @@ const total = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(12);
 
+// 是否已发起检索：未检索时只展示品牌横幅+搜索栏，不显示任何资源
+const hasSearched = ref(false);
+
+// 站点资源总数（展示在品牌横幅上）
+const totalResourceCount = ref(0);
+
 // 搜索和筛选
 const searchQuery = ref('');
 const filterType = ref('');
@@ -329,6 +395,16 @@ const filterCategory = ref('');
 const sortBy = ref<'created_at' | 'downloads' | 'likes' | 'rating' | 'title'>('created_at');
 const filterTeacherSns = ref<number[]>([]);
 const filterCourseSns = ref<number[]>([]);
+
+// 是否存在任意检索条件（关键词或任一筛选项）
+const hasSearchCriteria = computed(
+  () =>
+    searchQuery.value.trim().length > 0 ||
+    !!filterType.value ||
+    !!filterCategory.value ||
+    filterTeacherSns.value.length > 0 ||
+    filterCourseSns.value.length > 0
+);
 
 // 教师和课程列表
 const teacherList = ref<Teacher[]>([]);
@@ -606,10 +682,36 @@ const loadResources = async () => {
   }
 };
 
-// 搜索
-const handleSearch = () => {
+// 进入检索结果视图并加载资源（品牌横幅随之隐去）
+const runSearch = () => {
+  hasSearched.value = true;
   currentPage.value = 1;
   loadResources();
+};
+
+// 回到初始态：隐藏结果、重新展示品牌横幅
+const resetToBanner = () => {
+  hasSearched.value = false;
+  resources.value = [];
+  total.value = 0;
+};
+
+// 搜索（点击搜索按钮 / 回车）
+const handleSearch = () => {
+  if (!hasSearchCriteria.value) {
+    ElMessage.warning('请输入关键词或选择筛选条件');
+    return;
+  }
+  runSearch();
+};
+
+// 清空搜索关键词：若仍有筛选条件则按剩余条件重查，否则回到初始态
+const handleClearSearch = () => {
+  if (hasSearchCriteria.value) {
+    runSearch();
+  } else if (hasSearched.value) {
+    resetToBanner();
+  }
 };
 
 // 分页大小变化
@@ -630,27 +732,60 @@ const goToUpload = () => {
   router.push('/upload');
 };
 
-// 监听筛选条件变化
+// 进入账号入口：已登录用户直达个人中心，访客前往登录页
+const goToAccount = () => {
+  router.push(authStore.isAuthenticated ? '/profile' : '/login');
+};
+
+// 监听筛选条件变化：有条件则进入检索视图，条件被清空则退回品牌横幅
 watch(
   [filterType, filterCategory, sortBy, filterTeacherSns, filterCourseSns],
   () => {
-    currentPage.value = 1;
-    loadResources();
+    if (hasSearchCriteria.value) {
+      runSearch();
+    } else if (hasSearched.value) {
+      resetToBanner();
+    }
   },
   { deep: true }
 );
 
-// 页面加载时获取资源列表
+// 加载站点资源总数
+const loadResourceCount = async () => {
+  try {
+    const result = await getResourceCount();
+    totalResourceCount.value = result.total;
+  } catch (error) {
+    logger.error('[ResourceList]', '获取资源总数失败:', error);
+  }
+};
+
+// 用户指南关闭后，接着弹出资源页面使用指南
+const handleUserGuideClosed = () => {
+  resourceGuideModalRef.value?.show();
+};
+
+// 页面加载
 onMounted(() => {
-  // 从URL query参数中读取搜索关键词
+  // 从 URL query 参数中读取搜索关键词，带词进入即直接展示检索结果
   const queryKeyword = route.query.q as string;
   if (queryKeyword) {
     searchQuery.value = queryKeyword;
+    runSearch();
   }
-  loadResources();
   loadTeachers();
   loadCourses();
   loadFavorites();
+  loadResourceCount();
+
+  // 引导弹窗编排：先弹用户指南，其关闭后再弹资源页指南；
+  // 若用户指南已被永久关闭则直接尝试资源页指南
+  setTimeout(() => {
+    const opened = userGuideModalRef.value?.show();
+    if (opened !== true) {
+      resourceGuideModalRef.value?.show();
+    }
+  }, 500);
 });
 </script>
 
@@ -661,45 +796,163 @@ onMounted(() => {
   padding: 24px;
 }
 
-.page-header {
-  text-align: center;
-  margin-bottom: 32px;
+/* 品牌横幅容器：外间距挂在容器上，便于检索时随高度一起收起 */
+.banner-wrapper {
+  margin-bottom: 10px;
+  margin-inline: -72px;
 }
 
-.page-header h1 {
-  font-size: 28px;
-  font-weight: 600;
-  margin-bottom: 8px;
-  color: var(--el-text-color-primary);
+/* 品牌横幅进入/离开动画：淡入淡出 + 高度折叠 */
+.banner-collapse-enter-active {
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease;
 }
 
-.subtitle {
-  color: var(--el-text-color-secondary);
-  font-size: 16px;
+.banner-collapse-enter-from {
+  opacity: 0;
+  transform: translateY(-16px);
+}
+
+.banner-collapse-leave-active {
+  overflow: hidden;
+  max-height: 600px;
+  transition:
+    opacity 0.35s ease,
+    max-height 0.5s ease,
+    transform 0.4s ease,
+    margin 0.5s ease;
+}
+
+.banner-collapse-leave-to {
+  opacity: 0;
+  max-height: 0;
+  margin-bottom: 0;
+  transform: translateY(-16px);
 }
 
 .filter-card {
   margin-bottom: 24px;
+  transition: margin-bottom 0.35s ease;
+}
+
+.filter-card--landing {
+  margin-bottom: 100px;
+}
+
+/* 着陆态快捷入口 */
+.landing-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.action-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.action-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--el-color-primary);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.action-icon {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+  border-radius: 12px;
+}
+
+.action-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.action-text h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+
+.action-text p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+}
+
+.action-arrow {
+  flex-shrink: 0;
+  font-size: 18px;
+  color: var(--el-text-color-secondary);
+  transition: all 0.3s;
+}
+
+.action-card:hover .action-arrow {
+  color: var(--el-color-primary);
+  transform: translateX(4px);
+}
+
+/* 上传卡片淡入淡出 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 .search-bar {
   display: flex;
-  gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 26px;
 }
 
 .search-input {
   flex: 1;
 }
 
+.search-input :deep(.el-input__wrapper) {
+  min-height: 48px;
+  font-size: 16px;
+}
+
+.search-input :deep(.el-input-group__append) {
+  padding: 0 22px;
+}
+
+.search-input :deep(.el-input-group__append .el-icon) {
+  font-size: 20px;
+}
+
 .filter-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 16px;
-  flex-wrap: wrap;
 }
 
 .filter-item {
-  width: 180px;
+  width: 100%;
+}
+
+.filter-item :deep(.el-select__wrapper) {
+  min-height: 42px;
+  font-size: 15px;
 }
 
 /* 红色placeholder样式 */
@@ -979,13 +1232,29 @@ onMounted(() => {
   padding: 24px 0;
 }
 
+@media (max-width: 1439px) {
+  .banner-wrapper {
+    margin-inline: -48px;
+  }
+}
+
+@media (max-width: 1279px) {
+  .banner-wrapper {
+    margin-inline: -20px;
+  }
+}
+
 @media (max-width: 768px) {
+  .banner-wrapper {
+    margin-inline: 0;
+  }
+
   .search-bar {
     flex-direction: column;
   }
 
   .filter-row {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 
   .filter-item {
