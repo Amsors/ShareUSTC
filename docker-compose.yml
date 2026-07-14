@@ -55,7 +55,7 @@ services:
       - backend
     # 对外暴露 80；HTTPS 由宿主机层/外层网关终结（此时后端 COOKIE_SECURE=true）
     ports:
-      - '80:80'
+      - '8081:80'
 
 volumes:
   pgdata:
