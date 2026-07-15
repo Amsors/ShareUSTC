@@ -283,7 +283,7 @@ onMounted(() => {
 <style scoped>
 .rating-widget {
   background: var(--el-fill-color-light);
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   padding: 20px;
 }
 
@@ -340,7 +340,7 @@ onMounted(() => {
   align-items: center;
   padding: 9px 12px;
   background: #fff;
-  border-radius: 6px;
+  border-radius: var(--su-radius-sm);
   gap: 15px;
 }
 

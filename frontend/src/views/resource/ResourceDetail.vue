@@ -804,6 +804,8 @@ onMounted(() => {
 
 .resource-header-card {
   margin-bottom: 24px;
+  /* Elevated 内容卡：无阴影，靠灰底白卡对比区分（透明边框占位） */
+  border-color: transparent;
 }
 
 .resource-header {
@@ -854,7 +856,7 @@ onMounted(() => {
 
 .meta-item.uploader-link {
   cursor: pointer;
-  transition: color 0.2s;
+  transition: color var(--su-transition-base);
 }
 
 .meta-item.uploader-link:hover {
@@ -910,6 +912,8 @@ onMounted(() => {
 .courses-card,
 .related-resources-card {
   margin-bottom: 24px;
+  /* Elevated 内容卡：无阴影，靠灰底白卡对比区分（透明边框占位） */
+  border-color: transparent;
 }
 
 /* 关联资源列表样式 */
@@ -924,15 +928,14 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   padding: 12px;
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: border-color var(--su-transition-base);
   border: 1px solid var(--el-border-color-lighter);
 }
 
 .related-resource-item:hover {
-  background-color: var(--el-fill-color-light);
-  border-color: var(--el-color-primary-light-5);
+  border-color: var(--el-color-primary);
 }
 
 .related-resource-icon {
@@ -941,7 +944,7 @@ onMounted(() => {
   justify-content: center;
   width: 40px;
   height: 40px;
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   background-color: var(--el-color-primary-light-9);
   color: var(--el-color-primary);
   font-size: 20px;
@@ -1046,7 +1049,7 @@ onMounted(() => {
   color: var(--el-color-primary);
   background: var(--el-color-primary-light-9);
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius: var(--su-radius-sm);
 }
 
 .preview-content {
@@ -1127,8 +1130,8 @@ onMounted(() => {
   align-items: center;
   gap: 4px;
   padding: 2px 6px;
-  border-radius: 4px;
-  transition: background-color 0.2s;
+  border-radius: var(--su-radius-sm);
+  transition: background-color var(--su-transition-base);
   font-size: 12px;
   font-family: monospace;
   max-width: 180px;

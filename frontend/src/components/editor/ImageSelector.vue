@@ -383,17 +383,20 @@ onMounted(() => {
 
 .image-item {
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   overflow: hidden;
   background: var(--el-fill-color-lighter);
   border: 2px solid transparent;
-  transition: all 0.3s;
+  /* 静置无阴影；仅在 hover 时上浮 + 加阴影 */
+  transition:
+    border-color var(--su-transition-base),
+    box-shadow var(--su-transition-base),
+    transform var(--su-transition-base);
 }
 
 .image-item:hover {
-  border-color: var(--el-color-primary-light-5);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--su-shadow-md);
 }
 
 .image-item.is-selected {
@@ -455,15 +458,20 @@ onMounted(() => {
 /* 上传区域 */
 .upload-area {
   border: 2px dashed var(--el-border-color);
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   padding: 40px 20px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.3s;
+  transition:
+    background-color var(--su-transition-base),
+    border-color var(--su-transition-base);
   margin: 16px 0;
 }
 
-.upload-area:hover,
+.upload-area:hover {
+  border-color: var(--el-color-primary);
+}
+
 .upload-area.is-dragover {
   border-color: var(--el-color-primary);
   background-color: var(--el-fill-color-lighter);
@@ -499,10 +507,10 @@ onMounted(() => {
 
 .image-preview-card {
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   overflow: hidden;
   border: 2px solid var(--el-border-color);
-  transition: all 0.3s;
+  transition: border-color var(--su-transition-base);
   max-width: 200px;
 }
 
@@ -533,7 +541,7 @@ onMounted(() => {
 
 .url-preview {
   margin-top: 16px;
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   overflow: hidden;
   border: 1px solid var(--el-border-color);
   max-height: 300px;
@@ -553,5 +561,11 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .image-item:hover {
+    transform: none;
+  }
 }
 </style>

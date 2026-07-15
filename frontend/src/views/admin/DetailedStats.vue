@@ -378,7 +378,7 @@ onMounted(() => {
   text-align: center;
   padding: 20px;
   background-color: var(--el-fill-color-light);
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
 }
 
 .stat-item.highlight {
@@ -407,7 +407,7 @@ onMounted(() => {
   text-align: center;
   padding: 20px;
   background-color: var(--el-fill-color-light);
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   margin-bottom: 16px;
 }
 
@@ -480,7 +480,7 @@ onMounted(() => {
   text-align: center;
   padding: 24px;
   background-color: var(--el-fill-color-light);
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
 }
 
 .download-value {
@@ -510,7 +510,7 @@ onMounted(() => {
   align-items: center;
   padding: 24px;
   background-color: var(--el-fill-color-light);
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
 }
 
 .interaction-value {

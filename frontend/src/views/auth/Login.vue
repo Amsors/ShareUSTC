@@ -121,7 +121,7 @@ const handleSubmit = async () => {
 .login-card {
   width: 100%;
   max-width: 400px;
-  border-radius: 12px;
+  border-radius: var(--su-radius-lg);
 }
 
 .login-title {

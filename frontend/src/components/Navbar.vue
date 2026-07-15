@@ -75,7 +75,8 @@ const handleCommand = async (command: string) => {
   padding: 0 40px;
   height: 60px;
   background-color: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  /* 例外：吸顶导航栏保留阴影，用于在内容滚动到其下方时做分隔（非灰底白卡） */
+  box-shadow: var(--su-shadow-sm);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -97,7 +98,7 @@ const handleCommand = async (command: string) => {
   text-decoration: none;
   color: var(--el-text-color-regular);
   font-size: 14px;
-  transition: color 0.3s;
+  transition: color var(--su-transition-slow);
 }
 
 .nav-links a:hover {
@@ -113,7 +114,7 @@ const handleCommand = async (command: string) => {
   background-color: var(--el-color-primary);
   color: #fff !important;
   padding: 8px 16px;
-  border-radius: 4px;
+  border-radius: var(--su-radius-sm);
 }
 
 .register-btn:hover {
@@ -124,7 +125,7 @@ const handleCommand = async (command: string) => {
   background-color: var(--el-color-danger);
   color: #fff !important;
   padding: 8px 16px;
-  border-radius: 4px;
+  border-radius: var(--su-radius-sm);
 }
 
 .admin-link:hover {
@@ -147,7 +148,7 @@ const handleCommand = async (command: string) => {
   font-weight: normal;
   color: #fff;
   background-color: var(--el-color-warning);
-  border-radius: 4px;
+  border-radius: var(--su-radius-sm);
   vertical-align: middle;
 }
 </style>

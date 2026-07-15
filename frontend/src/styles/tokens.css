@@ -1,9 +1,12 @@
 /**
- * 项目自有设计 token（品牌色 / 渐变 / 徽章）。
+ * 项目自有设计 token（品牌色 / 渐变 / 徽章 / 圆角 / 阴影 / 间距 / 动效）。
  *
  * Element Plus 语义色请直接使用官方 --el-* 变量（如 --el-color-primary、
  * --el-text-color-regular），不要在此重复定义；此文件只放项目品牌相关、
  * Element Plus 未覆盖的 token，组件通过 var(--su-*) 引用。
+ *
+ * 圆角 / 阴影 / 间距 / 动效 token 的使用规则见
+ * dev_docs/specs/ui_design_system.md（视觉一致性规范）。
  */
 :root {
   /* 品牌主色渐变（登录 / 注册 / 首页 Banner / 排行榜头图等紫蓝渐变） */
@@ -19,4 +22,32 @@
   --su-medal-gold: linear-gradient(135deg, #ffd700 0%, #ffb800 100%);
   --su-medal-silver: linear-gradient(135deg, #c0c0c0 0%, #a0a0a0 100%);
   --su-medal-bronze: linear-gradient(135deg, #cd7f32 0%, #b87333 100%);
+
+  /* ---------- 圆角 radius（4 档 + 50% 圆形，禁止中间值）---------- */
+  --su-radius-sm: 4px; /* 标签 / 输入框 / 内联小控件 */
+  --su-radius-md: 8px; /* 默认：卡片 / 按钮 / 图片 / 代码块 */
+  --su-radius-lg: 12px; /* 大容器 / 弹窗 / 特色卡片 / Banner 内块 */
+  --su-radius-full: 9999px; /* 胶囊徽章 / 药丸；圆形头像仍用 50% */
+
+  /* ---------- 阴影 elevation（3 级，任何自定义阴影都归入其一）---------- */
+  /* 注意：静置内容卡不再使用阴影（靠灰底白卡对比区分），sm 仅用于吸顶头部 / 文档纸张态等低层浮起 */
+  --su-shadow-sm:
+    0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.06); /* 吸顶头部 / 文档纸张态 */
+  --su-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1); /* 可点击元素悬停 / 抬起 */
+  --su-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12); /* 弹窗 / 下拉 / 气泡 */
+
+  /* ---------- 间距 spacing（4px 基准栅格）---------- */
+  --su-space-1: 4px;
+  --su-space-2: 8px;
+  --su-space-3: 12px;
+  --su-space-4: 16px;
+  --su-space-5: 20px;
+  --su-space-6: 24px;
+  --su-space-8: 32px;
+  --su-space-10: 40px;
+
+  /* ---------- 动效 motion（禁止使用 all 过渡，逐属性列举）---------- */
+  --su-transition-fast: 0.15s ease; /* 颜色 / 背景等轻量反馈 */
+  --su-transition-base: 0.2s ease; /* 默认：transform / 阴影 / 边框 */
+  --su-transition-slow: 0.3s ease; /* 较大的进入 / 布局过渡 */
 }

@@ -223,13 +223,7 @@ defineExpose({
   gap: 12px;
   padding: 8px;
   background-color: var(--el-fill-color-light);
-  border-radius: 10px;
-  transition: all 0.3s ease;
-}
-
-.guide-item:hover {
-  background-color: var(--el-color-primary-light-9);
-  transform: translateX(4px);
+  border-radius: var(--su-radius-md);
 }
 
 .item-number {
@@ -269,7 +263,7 @@ defineExpose({
   gap: 6px;
   padding: 5px 15px;
   background-color: var(--el-color-success-light-9);
-  border-radius: 20px;
+  border-radius: var(--su-radius-lg);
   color: var(--el-color-success);
   font-size: 13px;
 }

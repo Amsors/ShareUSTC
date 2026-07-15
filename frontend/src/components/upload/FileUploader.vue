@@ -308,11 +308,13 @@ const formatDate = (dateStr: string): string => {
 <style scoped>
 .file-uploader {
   border: 2px dashed var(--el-border-color);
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   padding: 40px 20px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.3s;
+  transition:
+    background-color var(--su-transition-base),
+    border-color var(--su-transition-base);
   background-color: var(--el-fill-color-lighter);
   position: relative;
 }
@@ -375,7 +377,7 @@ const formatDate = (dateStr: string): string => {
   gap: 12px;
   padding: 12px 16px;
   background-color: var(--el-bg-color);
-  border-radius: 4px;
+  border-radius: var(--su-radius-sm);
 }
 
 .file-icon {
@@ -406,7 +408,7 @@ const formatDate = (dateStr: string): string => {
   font-size: 16px;
   color: var(--el-text-color-secondary);
   cursor: pointer;
-  transition: color 0.3s;
+  transition: color var(--su-transition-slow);
 }
 
 .delete-icon:hover {
@@ -430,7 +432,7 @@ const formatDate = (dateStr: string): string => {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
 }
 
 .checking-icon {
@@ -477,7 +479,7 @@ const formatDate = (dateStr: string): string => {
 .duplicate-item {
   padding: 12px;
   background-color: var(--el-fill-color-lighter);
-  border-radius: 6px;
+  border-radius: var(--su-radius-sm);
   border: 1px solid var(--el-border-color-lighter);
 }
 
@@ -530,7 +532,7 @@ const formatDate = (dateStr: string): string => {
   color: var(--el-text-color-secondary);
   background-color: var(--el-bg-color);
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius: var(--su-radius-sm);
 }
 
 .dialog-footer {

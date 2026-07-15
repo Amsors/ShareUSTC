@@ -112,7 +112,7 @@ watch(
 
 .markdown-container {
   background-color: var(--el-bg-color);
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   padding: 24px;
   max-height: 600px;
   overflow: auto;
@@ -161,7 +161,7 @@ watch(
 .markdown-body :deep(code) {
   background-color: var(--el-fill-color);
   padding: 0.2em 0.4em;
-  border-radius: 3px;
+  border-radius: var(--su-radius-sm);
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 0.9em;
 }
@@ -169,7 +169,7 @@ watch(
 .markdown-body :deep(pre) {
   background-color: var(--el-fill-color-dark);
   padding: 16px;
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   overflow-x: auto;
   margin: 1em 0;
 }
@@ -215,6 +215,6 @@ watch(
 .markdown-body :deep(img) {
   max-width: 100%;
   height: auto;
-  border-radius: 4px;
+  border-radius: var(--su-radius-sm);
 }
 </style>

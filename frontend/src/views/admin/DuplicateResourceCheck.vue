@@ -331,14 +331,6 @@ const formatDate = (dateStr: string): string => {
   margin-bottom: 24px;
 }
 
-.stat-card {
-  transition: transform 0.3s;
-}
-
-.stat-card:hover {
-  transform: translateY(-2px);
-}
-
 .stat-content {
   display: flex;
   align-items: center;
@@ -348,7 +340,7 @@ const formatDate = (dateStr: string): string => {
 .stat-icon {
   width: 56px;
   height: 56px;
-  border-radius: 12px;
+  border-radius: var(--su-radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;

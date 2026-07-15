@@ -244,7 +244,7 @@
           :class="{ 'quick-add-mode': enableQuickAdd, adding: addingResourceId === resource.id }"
           @click.prevent="handleResourceCardClick(resource)"
         >
-          <el-card class="resource-card" shadow="hover">
+          <el-card class="resource-card" shadow="never">
             <!-- 批量添加状态遮罩 -->
             <div v-if="addingResourceId === resource.id" class="adding-overlay">
               <el-icon class="adding-icon"><Loading /></el-icon>
@@ -811,7 +811,7 @@ onMounted(() => {
 
 .banner-collapse-enter-from {
   opacity: 0;
-  transform: translateY(-16px);
+  transform: translateY(-2px);
 }
 
 .banner-collapse-leave-active {
@@ -828,7 +828,7 @@ onMounted(() => {
   opacity: 0;
   max-height: 0;
   margin-bottom: 0;
-  transform: translateY(-16px);
+  transform: translateY(-2px);
 }
 
 .filter-card {
@@ -853,15 +853,13 @@ onMounted(() => {
   gap: 16px;
   padding: 20px 24px;
   border: 1px solid var(--el-border-color-lighter);
-  border-radius: 12px;
+  border-radius: var(--su-radius-lg);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: border-color var(--su-transition-base);
 }
 
 .action-card:hover {
-  transform: translateY(-2px);
   border-color: var(--el-color-primary);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
 }
 
 .action-icon {
@@ -874,7 +872,7 @@ onMounted(() => {
   font-size: 24px;
   color: var(--el-color-primary);
   background: var(--el-color-primary-light-9);
-  border-radius: 12px;
+  border-radius: var(--su-radius-lg);
 }
 
 .action-text {
@@ -899,7 +897,9 @@ onMounted(() => {
   flex-shrink: 0;
   font-size: 18px;
   color: var(--el-text-color-secondary);
-  transition: all 0.3s;
+  transition:
+    color var(--su-transition-base),
+    transform var(--su-transition-base);
 }
 
 .action-card:hover .action-arrow {
@@ -910,7 +910,7 @@ onMounted(() => {
 /* 上传卡片淡入淡出 */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity var(--su-transition-slow);
 }
 
 .fade-enter-from,
@@ -977,7 +977,7 @@ onMounted(() => {
 .switch-label {
   font-size: 14px;
   color: var(--el-text-color-secondary);
-  transition: color 0.3s;
+  transition: color var(--su-transition-slow);
 }
 
 .switch-label.active {
@@ -1007,7 +1007,8 @@ onMounted(() => {
 
 .resource-card-link.quick-add-mode:hover .resource-card {
   border-color: var(--el-color-success);
-  box-shadow: 0 0 0 2px var(--el-color-success-light-8);
+  outline: 2px solid var(--el-color-success-light-8);
+  outline-offset: -2px;
 }
 
 .resource-card-link.adding {
@@ -1040,7 +1041,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   background-color: var(--el-fill-color-light);
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   animation: fadeIn 0.3s ease-in-out;
 }
 
@@ -1105,7 +1106,10 @@ onMounted(() => {
 
 .resource-card {
   cursor: pointer;
-  transition: all 0.3s;
+  /* 静置无阴影；仅在 hover 时上浮 + 加阴影 */
+  transition:
+    transform var(--su-transition-base),
+    box-shadow var(--su-transition-base);
   height: 240px;
   display: flex;
   flex-direction: column;
@@ -1113,7 +1117,8 @@ onMounted(() => {
 }
 
 .resource-card-link:hover .resource-card {
-  transform: translateY(-4px);
+  transform: translateY(-2px);
+  box-shadow: var(--su-shadow-md);
 }
 
 /* 覆盖 el-card 的默认样式，确保高度一致 */
@@ -1263,6 +1268,12 @@ onMounted(() => {
 
   .resource-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .resource-card-link:hover .resource-card {
+    transform: none;
   }
 }
 </style>

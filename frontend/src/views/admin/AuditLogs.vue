@@ -397,7 +397,7 @@ onMounted(() => {
   color: var(--el-text-color-regular);
   background-color: var(--el-fill-color-light);
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--su-radius-sm);
 }
 
 .target-type {
@@ -424,7 +424,7 @@ onMounted(() => {
 .details-json {
   background-color: var(--el-fill-color-light);
   padding: 12px;
-  border-radius: 4px;
+  border-radius: var(--su-radius-sm);
   font-size: 12px;
   line-height: 1.5;
   max-height: 300px;

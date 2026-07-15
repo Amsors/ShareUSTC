@@ -197,7 +197,7 @@ onUnmounted(() => {
   cursor: pointer;
   padding: 8px;
   border-radius: 50%;
-  transition: background-color 0.2s;
+  transition: background-color var(--su-transition-base);
 }
 
 .bell-wrapper:hover {
@@ -238,6 +238,7 @@ onUnmounted(() => {
   padding: 12px 16px;
   border-bottom: 1px solid var(--el-border-color-lighter);
   cursor: pointer;
+  transition: background-color var(--su-transition-base);
 }
 
 .notification-item:hover {

@@ -104,7 +104,7 @@ const handleDownload = async () => {
   align-items: center;
   justify-content: center;
   background-color: var(--el-fill-color-light);
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
 }
 
 .unsupported-icon {

@@ -241,7 +241,7 @@ const handleSubmit = async () => {
 .register-card {
   width: 100%;
   max-width: 400px;
-  border-radius: 12px;
+  border-radius: var(--su-radius-lg);
 }
 
 .register-title {
@@ -269,13 +269,15 @@ const handleSubmit = async () => {
   flex: 1;
   height: 4px;
   background-color: var(--el-border-color-light);
-  border-radius: 2px;
+  border-radius: var(--su-radius-sm);
   overflow: hidden;
 }
 
 .strength-fill {
   height: 100%;
-  transition: all 0.3s;
+  transition:
+    width var(--su-transition-slow),
+    background-color var(--su-transition-slow);
 }
 
 .strength-text {

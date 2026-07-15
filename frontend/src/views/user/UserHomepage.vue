@@ -389,7 +389,7 @@ onMounted(() => {
 .markdown-body :deep(img) {
   max-width: 100%;
   height: auto;
-  border-radius: 4px;
+  border-radius: var(--su-radius-sm);
   margin: 12px 0;
 }
 
@@ -405,7 +405,7 @@ onMounted(() => {
 .markdown-body :deep(code) {
   background-color: var(--el-fill-color-light);
   padding: 2px 6px;
-  border-radius: 3px;
+  border-radius: var(--su-radius-sm);
   font-family: 'Consolas', 'Monaco', monospace;
   font-size: 0.9em;
   color: #e83e8c;
@@ -414,7 +414,7 @@ onMounted(() => {
 .markdown-body :deep(pre) {
   background-color: #282c34;
   padding: 16px;
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   overflow-x: auto;
   margin: 12px 0;
 }
@@ -470,15 +470,14 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  background-color: #fafafa;
-  border-radius: 8px;
+  background-color: var(--el-fill-color-lighter);
+  border-radius: var(--su-radius-md);
   cursor: pointer;
-  transition: all 0.3s;
+  transition: background-color var(--su-transition-base);
 }
 
 .resource-item:hover {
-  background-color: #f0f2f5;
-  transform: translateX(4px);
+  background-color: var(--el-fill-color-light);
 }
 
 .resource-main {

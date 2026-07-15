@@ -178,7 +178,7 @@ watch(
   align-items: center;
   min-height: 300px;
   background-color: var(--el-fill-color-light);
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   overflow: hidden;
 }
 
@@ -187,7 +187,7 @@ watch(
   max-height: 600px;
   object-fit: contain;
   cursor: zoom-in;
-  transition: transform 0.2s ease;
+  transition: transform var(--su-transition-base);
 }
 
 .image-overlay {
@@ -199,9 +199,9 @@ watch(
   gap: 8px;
   padding: 8px 16px;
   background-color: rgba(0, 0, 0, 0.6);
-  border-radius: 24px;
+  border-radius: var(--su-radius-lg);
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity var(--su-transition-slow);
 }
 
 .image-container:hover .image-overlay {

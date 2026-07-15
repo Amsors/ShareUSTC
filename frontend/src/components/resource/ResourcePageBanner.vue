@@ -31,14 +31,14 @@ defineProps<{
   align-items: center;
   gap: 28px;
   padding: 64px 54px;
-  border-radius: 16px;
+  border-radius: var(--su-radius-lg);
 }
 
 .banner-logo {
   flex-shrink: 0;
   width: 76px;
   height: 76px;
-  border-radius: 16px;
+  border-radius: var(--su-radius-lg);
   object-fit: cover;
 }
 

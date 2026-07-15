@@ -194,6 +194,8 @@ watch(
 
 .notification-card {
   min-height: 500px;
+  /* Elevated 内容卡：无阴影，靠灰底白卡对比区分（透明边框占位） */
+  border-color: transparent;
 }
 
 .pagination-wrapper {

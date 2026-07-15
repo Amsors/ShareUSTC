@@ -98,7 +98,7 @@ watch(
 
 .text-container {
   background-color: var(--el-fill-color-light);
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   padding: 16px;
   max-height: 600px;
   overflow: auto;

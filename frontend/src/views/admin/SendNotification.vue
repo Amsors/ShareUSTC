@@ -281,7 +281,7 @@ const handleReset = () => {
 
 .preview-card {
   background-color: var(--el-fill-color-light);
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   padding: 16px;
   border-left: 4px solid var(--el-color-primary);
 }

@@ -93,7 +93,7 @@
           class="resource-card-link"
           @click.prevent="goToResource(resource.id)"
         >
-          <el-card class="resource-card" shadow="hover">
+          <el-card class="resource-card" shadow="never">
             <div class="resource-content">
               <!-- 资源类型图标 -->
               <div
@@ -696,10 +696,9 @@ onMounted(() => {
 
 .detail-header {
   background: #fff;
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   padding: 24px;
   margin-bottom: 24px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -745,9 +744,8 @@ onMounted(() => {
 
 .resource-list {
   background: #fff;
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   padding: 24px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
 }
 
 .loading-container {
@@ -783,13 +781,16 @@ onMounted(() => {
 }
 
 .resource-card {
-  transition: all 0.3s;
+  /* 静置无阴影；仅在 .resource-card-link:hover 时上浮 + 加阴影 */
+  transition:
+    box-shadow var(--su-transition-base),
+    transform var(--su-transition-base);
   position: relative;
   height: 150px; // 固定卡片高度
 
   .resource-card-link:hover & {
     transform: translateY(-2px);
-    box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.1);
+    box-shadow: var(--su-shadow-md);
   }
 
   :deep(.el-card__body) {
@@ -813,7 +814,7 @@ onMounted(() => {
 .resource-type-icon {
   width: 48px;
   height: 48px;
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -923,6 +924,12 @@ onMounted(() => {
 
   .resource-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .resource-card-link:hover .resource-card {
+    transform: none;
   }
 }
 </style>

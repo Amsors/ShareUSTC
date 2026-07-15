@@ -154,7 +154,7 @@ function formatTime(time: string): string {
   padding: 16px;
   background-color: var(--el-bg-color);
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color var(--su-transition-base);
 }
 
 .notification-item:hover {

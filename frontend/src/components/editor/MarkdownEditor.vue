@@ -232,7 +232,7 @@ defineExpose({
   flex-direction: column;
   height: 100%;
   border: 1px solid var(--el-border-color);
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   overflow: hidden;
   background: var(--el-bg-color);
 }
@@ -326,20 +326,20 @@ defineExpose({
 :deep(.md-editor-preview img) {
   max-width: 100%;
   height: auto;
-  border-radius: 4px;
+  border-radius: var(--su-radius-sm);
 }
 
 :deep(.md-editor-preview code) {
   background-color: var(--el-fill-color);
   padding: 0.2em 0.4em;
-  border-radius: 3px;
+  border-radius: var(--su-radius-sm);
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
 }
 
 :deep(.md-editor-preview pre) {
   background-color: var(--el-fill-color-dark);
   padding: 16px;
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   overflow-x: auto;
 }
 

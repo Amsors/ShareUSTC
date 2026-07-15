@@ -211,7 +211,7 @@ watch(
 .comment-item {
   padding: 12px;
   background-color: var(--el-fill-color-light);
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
 }
 
 .comment-header {
