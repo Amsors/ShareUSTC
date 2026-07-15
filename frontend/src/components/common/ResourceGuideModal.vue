@@ -81,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import { Collection } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import logger from '@/utils/logger';
@@ -172,13 +172,7 @@ function setPermanentlyClosed(closed: boolean): void {
   }
 }
 
-// 页面加载时检查是否显示
-onMounted(() => {
-  // 延迟一点显示，让页面先加载完成
-  setTimeout(() => {
-    show();
-  }, 500);
-});
+// 是否自动弹出由父组件（资源页）编排，在用户指南关闭后再触发
 
 // 暴露方法给父组件
 defineExpose({
@@ -229,13 +223,7 @@ defineExpose({
   gap: 12px;
   padding: 8px;
   background-color: var(--el-fill-color-light);
-  border-radius: 10px;
-  transition: all 0.3s ease;
-}
-
-.guide-item:hover {
-  background-color: var(--el-color-primary-light-9);
-  transform: translateX(4px);
+  border-radius: var(--su-radius-md);
 }
 
 .item-number {
@@ -275,7 +263,7 @@ defineExpose({
   gap: 6px;
   padding: 5px 15px;
   background-color: var(--el-color-primary-light-9);
-  border-radius: 20px;
+  border-radius: var(--su-radius-lg);
   color: var(--el-color-primary);
   font-size: 13px;
 }

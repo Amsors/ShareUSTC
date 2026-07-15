@@ -690,7 +690,7 @@ watch(
 
 .pdf-container {
   background-color: var(--el-fill-color-light);
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   overflow: hidden;
 }
 
@@ -742,7 +742,8 @@ watch(
 
 .pdf-canvas {
   background-color: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  /* 例外：文档预览页面画布保留阴影作为「纸张态」提示（与全屏 .fullscreen-canvas 一致） */
+  box-shadow: var(--su-shadow-sm);
 }
 
 /* 全屏样式 */
@@ -753,7 +754,7 @@ watch(
   gap: 12px;
   padding: 12px;
   background-color: var(--el-fill-color-light);
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   margin-bottom: 16px;
 }
 
@@ -764,12 +765,12 @@ watch(
   max-height: 70vh;
   overflow: auto;
   background-color: var(--el-fill-color-light);
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   padding: 24px;
 }
 
 .fullscreen-canvas {
   background-color: white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--su-shadow-lg);
 }
 </style>

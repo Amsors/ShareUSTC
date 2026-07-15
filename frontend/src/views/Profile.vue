@@ -190,7 +190,12 @@
           </el-empty>
 
           <div v-else class="resources-list">
-            <el-card v-for="resource in userResources" :key="resource.id" class="resource-card">
+            <el-card
+              v-for="resource in userResources"
+              :key="resource.id"
+              class="resource-card"
+              shadow="never"
+            >
               <div class="resource-header">
                 <h4 class="resource-title" @click="$router.push(`/resources/${resource.id}`)">
                   {{ resource.title }}
@@ -918,7 +923,7 @@ const refreshUserInfo = async () => {
 
 .user-card {
   background-color: #fff;
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   padding: 24px;
   text-align: center;
   margin-bottom: 16px;
@@ -935,7 +940,7 @@ const refreshUserInfo = async () => {
 }
 
 .profile-menu {
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
 }
 
 .main-content {
@@ -1072,15 +1077,19 @@ const refreshUserInfo = async () => {
 
 .user-image-item {
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   overflow: hidden;
-  background-color: #fff;
+  background-color: var(--el-bg-color);
   border: 1px solid var(--el-border-color-lighter);
-  transition: box-shadow 0.3s;
+  /* 静置无阴影；仅在 hover 时上浮 + 加阴影 */
+  transition:
+    transform var(--su-transition-base),
+    box-shadow var(--su-transition-base);
 }
 
 .user-image-item:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  box-shadow: var(--su-shadow-md);
 }
 
 .user-image-wrapper {
@@ -1109,7 +1118,7 @@ const refreshUserInfo = async () => {
   align-items: center;
   gap: 12px;
   opacity: 0;
-  transition: opacity 0.3s;
+  transition: opacity var(--su-transition-slow);
 }
 
 .user-image-wrapper:hover .user-image-overlay {
@@ -1149,11 +1158,15 @@ const refreshUserInfo = async () => {
 }
 
 .resource-card {
-  transition: box-shadow 0.3s;
+  /* 静置无阴影；仅在 hover 时上浮 + 加阴影 */
+  transition:
+    transform var(--su-transition-base),
+    box-shadow var(--su-transition-base);
 }
 
 .resource-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  box-shadow: var(--su-shadow-md);
 }
 
 .resource-header {
@@ -1244,7 +1257,7 @@ const refreshUserInfo = async () => {
 
 .bio-content {
   background: var(--el-fill-color-light);
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   padding: 20px;
 }
 
@@ -1282,7 +1295,7 @@ const refreshUserInfo = async () => {
 .markdown-body :deep(img) {
   max-width: 100%;
   height: auto;
-  border-radius: 4px;
+  border-radius: var(--su-radius-sm);
   margin: 12px 0;
 }
 
@@ -1298,7 +1311,7 @@ const refreshUserInfo = async () => {
 .markdown-body :deep(code) {
   background-color: var(--el-fill-color-light);
   padding: 2px 6px;
-  border-radius: 3px;
+  border-radius: var(--su-radius-sm);
   font-family: 'Consolas', 'Monaco', monospace;
   font-size: 0.9em;
   color: #e83e8c;
@@ -1307,7 +1320,7 @@ const refreshUserInfo = async () => {
 .markdown-body :deep(pre) {
   background-color: #282c34;
   padding: 16px;
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   overflow-x: auto;
   margin: 12px 0;
 }
@@ -1357,5 +1370,12 @@ const refreshUserInfo = async () => {
   border: none;
   border-top: 1px solid var(--el-border-color-light);
   margin: 16px 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .resource-card:hover,
+  .user-image-item:hover {
+    transform: none;
+  }
 }
 </style>

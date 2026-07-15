@@ -24,7 +24,7 @@
         v-for="favorite in favorites"
         :key="favorite.id"
         class="favorite-card"
-        shadow="hover"
+        shadow="never"
         @click="goToDetail(favorite.id)"
       >
         <div class="favorite-content">
@@ -273,11 +273,15 @@ onMounted(() => {
 
 .favorite-card {
   cursor: pointer;
-  transition: all 0.3s;
+  /* 静置无阴影；仅在 hover 时上浮 + 加阴影 */
+  transition:
+    transform var(--su-transition-base),
+    box-shadow var(--su-transition-base);
   position: relative;
 
   &:hover {
     transform: translateY(-2px);
+    box-shadow: var(--su-shadow-md);
   }
 
   :deep(.el-card__body) {
@@ -352,6 +356,12 @@ onMounted(() => {
 @media (max-width: 768px) {
   .favorite-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .favorite-card:hover {
+    transform: none;
   }
 }
 </style>

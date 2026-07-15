@@ -273,9 +273,11 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 12px;
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   cursor: pointer;
-  transition: all 0.2s;
+  transition:
+    background-color var(--su-transition-base),
+    border-color var(--su-transition-base);
   border: 1px solid var(--el-border-color-lighter);
 
   &:hover {
@@ -283,7 +285,7 @@ onMounted(() => {
   }
 
   &.is-selected {
-    background-color: #f0f9ff;
+    background-color: var(--el-color-primary-light-9);
     border-color: var(--el-color-primary);
   }
 

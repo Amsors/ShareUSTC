@@ -239,10 +239,9 @@ onMounted(() => {
 .error-state,
 .success-state {
   background: #fff;
-  border-radius: 12px;
+  border-radius: var(--su-radius-lg);
   padding: 60px 40px;
   text-align: center;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
 }
 
 .loading-icon {
@@ -286,9 +285,8 @@ onMounted(() => {
 
 .challenge-content {
   background: #fff;
-  border-radius: 12px;
+  border-radius: var(--su-radius-lg);
   padding: 32px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
 }
 
 .challenge-info {
@@ -332,7 +330,7 @@ onMounted(() => {
 
 .preview-container {
   border: 1px solid var(--el-border-color-lighter);
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   overflow: hidden;
 }
 

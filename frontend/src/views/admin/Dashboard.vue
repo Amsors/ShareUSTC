@@ -186,14 +186,6 @@ onMounted(() => {
   margin-bottom: 24px;
 }
 
-.stat-card {
-  transition: transform 0.3s;
-}
-
-.stat-card:hover {
-  transform: translateY(-4px);
-}
-
 .stat-content {
   display: flex;
   align-items: center;
@@ -203,7 +195,7 @@ onMounted(() => {
 .stat-icon {
   width: 56px;
   height: 56px;
-  border-radius: 12px;
+  border-radius: var(--su-radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -258,8 +250,8 @@ onMounted(() => {
   align-items: center;
   padding: 16px;
   cursor: pointer;
-  border-radius: 8px;
-  transition: background-color 0.3s;
+  border-radius: var(--su-radius-md);
+  transition: background-color var(--su-transition-base);
 }
 
 .pending-item:hover {
@@ -269,7 +261,7 @@ onMounted(() => {
 .pending-icon {
   width: 40px;
   height: 40px;
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   display: flex;
   align-items: center;
   justify-content: center;

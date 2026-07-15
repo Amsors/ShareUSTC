@@ -19,10 +19,9 @@ import DuplicateResourceCheck from '@/views/admin/DuplicateResourceCheck.vue';
 // 路由配置
 const routes = [
   {
+    // 首页已并入资源页：根路径重定向到资源列表
     path: '/',
-    name: 'Home',
-    component: () => import('@/views/Home.vue'),
-    meta: { public: true },
+    redirect: '/resources',
   },
   {
     path: '/about',

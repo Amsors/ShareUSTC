@@ -260,17 +260,15 @@ onMounted(() => {
   display: flex;
   align-items: center;
   padding: 16px;
-  background-color: #fafafa;
-  border-radius: 12px;
+  background-color: var(--el-fill-color-lighter);
+  border-radius: var(--su-radius-lg);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background-color var(--su-transition-base);
   gap: 16px;
 }
 
 .leaderboard-item:hover {
-  background-color: #f0f2f5;
-  transform: translateX(4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  background-color: var(--el-fill-color-light);
 }
 
 /* 排名 */

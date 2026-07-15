@@ -7,6 +7,7 @@
     :close-on-press-escape="true"
     class="user-guide-modal"
     align-center
+    @closed="emit('closed')"
   >
     <div class="guide-content">
       <div class="guide-items">
@@ -75,10 +76,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import { CircleCheck } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import logger from '@/utils/logger';
+
+// 关闭后通知父组件（用于串联下一个引导弹窗）
+const emit = defineEmits<{ closed: [] }>();
 
 // 状态
 const visible = ref(false);
@@ -105,11 +109,13 @@ function shouldShowModal(): boolean {
   return true;
 }
 
-// 显示弹窗
-function show() {
+// 显示弹窗；返回本次是否真正打开（供父组件决定是否直接串联下一个弹窗）
+function show(): boolean {
   if (shouldShowModal()) {
     visible.value = true;
+    return true;
   }
+  return false;
 }
 
 // 关闭弹窗
@@ -158,7 +164,7 @@ function setPermanentlyClosed(closed: boolean): void {
         })
       );
     } else {
-      // 清除永久关闭设置，下次进入首页会显示
+      // 清除永久关闭设置，下次进入资源页（首页）会显示
       localStorage.removeItem(GUIDE_MODAL_KEY);
     }
   } catch (e) {
@@ -166,13 +172,7 @@ function setPermanentlyClosed(closed: boolean): void {
   }
 }
 
-// 页面加载时检查是否显示
-onMounted(() => {
-  // 延迟一点显示，让页面先加载完成
-  setTimeout(() => {
-    show();
-  }, 500);
-});
+// 是否自动弹出由父组件（资源页）编排，本组件不再自行 onMounted 触发
 
 // 暴露方法给父组件
 defineExpose({
@@ -223,13 +223,7 @@ defineExpose({
   gap: 12px;
   padding: 8px;
   background-color: var(--el-fill-color-light);
-  border-radius: 10px;
-  transition: all 0.3s ease;
-}
-
-.guide-item:hover {
-  background-color: var(--el-color-primary-light-9);
-  transform: translateX(4px);
+  border-radius: var(--su-radius-md);
 }
 
 .item-number {
@@ -269,7 +263,7 @@ defineExpose({
   gap: 6px;
   padding: 5px 15px;
   background-color: var(--el-color-success-light-9);
-  border-radius: 20px;
+  border-radius: var(--su-radius-lg);
   color: var(--el-color-success);
   font-size: 13px;
 }

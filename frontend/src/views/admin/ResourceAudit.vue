@@ -42,7 +42,7 @@
           v-for="resource in resources"
           :key="resource.id"
           class="resource-item"
-          shadow="hover"
+          shadow="never"
         >
           <div class="resource-header">
             <h3 class="resource-title">{{ resource.title }}</h3>
@@ -302,14 +302,6 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.resource-item {
-  transition: all 0.3s;
-}
-
-.resource-item:hover {
-  transform: translateY(-2px);
 }
 
 .resource-header {

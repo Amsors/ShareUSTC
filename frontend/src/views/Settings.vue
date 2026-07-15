@@ -65,10 +65,7 @@
             </div>
           </div>
 
-          <div
-            v-if="pdfPreviewVerified && autoLoadPdfPreview"
-            class="setting-item threshold-setting"
-          >
+          <div v-if="pdfPreviewVerified && autoLoadPdfPreview" class="setting-item">
             <div class="setting-info">
               <div class="setting-label">自动加载大小阈值</div>
               <div class="setting-desc">超过此大小的 PDF 不会自动加载，需要手动点击加载</div>
@@ -573,9 +570,8 @@ const handleFilterEmptyResourcesChange = (value: boolean) => {
 
 .settings-section {
   background: #fff;
-  border-radius: 12px;
+  border-radius: var(--su-radius-lg);
   padding: 24px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
 }
 
 .section-title {
@@ -603,12 +599,12 @@ const handleFilterEmptyResourcesChange = (value: boolean) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 0;
-  border-bottom: 1px solid var(--el-border-color-lighter);
+  padding: 16px 20px;
 }
 
-.setting-item:last-child {
-  border-bottom: none;
+/* 相邻设置项之间保持统一的垂直间距 */
+.setting-item + .setting-item {
+  margin-top: 12px;
 }
 
 .setting-info {
@@ -620,7 +616,7 @@ const handleFilterEmptyResourcesChange = (value: boolean) => {
   font-size: 15px;
   font-weight: 500;
   color: var(--el-text-color-primary);
-  margin-bottom: 6px;
+  margin-bottom: 10px;
 }
 
 .setting-desc {
@@ -643,14 +639,7 @@ const handleFilterEmptyResourcesChange = (value: boolean) => {
   margin-top: 4px;
 }
 
-/* 阈值设置样式 */
-.threshold-setting {
-  background-color: var(--el-fill-color-light);
-  border-radius: 8px;
-  margin-top: 8px;
-  padding: 16px 20px;
-}
-
+/* 阈值输入框宽度 */
 .threshold-input {
   width: 120px;
 }
@@ -667,7 +656,7 @@ const handleFilterEmptyResourcesChange = (value: boolean) => {
   margin-bottom: 24px;
   padding: 20px;
   background-color: var(--el-fill-color-light);
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
 }
 
 .stat-item {

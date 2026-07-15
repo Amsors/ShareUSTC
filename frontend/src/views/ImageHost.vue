@@ -418,14 +418,19 @@ onMounted(() => {
 
 .upload-area {
   border: 2px dashed var(--el-border-color);
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   padding: 40px 20px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.3s;
+  transition:
+    background-color var(--su-transition-base),
+    border-color var(--su-transition-base);
 }
 
-.upload-area:hover,
+.upload-area:hover {
+  border-color: var(--el-color-primary);
+}
+
 .upload-area.is-dragover {
   border-color: var(--el-color-primary);
   background-color: var(--el-fill-color-light);
@@ -470,7 +475,7 @@ onMounted(() => {
   width: 100%;
   max-height: 200px;
   object-fit: contain;
-  border-radius: 4px;
+  border-radius: var(--su-radius-sm);
   border: 1px solid var(--el-border-color-lighter);
 }
 
@@ -523,15 +528,19 @@ onMounted(() => {
 
 .image-item {
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   overflow: hidden;
-  background-color: #fff;
+  background-color: var(--el-bg-color);
   border: 1px solid var(--el-border-color-lighter);
-  transition: box-shadow 0.3s;
+  /* 静置无阴影；仅在 hover 时上浮 + 加阴影 */
+  transition:
+    transform var(--su-transition-base),
+    box-shadow var(--su-transition-base);
 }
 
 .image-item:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  box-shadow: var(--su-shadow-md);
 }
 
 .image-wrapper {
@@ -560,7 +569,7 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   opacity: 0;
-  transition: opacity 0.3s;
+  transition: opacity var(--su-transition-slow);
 }
 
 .image-wrapper:hover .image-overlay {
@@ -605,14 +614,14 @@ onMounted(() => {
   max-height: 300px;
   object-fit: contain;
   margin-bottom: 16px;
-  border-radius: 4px;
+  border-radius: var(--su-radius-sm);
 }
 
 .detail-info {
   text-align: left;
   background-color: var(--el-fill-color-light);
   padding: 16px;
-  border-radius: 4px;
+  border-radius: var(--su-radius-sm);
   margin-bottom: 16px;
 }
 
@@ -627,5 +636,11 @@ onMounted(() => {
 
 .mt-2 {
   margin-top: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .image-item:hover {
+    transform: none;
+  }
 }
 </style>

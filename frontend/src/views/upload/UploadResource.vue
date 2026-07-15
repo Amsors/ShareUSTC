@@ -397,9 +397,10 @@ const resetAndUpload = () => {
 
 .upload-container {
   background: var(--el-bg-color);
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   padding: 32px;
   margin-bottom: 24px;
+  /* Elevated 主内容卡：无阴影，靠灰底白卡对比区分 */
 }
 
 .upload-steps {
@@ -428,7 +429,7 @@ const resetAndUpload = () => {
 
 .markdown-editor-section {
   border: 1px solid var(--el-border-color);
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   overflow: hidden;
 }
 
@@ -444,6 +445,8 @@ const resetAndUpload = () => {
 
 .file-preview-card {
   margin-bottom: 24px;
+  /* 嵌套在 upload-container 内的 Outlined 卡：仅描边、无阴影，避免阴影叠加 */
+  box-shadow: none;
 }
 
 .file-preview {

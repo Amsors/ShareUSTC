@@ -92,7 +92,7 @@ const toggleCollapse = () => {
   color: white;
   display: flex;
   flex-direction: column;
-  transition: width 0.3s;
+  transition: width var(--su-transition-slow);
   position: fixed;
   height: 100vh;
   z-index: 100;
@@ -127,7 +127,9 @@ const toggleCollapse = () => {
   padding: 12px 24px;
   color: rgba(255, 255, 255, 0.7);
   text-decoration: none;
-  transition: all 0.3s;
+  transition:
+    background-color var(--su-transition-slow),
+    color var(--su-transition-slow);
   cursor: pointer;
 }
 
@@ -152,7 +154,7 @@ const toggleCollapse = () => {
   justify-content: center;
   cursor: pointer;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
-  transition: background-color 0.3s;
+  transition: background-color var(--su-transition-slow);
 }
 
 .collapse-btn:hover {
@@ -163,7 +165,7 @@ const toggleCollapse = () => {
 .main-content {
   flex: 1;
   margin-left: 240px;
-  transition: margin-left 0.3s;
+  transition: margin-left var(--su-transition-slow);
   display: flex;
   flex-direction: column;
 }

@@ -274,7 +274,8 @@ onMounted(() => {
   align-items: center;
   padding: 16px 24px;
   background: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  /* 例外：吸顶页头保留阴影，用于在内容滚动到其下方时做分隔（非灰底白卡） */
+  box-shadow: var(--su-shadow-sm);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -376,20 +377,20 @@ onMounted(() => {
 .markdown-body :deep(img) {
   max-width: 100%;
   height: auto;
-  border-radius: 4px;
+  border-radius: var(--su-radius-sm);
 }
 
 .markdown-body :deep(code) {
   background-color: var(--el-fill-color-light);
   padding: 0.2em 0.4em;
-  border-radius: 3px;
+  border-radius: var(--su-radius-sm);
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
 }
 
 .markdown-body :deep(pre) {
   background-color: var(--el-fill-color-light);
   padding: 16px;
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   overflow-x: auto;
 }
 

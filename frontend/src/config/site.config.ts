@@ -34,12 +34,11 @@ export const brandConfig = {
 // 平台简介配置
 export const platformConfig = {
   // 平台简介（第一段）
-  description:
-    'ShareUSTC 是一个面向USTC学生的学习资源分享平台，旨在促进校内优质学习资源的共享与传承，打造互助性的学习社区。',
+  description: 'ShareUSTC 是一个学习资源分享平台，让优质学习资源在校内共享。',
 
   // 平台简介（第二段）
   descriptionSecond:
-    '在这里，你可以下载课程笔记、往年试卷、复习提纲、讲义等各类学习资料，也可以分享自己的学习资源，帮助更多同学。',
+    '你可以在这里下载课程笔记、往年试卷、复习提纲、讲义等各类学习资料，也可以分享自己的学习资源，帮助更多同学。',
 
   // 开源项目描述
   openSourceDescription:
@@ -61,10 +60,10 @@ export const authConfig = {
   registerTitle: '注册 ShareUSTC',
 
   // 登录/注册副标题
-  authSubtitle: '校园学习资源分享平台',
+  authSubtitle: '登录以访问更多功能',
 
   // 注册页面副标题
-  registerSubtitle: '加入校园学习资源分享平台',
+  registerSubtitle: '注册ShareUSTC,享受更多功能',
 };
 
 // 资源来源配置（支持动态添加）
@@ -144,6 +143,16 @@ export interface ChangelogItem {
 }
 
 export const changelog: ChangelogItem[] = [
+  {
+    date: '2026-07-15',
+    type: 'improve',
+    content: '重构UI',
+  },
+  {
+    date: '2026-07-14',
+    type: 'feature',
+    content: '将网站容器化部署',
+  },
   {
     date: '2026-03-05',
     type: 'improve',

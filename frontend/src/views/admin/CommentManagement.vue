@@ -42,7 +42,7 @@
       <el-empty v-if="!loading && comments.length === 0" description="暂无评论" />
 
       <div v-else class="comment-list">
-        <el-card v-for="comment in comments" :key="comment.id" class="comment-item" shadow="hover">
+        <el-card v-for="comment in comments" :key="comment.id" class="comment-item" shadow="never">
           <div class="comment-header">
             <div class="user-info">
               <el-avatar :size="32" :icon="UserFilled" />
@@ -323,14 +323,6 @@ onMounted(() => {
   gap: 16px;
 }
 
-.comment-item {
-  transition: all 0.3s;
-}
-
-.comment-item:hover {
-  transform: translateY(-2px);
-}
-
 .comment-header {
   display: flex;
   justify-content: space-between;
@@ -352,7 +344,7 @@ onMounted(() => {
 .comment-content {
   padding: 12px;
   background-color: var(--el-fill-color-light);
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   margin-bottom: 12px;
 }
 

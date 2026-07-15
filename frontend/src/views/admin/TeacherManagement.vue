@@ -679,7 +679,7 @@ onMounted(fetchTeachers);
   .json-example {
     background: var(--el-fill-color-light);
     padding: 12px;
-    border-radius: 4px;
+    border-radius: var(--su-radius-sm);
     font-family: monospace;
     font-size: 13px;
     margin: 12px 0;

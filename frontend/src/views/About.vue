@@ -648,7 +648,7 @@ const copyQQGroup = async () => {
   margin-bottom: 48px;
   padding: 40px;
   background: linear-gradient(135deg, #ffcccc 0%, #ffffcc 50%, #ccf0ce 100%);
-  border-radius: 16px;
+  border-radius: var(--su-radius-lg);
 }
 
 .about-header h1 {
@@ -691,7 +691,7 @@ const copyQQGroup = async () => {
 .section {
   background: #fff;
   padding: 32px;
-  border-radius: 12px;
+  border-radius: var(--su-radius-lg);
   border: 1px solid var(--el-border-color-lighter);
 }
 
@@ -727,14 +727,17 @@ const copyQQGroup = async () => {
   gap: 12px;
   padding: 12px 16px;
   border: 1px solid var(--el-border-color-lighter);
-  border-radius: 8px;
-  background-color: #fcfcfc;
-  transition: all 0.3s ease;
+  border-radius: var(--su-radius-md);
+  background-color: var(--el-bg-color);
+  /* 静置无阴影；仅在 hover 时上浮 + 加阴影 */
+  transition:
+    box-shadow var(--su-transition-base),
+    transform var(--su-transition-base);
   text-align: left;
 }
 
 .features-section .feature-card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--su-shadow-md);
   transform: translateY(-2px);
 }
 
@@ -800,11 +803,11 @@ const copyQQGroup = async () => {
   display: inline-block;
   text-decoration: none;
   color: #24292e;
-  transition: transform 0.3s ease;
+  transition: transform var(--su-transition-base);
 }
 
 .github-link:hover {
-  transform: translateY(-4px);
+  transform: translateY(-2px);
 }
 
 .github-content {
@@ -813,14 +816,14 @@ const copyQQGroup = async () => {
   gap: 16px;
   padding: 20px 28px;
   background: #f6f8fa;
-  border-radius: 12px;
+  border-radius: var(--su-radius-lg);
   border: 1px solid #d0d7de;
-  transition: all 0.3s ease;
+  /* 静置无阴影；仅在 hover 时加阴影 */
+  transition: box-shadow var(--su-transition-base);
 }
 
 .github-link:hover .github-content {
-  background: #fff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--su-shadow-md);
 }
 
 .github-icon {
@@ -889,7 +892,7 @@ const copyQQGroup = async () => {
   max-height: 220px;
   background: #fff;
   border: 1px solid #e1e4e8;
-  border-radius: 12px;
+  border-radius: var(--su-radius-lg);
   padding: 16px 20px;
   overflow: hidden;
 }
@@ -965,7 +968,7 @@ const copyQQGroup = async () => {
 
 .contributors-list::-webkit-scrollbar-thumb {
   background: #d0d7de;
-  border-radius: 2px;
+  border-radius: var(--su-radius-sm);
 }
 
 .contributor-item {
@@ -1067,7 +1070,7 @@ const copyQQGroup = async () => {
   gap: 16px;
   padding: 12px 16px;
   background: #f6f8fa;
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   border-left: 3px solid var(--el-color-primary);
 }
 
@@ -1089,7 +1092,7 @@ const copyQQGroup = async () => {
 .changelog-tag {
   font-size: 12px;
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius: var(--su-radius-sm);
   font-weight: 500;
   flex-shrink: 0;
 }
@@ -1129,7 +1132,7 @@ const copyQQGroup = async () => {
   gap: 16px;
   padding: 16px 20px;
   background: #f6f8fa;
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
   border-left: 3px solid var(--el-color-primary);
 }
 
@@ -1163,7 +1166,9 @@ const copyQQGroup = async () => {
   font-size: 14px;
   font-weight: 500;
   text-decoration: none;
-  transition: all 0.2s ease;
+  transition:
+    background-color var(--su-transition-base),
+    color var(--su-transition-base);
 }
 
 .source-link {
@@ -1244,8 +1249,10 @@ const copyQQGroup = async () => {
   cursor: pointer;
   font-weight: 500;
   padding: 2px 6px;
-  border-radius: 4px;
-  transition: all 0.2s ease;
+  border-radius: var(--su-radius-sm);
+  transition:
+    background-color var(--su-transition-base),
+    color var(--su-transition-base);
   user-select: none;
 }
 
@@ -1353,6 +1360,13 @@ const copyQQGroup = async () => {
   .source-info,
   .uploader-info {
     width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .features-section .feature-card:hover,
+  .github-link:hover {
+    transform: none;
   }
 }
 </style>

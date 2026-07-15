@@ -196,7 +196,7 @@ onMounted(() => {
   margin-bottom: 24px;
   padding: 16px;
   background-color: var(--el-fill-color-light);
-  border-radius: 8px;
+  border-radius: var(--su-radius-md);
 }
 
 .stat-item {
