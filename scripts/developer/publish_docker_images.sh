@@ -75,6 +75,25 @@ fetch_all_tags() {
     rm -f "$page_file"
 }
 
+print_all_tags() {
+    local repository="$1"
+    local tags_file="$2"
+    local tag_count
+    local tag
+
+    tag_count="$(wc -l <"$tags_file")"
+    echo "    ${repository}: ${tag_count} 个 tag"
+
+    if [[ ! -s "$tags_file" ]]; then
+        echo "      - （暂无 tag）"
+        return
+    fi
+
+    while IFS= read -r tag; do
+        echo "      - $tag"
+    done <"$tags_file"
+}
+
 if (( $# != 0 )); then
     usage >&2
     exit 1
@@ -103,8 +122,8 @@ BACKEND_TAGS_FILE="$(mktemp)"
 trap 'rm -f "$FRONTEND_TAGS_FILE" "$BACKEND_TAGS_FILE"' EXIT
 fetch_all_tags "$FRONTEND_REPOSITORY" "$FRONTEND_TAGS_FILE"
 fetch_all_tags "$BACKEND_REPOSITORY" "$BACKEND_TAGS_FILE"
-echo "    前端仓库: $(wc -l <"$FRONTEND_TAGS_FILE") 个 tag"
-echo "    后端仓库: $(wc -l <"$BACKEND_TAGS_FILE") 个 tag"
+print_all_tags "$FRONTEND_REPOSITORY" "$FRONTEND_TAGS_FILE"
+print_all_tags "$BACKEND_REPOSITORY" "$BACKEND_TAGS_FILE"
 
 while true; do
     read -r -p "请输入前后端镜像共用的 tag: " TAG

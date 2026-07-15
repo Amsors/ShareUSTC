@@ -6,12 +6,12 @@ use serde::Serialize;
 use uuid::Uuid;
 
 use backend::api;
-use backend::config::Config;
+use backend::config::{BrandConfig, Config};
 use backend::db::{self, AppState};
 use backend::middleware::{JwtAuth, PublicPathRule};
 use backend::services::{self, StorageBackendType};
 use backend::tasks;
-use backend::utils::{internal_error, not_found};
+use backend::utils::{error_response, internal_error, not_found};
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -38,32 +38,56 @@ async fn hello(data: web::Data<AppState>) -> impl Responder {
 }
 
 /// Liveness 探针：仅表示进程存活，不探测依赖。恒定返回 200。
-#[get("/api/health")]
-async fn health_check(config: web::Data<AppState>) -> impl Responder {
+#[get("/health")]
+async fn health_check(brand: web::Data<BrandConfig>) -> impl Responder {
     HttpResponse::Ok().json(serde_json::json!({
         "status": "healthy",
-        "service": config.brand.service_name
+        "service": brand.service_name
     }))
 }
 
 /// Readiness 探针：探测数据库可用性（`SELECT 1`）。
 /// 就绪返回 200，数据库不可达返回 503（错误体遵循 api_design.md 的 `{error, message}`）。
 /// compose / K8s 的 healthcheck 指向本端点。
-#[get("/api/health/ready")]
-async fn readiness_check(data: web::Data<AppState>) -> impl Responder {
-    match sqlx::query("SELECT 1").execute(&data.pool).await {
+#[get("/health/ready")]
+async fn readiness_check(
+    pool: web::Data<sqlx::PgPool>,
+    brand: web::Data<BrandConfig>,
+) -> impl Responder {
+    match services::HealthService::check_readiness(pool.get_ref()).await {
         Ok(_) => HttpResponse::Ok().json(serde_json::json!({
             "status": "ready",
-            "service": data.brand.service_name
+            "service": brand.service_name
         })),
         Err(e) => {
-            log::warn!("[Health] readiness 探测失败：数据库不可达 | error={}", e);
-            HttpResponse::ServiceUnavailable().json(serde_json::json!({
-                "error": "ServiceUnavailable",
-                "message": "数据库不可达"
-            }))
+            log::warn!("[System] readiness 探测失败：数据库不可达 | error={}", e);
+            error_response(503, "数据库不可达")
         }
     }
+}
+
+/// 构建 JWT 中间件的公开路径规则。
+fn public_path_rules() -> Vec<PublicPathRule> {
+    vec![
+        // 存活与就绪探针供容器编排系统访问，不携带用户认证信息
+        PublicPathRule::with_methods("/api/health", vec![Method::GET]),
+        // /api/auth 全部公开
+        PublicPathRule::all_methods("/api/auth"),
+        // /api/resources GET 方法公开（列表、搜索、详情、下载），但排除需要登录的接口
+        PublicPathRule::with_methods("/api/resources", vec![Method::GET])
+            .exclude(vec!["/api/resources/my", "/api/resources/{id}/rate"]),
+        // /api/resources/pdf-preview-challenge 全部公开（支持未登录用户检测）
+        PublicPathRule::all_methods("/api/resources/pdf-preview-challenge"),
+        // /api/users/{user_id} 和 /api/users/{user_id}/homepage GET 方法公开
+        // 排除 /api/users/me 和 /api/users/verify
+        PublicPathRule::with_methods("/api/users", vec![Method::GET])
+            .exclude(vec!["/api/users/me", "/api/users/verify"]),
+        // /api/config 公开（站点配置）
+        PublicPathRule::with_methods("/api/config", vec![Method::GET]),
+        // /api/teachers 和 /api/courses GET 方法公开（供游客筛选资源）
+        PublicPathRule::with_methods("/api/teachers", vec![Method::GET]),
+        PublicPathRule::with_methods("/api/courses", vec![Method::GET]),
+    ]
 }
 
 /// 获取图片文件（公开访问）
@@ -330,27 +354,7 @@ async fn main() -> std::io::Result<()> {
         // 克隆 CORS 域名列表供此 worker 线程使用
         let cors_origins_worker = cors_origins.clone();
 
-        // 配置公开路径规则
-        let public_rules = vec![
-            // /api/auth 全部公开
-            PublicPathRule::all_methods("/api/auth"),
-            // /api/resources GET 方法公开（列表、搜索、详情、下载），但排除需要登录的接口
-            PublicPathRule::with_methods("/api/resources", vec![Method::GET])
-                .exclude(vec!["/api/resources/my", "/api/resources/{id}/rate"]),
-            // /api/resources/pdf-preview-challenge 全部公开（支持未登录用户检测）
-            PublicPathRule::all_methods("/api/resources/pdf-preview-challenge"),
-            // /api/users/{user_id} 和 /api/users/{user_id}/homepage GET 方法公开
-            // 排除 /api/users/me 和 /api/users/verify
-            PublicPathRule::with_methods("/api/users", vec![Method::GET])
-                .exclude(vec!["/api/users/me", "/api/users/verify"]),
-            // /api/config 公开（站点配置）
-            PublicPathRule::with_methods("/api/config", vec![Method::GET]),
-            // /api/teachers 和 /api/courses GET 方法公开（供游客筛选资源）
-            PublicPathRule::with_methods("/api/teachers", vec![Method::GET]),
-            PublicPathRule::with_methods("/api/courses", vec![Method::GET]),
-        ];
-
-        let jwt_auth = JwtAuth::new(jwt_secret.clone()).with_public_rules(public_rules);
+        let jwt_auth = JwtAuth::new(jwt_secret.clone()).with_public_rules(public_path_rules());
 
         // 构建 CORS 配置
         // 注意：使用 Cookie 认证必须设置 supports_credentials(true)
@@ -382,6 +386,8 @@ async fn main() -> std::io::Result<()> {
 
         App::new()
             .app_data(app_state.clone())
+            .app_data(web::Data::new(app_state.pool.clone()))
+            .app_data(web::Data::new(app_state.brand.clone()))
             .wrap(cors)
             .wrap(Logger::new("%a %r %s %b %Dms").log_target("backend::access"))
             // API 路由（统一使用 /api 前缀，通过中间件控制认证）
@@ -389,6 +395,8 @@ async fn main() -> std::io::Result<()> {
             .service(
                 web::scope("/api")
                     .wrap(jwt_auth)
+                    .service(health_check)
+                    .service(readiness_check)
                     .configure(api::auth::config)
                     .configure(api::user::config)
                     .configure(api::oss::config)
@@ -404,8 +412,6 @@ async fn main() -> std::io::Result<()> {
             )
             // 独立的公开服务（非 /api 前缀）
             .service(serve_image)
-            .service(health_check)
-            .service(readiness_check)
             .service(hello)
     })
     .bind(&server_addr)?
@@ -465,4 +471,61 @@ async fn initialize_user_sn(pool: &sqlx::PgPool) -> Result<usize, sqlx::Error> {
     }
 
     Ok(assigned)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use actix_web::{http::StatusCode, test as actix_test, App};
+    use sqlx::postgres::PgPoolOptions;
+    use std::time::Duration;
+
+    #[test]
+    fn readiness_probe_is_public_for_get_requests() {
+        let rules = public_path_rules();
+        let is_public = rules
+            .iter()
+            .any(|rule| rule.matches("/api/health/ready", &Method::GET));
+        let post_is_public = rules
+            .iter()
+            .any(|rule| rule.matches("/api/health/ready", &Method::POST));
+
+        assert!(is_public, "readiness 探针不应要求认证信息");
+        assert!(!post_is_public, "健康检查路径只应公开 GET 方法");
+    }
+
+    #[actix_web::test]
+    async fn readiness_probe_without_auth_reaches_handler() {
+        let pool = PgPoolOptions::new()
+            .acquire_timeout(Duration::from_millis(100))
+            .connect_lazy("postgres://test:test@127.0.0.1:1/test")
+            .expect("测试数据库连接串应可解析");
+        let jwt_auth =
+            JwtAuth::new("test-jwt-secret".to_string()).with_public_rules(public_path_rules());
+        let app = actix_test::init_service(
+            App::new()
+                .app_data(web::Data::new(pool))
+                .app_data(web::Data::new(BrandConfig::default()))
+                .service(
+                    web::scope("/api")
+                        .wrap(jwt_auth)
+                        .service(health_check)
+                        .service(readiness_check),
+                ),
+        )
+        .await;
+
+        let response = actix_test::call_service(
+            &app,
+            actix_test::TestRequest::get()
+                .uri("/api/health/ready")
+                .to_request(),
+        )
+        .await;
+
+        assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
+        let body: serde_json::Value = actix_test::read_body_json(response).await;
+        assert_eq!(body["error"], "ServiceUnavailable");
+        assert_eq!(body["message"], "数据库不可达");
+    }
 }
