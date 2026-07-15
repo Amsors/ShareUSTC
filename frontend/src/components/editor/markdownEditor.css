@@ -1,0 +1,233 @@
+.markdown-editor-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid var(--el-border-color);
+  border-radius: var(--su-radius-md);
+  overflow: hidden;
+  background: var(--el-bg-color);
+}
+
+.editor-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--el-border-color);
+  background: var(--el-fill-color-lighter);
+  flex-shrink: 0;
+}
+
+.toolbar-left {
+  display: flex;
+  gap: 8px;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.word-count {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.editor-container {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  min-height: 500px;
+}
+
+/* 上传页让源文件区随内容增高，避免与页面同时出现纵向滚动操作。 */
+.markdown-editor-wrapper.is-auto-grow {
+  height: auto;
+}
+
+.markdown-editor-wrapper.is-auto-grow .editor-container {
+  flex: none;
+  height: var(--markdown-editor-auto-grow-height, 500px);
+  min-height: 500px;
+}
+
+.markdown-editor-wrapper.is-auto-grow :deep(.cm-content[contenteditable='true']) {
+  min-height: 0;
+}
+
+.markdown-editor-wrapper.is-auto-grow :deep(.cm-scroller) {
+  overflow-y: hidden;
+}
+
+/* 只隐藏左侧源文件的自定义滚动条，右侧预览仍独立滚动。 */
+.markdown-editor-wrapper.is-auto-grow
+  :deep(.md-editor-input-wrapper ~ .md-editor-custom-scrollbar__track) {
+  display: none;
+}
+
+.md-editor {
+  height: 100% !important;
+}
+
+/* 自定义 md-editor 样式 */
+:deep(.md-editor) {
+  --md-bk-color: var(--el-bg-color);
+  --md-border-color: var(--el-border-color);
+  --md-text-color: var(--el-text-color-primary);
+  --md-hover-color: var(--el-fill-color-light);
+}
+
+:deep(.md-editor-toolbar) {
+  border-bottom: 1px solid var(--el-border-color);
+}
+
+:deep(.md-editor-footer) {
+  border-top: 1px solid var(--el-border-color);
+}
+
+:deep(.md-editor-content) {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
+/* 源文件行号固定在编辑区左侧，帮助区分真实换行与视觉自动换行。 */
+:deep(.cm-gutters) {
+  color: var(--el-text-color-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+:deep(.cm-lineNumbers .cm-gutterElement) {
+  min-width: 3ch;
+  padding: 0 8px 0 6px;
+}
+
+/* 三栏顺序：目录、源文件、渲染结果。 */
+:deep(.md-editor-catalog-flat) {
+  order: 1;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+:deep(.md-editor-catalog-flat .md-editor-catalog-editor) {
+  width: 100%;
+  border-inline-start: 0;
+}
+
+:deep(.md-editor-content-wrapper) {
+  order: 3;
+}
+
+:deep(.markdown-catalog-resizer) {
+  position: relative;
+  z-index: 2;
+  order: 2;
+  flex: 0 0 7px;
+  width: 7px;
+  height: 100%;
+  cursor: col-resize;
+  touch-action: none;
+  outline: none;
+}
+
+:deep(.markdown-catalog-resizer::after),
+:deep(.md-editor-resize-operate::after) {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 50%;
+  width: 1px;
+  background: var(--el-border-color);
+  content: '';
+  transition: background-color var(--su-transition-fast);
+}
+
+:deep(.markdown-catalog-resizer:hover::after),
+:deep(.markdown-catalog-resizer:focus-visible::after),
+:deep(.markdown-catalog-resizer.is-resizing::after),
+:deep(.md-editor-resize-operate:hover::after) {
+  background: var(--el-color-primary);
+}
+
+/* 将内置的源文件/预览分隔条扩大为更容易操作的热区。 */
+:deep(.md-editor-resize-operate) {
+  width: 7px;
+  background: transparent;
+  transform: translateX(-50%);
+}
+
+/* 预览区域样式 */
+:deep(.md-editor-preview) {
+  padding: 16px;
+}
+
+:deep(.md-editor-preview h1) {
+  font-size: 2em;
+  border-bottom: 1px solid var(--el-border-color);
+  padding-bottom: 0.3em;
+  margin-bottom: 1em;
+}
+
+:deep(.md-editor-preview h2) {
+  font-size: 1.5em;
+  border-bottom: 1px solid var(--el-border-color);
+  padding-bottom: 0.3em;
+  margin: 1.5em 0 1em;
+}
+
+:deep(.md-editor-preview h3) {
+  font-size: 1.25em;
+  margin: 1.5em 0 1em;
+}
+
+:deep(.md-editor-preview p) {
+  margin: 1em 0;
+  line-height: 1.8;
+}
+
+:deep(.md-editor-preview img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--su-radius-sm);
+}
+
+:deep(.md-editor-preview code) {
+  background-color: var(--el-fill-color);
+  padding: 0.2em 0.4em;
+  border-radius: var(--su-radius-sm);
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
+:deep(.md-editor-preview pre) {
+  background-color: var(--el-fill-color-dark);
+  padding: 16px;
+  border-radius: var(--su-radius-md);
+  overflow-x: auto;
+}
+
+:deep(.md-editor-preview pre code) {
+  background-color: transparent;
+  padding: 0;
+}
+
+:deep(.md-editor-preview blockquote) {
+  border-left: 4px solid var(--el-border-color);
+  padding-left: 1em;
+  margin: 1em 0;
+  color: var(--el-text-color-secondary);
+}
+
+:deep(.md-editor-preview table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+}
+
+:deep(.md-editor-preview th),
+:deep(.md-editor-preview td) {
+  border: 1px solid var(--el-border-color);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+:deep(.md-editor-preview th) {
+  background-color: var(--el-fill-color-light);
+}

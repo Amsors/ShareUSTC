@@ -1,11 +1,11 @@
 <template>
-  <div class="upload-resource-page">
+  <div class="upload-resource-page" :class="{ 'is-markdown-mode': isUploadContainerExpanded }">
     <div class="page-header">
       <h1>上传资源</h1>
       <p class="subtitle">分享你的学习资料，帮助更多同学</p>
     </div>
 
-    <div class="upload-container">
+    <div :ref="setUploadContainerRef" class="upload-container">
       <!-- 步骤条 -->
       <el-steps :active="currentStep" finish-status="success" simple class="upload-steps">
         <el-step title="选择文件" />
@@ -35,8 +35,8 @@
               <MarkdownEditor
                 v-model="markdownContent"
                 :auto-save-key="'upload_markdown_draft'"
+                auto-grow
                 placeholder="开始编写你的 Markdown 内容..."
-                style="height: 500px"
               />
             </div>
           </el-tab-pane>
@@ -52,6 +52,13 @@
             下一步
             <el-icon class="el-icon--right"><ArrowRight /></el-icon>
           </el-button>
+          <span
+            v-if="uploadMode === 'markdown' && !markdownFileName.trim()"
+            class="filename-required-hint"
+            role="status"
+          >
+            请在上方填写文件名(标题)
+          </span>
         </div>
       </div>
 
@@ -61,8 +68,10 @@
           <div class="file-preview">
             <el-icon class="file-icon"><Document /></el-icon>
             <div class="file-info">
-              <span class="file-name">{{ selectedFile?.name }}</span>
-              <span class="file-size">{{ formatFileSize(selectedFile?.size) }}</span>
+              <span class="file-name">{{ uploadFileDisplay.name }}</span>
+              <span v-if="uploadFileDisplay.showSize" class="file-size">
+                {{ formatFileSize(selectedFile?.size) }}
+              </span>
             </div>
             <el-button type="primary" link @click="goToStep(0)">
               {{ uploadMode === 'file' ? '更换文件' : '返回编辑' }}
@@ -157,7 +166,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch, type ComponentPublicInstance } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { ArrowRight, Document, Loading, CircleCheck, CircleClose } from '@element-plus/icons-vue';
@@ -167,6 +176,9 @@ import MarkdownEditor from '@/components/editor/MarkdownEditor.vue';
 import { uploadResource } from '@/api/resource';
 import { getErrorMessage, isHandledError } from '@/api/request';
 import logger from '@/utils/logger';
+import { getUploadFileDisplay, type UploadMode } from '@/utils/uploadDisplay';
+import { scrollToPageTop } from '@/utils/pageScroll';
+import { useUploadContainerTransition } from '@/composables/useUploadContainerTransition';
 import {
   formatFileSize,
   getResourceTypeFromFileName,
@@ -181,7 +193,24 @@ const router = useRouter();
 const currentStep = ref(0);
 
 // 上传模式：'file' 或 'markdown'
-const uploadMode = ref<'file' | 'markdown'>('file');
+const uploadMode = ref<UploadMode>('file');
+const uploadContainerTransition = useUploadContainerTransition();
+const isUploadContainerExpanded = uploadContainerTransition.isExpanded;
+const isUploadContainerTransitioning = uploadContainerTransition.isTransitioning;
+const setUploadContainerExpanded = uploadContainerTransition.setExpanded;
+const collapseUploadContainer = uploadContainerTransition.collapse;
+const expandUploadContainerAfterRender = uploadContainerTransition.expandAfterRender;
+
+const setUploadContainerRef = (element: Element | ComponentPublicInstance | null): void => {
+  uploadContainerTransition.containerRef.value =
+    element instanceof HTMLElement ? element : undefined;
+};
+
+watch(uploadMode, (mode) => {
+  if (currentStep.value === 0) {
+    setUploadContainerExpanded(mode === 'markdown');
+  }
+});
 
 // 选中的文件（文件上传模式）
 const selectedFile = ref<File | null>(null);
@@ -233,6 +262,11 @@ const canProceedToStep2 = computed(() => {
   }
 });
 
+// 填写信息页的文件名（在线 Markdown 此时尚未转换为 File 对象）
+const uploadFileDisplay = computed(() =>
+  getUploadFileDisplay(uploadMode.value, selectedFile.value?.name)
+);
+
 // 审核状态文本
 const auditStatusText = computed(() => {
   switch (auditStatus.value) {
@@ -248,9 +282,14 @@ const auditStatusText = computed(() => {
 });
 
 // 跳转到指定步骤
-const goToStep = (step: number) => {
+const goToStep = async (step: number): Promise<void> => {
+  if (isUploadContainerTransitioning.value) return;
+
+  const isReturningToMarkdown =
+    currentStep.value === 1 && step === 0 && uploadMode.value === 'markdown';
+
   // 如果从步骤2返回步骤1，且是markdown模式，需要清空selectedFile
-  if (currentStep.value === 1 && step === 0 && uploadMode.value === 'markdown') {
+  if (isReturningToMarkdown) {
     selectedFile.value = null;
   }
 
@@ -260,7 +299,22 @@ const goToStep = (step: number) => {
     metadata.value.title = fileName.endsWith('.md') ? fileName : `${fileName}.md`;
   }
 
+  if (currentStep.value === 0 && step === 1 && uploadMode.value === 'markdown') {
+    await collapseUploadContainer();
+    currentStep.value = step;
+    scrollToPageTop();
+    return;
+  }
+
   currentStep.value = step;
+
+  if (step === 1) {
+    scrollToPageTop();
+  }
+
+  if (isReturningToMarkdown) {
+    await expandUploadContainerAfterRender();
+  }
 };
 
 // 将 Markdown 内容转换为 File 对象
@@ -373,9 +427,21 @@ const resetAndUpload = () => {
 
 <style scoped>
 .upload-resource-page {
-  max-width: 800px;
+  width: 100%;
   margin: 0 auto;
-  padding: 24px;
+  padding: var(--su-space-6);
+}
+
+.page-header,
+.upload-tips {
+  width: 100%;
+  max-width: 800px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.upload-resource-page.is-markdown-mode .upload-container {
+  width: 100%;
 }
 
 .page-header {
@@ -396,11 +462,22 @@ const resetAndUpload = () => {
 }
 
 .upload-container {
+  width: 800px;
+  max-width: 100%;
+  margin-right: auto;
+  margin-left: auto;
   background: var(--el-bg-color);
   border-radius: var(--su-radius-md);
   padding: 32px;
   margin-bottom: 24px;
+  transition: width var(--su-transition-slow);
   /* Elevated 主内容卡：无阴影，靠灰底白卡对比区分 */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .upload-container {
+    transition: none;
+  }
 }
 
 .upload-steps {
@@ -413,9 +490,15 @@ const resetAndUpload = () => {
 
 .step-actions {
   display: flex;
+  align-items: center;
   justify-content: center;
   gap: 16px;
   margin-top: 32px;
+}
+
+.filename-required-hint {
+  color: var(--el-color-warning);
+  font-size: 14px;
 }
 
 /* 上传模式选项卡样式 */

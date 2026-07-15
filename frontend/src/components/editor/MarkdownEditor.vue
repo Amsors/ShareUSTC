@@ -1,5 +1,5 @@
 <template>
-  <div class="markdown-editor-wrapper">
+  <div class="markdown-editor-wrapper" :class="{ 'is-auto-grow': autoGrow }">
     <!-- 工具栏 -->
     <div class="editor-toolbar">
       <div class="toolbar-left">
@@ -16,11 +16,12 @@
     </div>
 
     <!-- 编辑器主体 -->
-    <div class="editor-container">
+    <div ref="editorContainerRef" class="editor-container">
       <md-editor
         v-model="content"
         :toolbars="toolbars"
         :footers="footers"
+        catalog-layout="flat"
         placeholder="开始编写你的 Markdown 内容..."
         class="md-editor"
         @on-upload-img="handleUploadImg"
@@ -37,20 +38,32 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Picture } from '@element-plus/icons-vue';
-import { MdEditor } from 'md-editor-v3';
+import { config, MdEditor } from 'md-editor-v3';
 // 工具栏/底栏类型未从包入口导出，从内部类型路径引入（类型导入编译期擦除，不影响运行时）
 import type { ToolbarNames, Footers } from 'md-editor-v3/lib/types/MdEditor/type';
 import 'md-editor-v3/lib/style.css';
 import ImageSelector from '@/components/editor/ImageSelector.vue';
+import { useResizableMarkdownCatalog } from '@/composables/useResizableMarkdownCatalog';
 import { uploadImage } from '@/api/imageHost';
 import { getErrorMessage, isHandledError } from '@/api/request';
 import logger from '@/utils/logger';
+import {
+  withMarkdownSourceAutoGrow,
+  withMarkdownSourceLineNumbers,
+} from '@/utils/markdownEditorConfig';
+
+// 为 CodeMirror 源文件编辑区启用行号及按内容测高。
+config({
+  codeMirrorExtensions: (extensions) =>
+    withMarkdownSourceAutoGrow(withMarkdownSourceLineNumbers(extensions)),
+});
 
 // 定义props和emits
 const props = defineProps<{
   modelValue: string;
   resourceId?: string;
   autoSaveKey?: string;
+  autoGrow?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -63,6 +76,9 @@ const emit = defineEmits<{
 const content = ref(props.modelValue || '');
 const showImageSelector = ref(false);
 const hasDraft = ref(false);
+const editorContainerRef = ref<HTMLElement>();
+
+useResizableMarkdownCatalog(editorContainerRef);
 
 // 工具栏配置
 const toolbars: ToolbarNames[] = [
@@ -226,149 +242,4 @@ defineExpose({
 });
 </script>
 
-<style scoped>
-.markdown-editor-wrapper {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  border: 1px solid var(--el-border-color);
-  border-radius: var(--su-radius-md);
-  overflow: hidden;
-  background: var(--el-bg-color);
-}
-
-.editor-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--el-border-color);
-  background: var(--el-fill-color-lighter);
-  flex-shrink: 0;
-}
-
-.toolbar-left {
-  display: flex;
-  gap: 8px;
-}
-
-.toolbar-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.word-count {
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-}
-
-.editor-container {
-  flex: 1;
-  overflow: hidden;
-  position: relative;
-  min-height: 500px;
-}
-
-.md-editor {
-  height: 100% !important;
-}
-
-/* 自定义md-editor样式 */
-:deep(.md-editor) {
-  --md-bk-color: var(--el-bg-color);
-  --md-border-color: var(--el-border-color);
-  --md-text-color: var(--el-text-color-primary);
-  --md-hover-color: var(--el-fill-color-light);
-}
-
-:deep(.md-editor-toolbar) {
-  border-bottom: 1px solid var(--el-border-color);
-}
-
-:deep(.md-editor-footer) {
-  border-top: 1px solid var(--el-border-color);
-}
-
-:deep(.md-editor-content) {
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-}
-
-/* 预览区域样式 */
-:deep(.md-editor-preview) {
-  padding: 16px;
-}
-
-:deep(.md-editor-preview h1) {
-  font-size: 2em;
-  border-bottom: 1px solid var(--el-border-color);
-  padding-bottom: 0.3em;
-  margin-bottom: 1em;
-}
-
-:deep(.md-editor-preview h2) {
-  font-size: 1.5em;
-  border-bottom: 1px solid var(--el-border-color);
-  padding-bottom: 0.3em;
-  margin: 1.5em 0 1em;
-}
-
-:deep(.md-editor-preview h3) {
-  font-size: 1.25em;
-  margin: 1.5em 0 1em;
-}
-
-:deep(.md-editor-preview p) {
-  margin: 1em 0;
-  line-height: 1.8;
-}
-
-:deep(.md-editor-preview img) {
-  max-width: 100%;
-  height: auto;
-  border-radius: var(--su-radius-sm);
-}
-
-:deep(.md-editor-preview code) {
-  background-color: var(--el-fill-color);
-  padding: 0.2em 0.4em;
-  border-radius: var(--su-radius-sm);
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-}
-
-:deep(.md-editor-preview pre) {
-  background-color: var(--el-fill-color-dark);
-  padding: 16px;
-  border-radius: var(--su-radius-md);
-  overflow-x: auto;
-}
-
-:deep(.md-editor-preview pre code) {
-  background-color: transparent;
-  padding: 0;
-}
-
-:deep(.md-editor-preview blockquote) {
-  border-left: 4px solid var(--el-border-color);
-  padding-left: 1em;
-  margin: 1em 0;
-  color: var(--el-text-color-secondary);
-}
-
-:deep(.md-editor-preview table) {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 1em 0;
-}
-
-:deep(.md-editor-preview th),
-:deep(.md-editor-preview td) {
-  border: 1px solid var(--el-border-color);
-  padding: 8px 12px;
-  text-align: left;
-}
-
-:deep(.md-editor-preview th) {
-  background-color: var(--el-fill-color-light);
-}
-</style>
+<style scoped src="./markdownEditor.css"></style>
