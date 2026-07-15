@@ -21,7 +21,8 @@ services:
       retries: 5
 
   backend:
-    image: amsors/shareustc-backend:v1
+    build:
+      context: ./backend
     restart: unless-stopped
     # 连接池 acquire timeout 仅 3s，必须等库就绪再启动
     depends_on:
@@ -47,7 +48,8 @@ services:
       start_period: 30s
 
   frontend:
-    image: amsors/shareustc-frontend:v1
+    build:
+      context: ./frontend
     restart: unless-stopped
     depends_on:
       - backend
