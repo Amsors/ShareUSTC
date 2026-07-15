@@ -27,16 +27,11 @@ body.el-popup-parent--hidden {
   caret-color: transparent !important;
 }
 
-/* 输入框和文本域需要显示光标，以便用户知道可以输入 */
-input,
-textarea,
+/* 只在可编辑控件真正获得焦点时显示输入光标，避免浏览光标造成可输入的错觉 */
 input:focus,
 textarea:focus,
-[contenteditable='true'],
 [contenteditable='true']:focus,
-.el-input__inner,
 .el-input__inner:focus,
-.el-textarea__inner,
 .el-textarea__inner:focus {
   caret-color: auto !important;
 }

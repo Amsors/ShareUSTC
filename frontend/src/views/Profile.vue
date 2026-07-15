@@ -940,6 +940,7 @@ const refreshUserInfo = async () => {
 }
 
 .profile-menu {
+  border-right: none;
   border-radius: var(--su-radius-md);
 }
 

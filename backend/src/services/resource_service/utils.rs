@@ -41,28 +41,34 @@ pub fn infer_resource_type(file_name: &str, mime_type: Option<&str>) -> Option<R
     })
 }
 
-/// 添加资源类型筛选条件到 QueryBuilder
-pub fn add_resource_type_condition<'a>(
-    builder: &mut QueryBuilder<'a, sqlx::Postgres>,
-    resource_type: Option<&'a str>,
-) {
-    if let Some(resource_type) = resource_type {
-        match resource_type {
-            "ppt" => {
-                builder.push(" AND (r.resource_type = 'ppt' OR r.resource_type = 'pptx')");
-            }
-            "image" => {
-                builder.push(" AND (r.resource_type = 'jpeg' OR r.resource_type = 'jpg' OR r.resource_type = 'png')");
-            }
-            "doc" => {
-                builder.push(" AND (r.resource_type = 'doc' OR r.resource_type = 'docx')");
-            }
-            _ => {
-                builder.push(" AND r.resource_type = ");
-                builder.push_bind(resource_type);
-            }
+/// 将前端的合并类型筛选值展开为数据库中的实际资源类型
+pub fn expand_resource_type_filters(resource_types: &[String]) -> Vec<String> {
+    let mut expanded = Vec::new();
+    for resource_type in resource_types {
+        match resource_type.as_str() {
+            "ppt" => expanded.extend(["ppt".to_string(), "pptx".to_string()]),
+            "image" => expanded.extend(["jpeg".to_string(), "jpg".to_string(), "png".to_string()]),
+            "doc" => expanded.extend(["doc".to_string(), "docx".to_string()]),
+            _ => expanded.push(resource_type.clone()),
         }
     }
+    expanded.sort_unstable();
+    expanded.dedup();
+    expanded
+}
+
+/// 添加资源类型多选筛选条件到 QueryBuilder
+pub fn add_resource_type_condition(
+    builder: &mut QueryBuilder<'_, sqlx::Postgres>,
+    resource_types: &[String],
+) {
+    if resource_types.is_empty() {
+        return;
+    }
+
+    builder.push(" AND r.resource_type = ANY(");
+    builder.push_bind(expand_resource_type_filters(resource_types));
+    builder.push(")");
 }
 
 /// 计算平均分辅助函数
@@ -194,4 +200,17 @@ pub async fn compute_hash_from_storage_with_retry(
     }
 
     Err(format!("重试 {} 次后仍然失败: {}", MAX_RETRIES, last_error))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::expand_resource_type_filters;
+
+    #[test]
+    fn test_expand_resource_type_filters_merges_grouped_types() {
+        let filters = vec!["ppt".to_string(), "image".to_string(), "pdf".to_string()];
+        let expanded = expand_resource_type_filters(&filters);
+
+        assert_eq!(expanded, vec!["jpeg", "jpg", "pdf", "png", "ppt", "pptx"]);
+    }
 }

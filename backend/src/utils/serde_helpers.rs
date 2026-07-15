@@ -94,3 +94,54 @@ where
 
     deserializer.deserialize_any(VecI64Visitor)
 }
+
+/// 自定义反序列化函数：支持单个值、逗号分隔字符串或字符串数组
+/// 用于处理查询参数中的多选字符串字段
+pub fn deserialize_vec_string<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    use serde::de::{Error, SeqAccess, Visitor};
+    use std::fmt;
+
+    struct VecStringVisitor;
+
+    impl<'de> Visitor<'de> for VecStringVisitor {
+        type Value = Vec<String>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("单个字符串、逗号分隔字符串或字符串数组")
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where
+            E: Error,
+        {
+            Ok(value
+                .split(',')
+                .map(str::trim)
+                .filter(|item| !item.is_empty())
+                .map(str::to_string)
+                .collect())
+        }
+
+        fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+        where
+            A: SeqAccess<'de>,
+        {
+            let mut result = Vec::new();
+            while let Some(value) = seq.next_element::<String>()? {
+                result.extend(
+                    value
+                        .split(',')
+                        .map(str::trim)
+                        .filter(|item| !item.is_empty())
+                        .map(str::to_string),
+                );
+            }
+            Ok(result)
+        }
+    }
+
+    deserializer.deserialize_any(VecStringVisitor)
+}

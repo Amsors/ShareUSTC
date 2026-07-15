@@ -1,7 +1,8 @@
-use crate::utils::deserialize_vec_i64;
+use crate::utils::{deserialize_vec_i64, deserialize_vec_string};
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
+use std::collections::HashMap;
 use uuid::Uuid;
 
 /// 资源类型枚举
@@ -437,6 +438,8 @@ pub struct ResourceListResponse {
     pub total: i64,
     pub page: i32,
     pub per_page: i32,
+    /// 忽略当前分类选择后，其他筛选条件下的分类资源数
+    pub category_counts: HashMap<String, i64>,
 }
 
 /// 资源列表项 DTO
@@ -465,6 +468,12 @@ pub struct ResourceListQuery {
     pub per_page: Option<i32>,
     pub resource_type: Option<String>,
     pub category: Option<String>,
+    /// 资源类型多选筛选
+    #[serde(default, deserialize_with = "deserialize_vec_string")]
+    pub resource_types: Vec<String>,
+    /// 资源分类多选筛选
+    #[serde(default, deserialize_with = "deserialize_vec_string")]
+    pub categories: Vec<String>,
     pub sort_by: Option<String>,
     pub sort_order: Option<String>,
     /// 关联教师编号列表（筛选）
@@ -484,6 +493,12 @@ pub struct ResourceSearchQuery {
     pub per_page: Option<i32>,
     pub resource_type: Option<String>,
     pub category: Option<String>,
+    /// 资源类型多选筛选
+    #[serde(default, deserialize_with = "deserialize_vec_string")]
+    pub resource_types: Vec<String>,
+    /// 资源分类多选筛选
+    #[serde(default, deserialize_with = "deserialize_vec_string")]
+    pub categories: Vec<String>,
     /// 关联教师编号列表（筛选）
     #[serde(default, deserialize_with = "deserialize_vec_i64")]
     pub teacher_sns: Vec<i64>,
@@ -498,7 +513,25 @@ impl ResourceListQuery {
     }
 
     pub fn get_per_page(&self) -> i32 {
-        self.per_page.unwrap_or(20).clamp(1, 100)
+        self.per_page.unwrap_or(20).clamp(1, 1000)
+    }
+
+    /// 合并新多选参数与遗留单选参数
+    pub fn get_resource_types(&self) -> Vec<String> {
+        if self.resource_types.is_empty() {
+            self.resource_type.iter().cloned().collect()
+        } else {
+            self.resource_types.clone()
+        }
+    }
+
+    /// 合并新多选参数与遗留单选参数
+    pub fn get_categories(&self) -> Vec<String> {
+        if self.categories.is_empty() {
+            self.category.iter().cloned().collect()
+        } else {
+            self.categories.clone()
+        }
     }
 }
 
@@ -508,7 +541,25 @@ impl ResourceSearchQuery {
     }
 
     pub fn get_per_page(&self) -> i32 {
-        self.per_page.unwrap_or(20).clamp(1, 100)
+        self.per_page.unwrap_or(20).clamp(1, 1000)
+    }
+
+    /// 合并新多选参数与遗留单选参数
+    pub fn get_resource_types(&self) -> Vec<String> {
+        if self.resource_types.is_empty() {
+            self.resource_type.iter().cloned().collect()
+        } else {
+            self.resource_types.clone()
+        }
+    }
+
+    /// 合并新多选参数与遗留单选参数
+    pub fn get_categories(&self) -> Vec<String> {
+        if self.categories.is_empty() {
+            self.category.iter().cloned().collect()
+        } else {
+            self.categories.clone()
+        }
     }
 }
 
@@ -910,6 +961,8 @@ mod tests {
                 per_page: None,
                 resource_type: None,
                 category: None,
+                resource_types: vec![],
+                categories: vec![],
                 sort_by: None,
                 sort_order: None,
                 teacher_sns: vec![],
@@ -925,6 +978,8 @@ mod tests {
                 per_page: None,
                 resource_type: None,
                 category: None,
+                resource_types: vec![],
+                categories: vec![],
                 sort_by: None,
                 sort_order: None,
                 teacher_sns: vec![],
@@ -940,6 +995,8 @@ mod tests {
                 per_page: None,
                 resource_type: None,
                 category: None,
+                resource_types: vec![],
+                categories: vec![],
                 sort_by: None,
                 sort_order: None,
                 teacher_sns: vec![],
@@ -955,6 +1012,8 @@ mod tests {
                 per_page: None,
                 resource_type: None,
                 category: None,
+                resource_types: vec![],
+                categories: vec![],
                 sort_by: None,
                 sort_order: None,
                 teacher_sns: vec![],
@@ -970,6 +1029,8 @@ mod tests {
                 per_page: Some(50),
                 resource_type: None,
                 category: None,
+                resource_types: vec![],
+                categories: vec![],
                 sort_by: None,
                 sort_order: None,
                 teacher_sns: vec![],
@@ -982,15 +1043,17 @@ mod tests {
         fn test_per_page_too_high() {
             let query = ResourceListQuery {
                 page: None,
-                per_page: Some(200),
+                per_page: Some(2000),
                 resource_type: None,
                 category: None,
+                resource_types: vec![],
+                categories: vec![],
                 sort_by: None,
                 sort_order: None,
                 teacher_sns: vec![],
                 course_sns: vec![],
             };
-            assert_eq!(query.get_per_page(), 100);
+            assert_eq!(query.get_per_page(), 1000);
         }
 
         #[test]
@@ -1000,12 +1063,38 @@ mod tests {
                 per_page: Some(0),
                 resource_type: None,
                 category: None,
+                resource_types: vec![],
+                categories: vec![],
                 sort_by: None,
                 sort_order: None,
                 teacher_sns: vec![],
                 course_sns: vec![],
             };
             assert_eq!(query.get_per_page(), 1);
+        }
+
+        #[test]
+        fn test_multi_select_query_deserialization() {
+            let query: ResourceListQuery = serde_json::from_value(serde_json::json!({
+                "resourceTypes": "pdf,ppt,image",
+                "categories": ["lecture", "past_paper"]
+            }))
+            .expect("多选查询参数应可反序列化");
+
+            assert_eq!(query.resource_types, vec!["pdf", "ppt", "image"]);
+            assert_eq!(query.categories, vec!["lecture", "past_paper"]);
+        }
+
+        #[test]
+        fn test_legacy_single_select_query_is_preserved() {
+            let query: ResourceListQuery = serde_json::from_value(serde_json::json!({
+                "resourceType": "pdf",
+                "category": "lecture"
+            }))
+            .expect("遗留单选查询参数应可反序列化");
+
+            assert_eq!(query.get_resource_types(), vec!["pdf"]);
+            assert_eq!(query.get_categories(), vec!["lecture"]);
         }
     }
 

@@ -16,7 +16,7 @@ export const ResourceType = {
 
 export type ResourceTypeType = (typeof ResourceType)[keyof typeof ResourceType];
 
-// 资源类型筛选选项（用于筛选下拉框，合并相关类型）
+// 资源类型筛选选项（合并相关类型）
 export const ResourceTypeFilterOptions = {
   ppt: 'ppt', // PPT（包含 ppt 和 pptx）
   doc: 'doc', // Word 文档（包含 doc 和 docx）
@@ -146,7 +146,12 @@ export interface ResourceListResponse {
   total: number;
   page: number;
   perPage: number;
+  /** 旧版后端可能不返回分类计数，前端需兼容处理 */
+  categoryCounts?: Partial<Record<ResourceCategoryType, number>>;
 }
+
+// 资源列表排序字段
+export type ResourceSortField = 'created_at' | 'downloads' | 'likes' | 'rating' | 'title';
 
 // 资源列表查询参数
 export interface ResourceListQuery {
@@ -154,7 +159,9 @@ export interface ResourceListQuery {
   perPage?: number;
   resourceType?: string;
   category?: string;
-  sortBy?: 'created_at' | 'downloads' | 'likes' | 'rating' | 'title';
+  resourceTypes?: ResourceTypeFilterType[] | string[];
+  categories?: ResourceCategoryType[] | string[];
+  sortBy?: ResourceSortField;
   sortOrder?: 'asc' | 'desc';
   /** 关联教师编号列表（筛选） */
   teacherSns?: number[];
@@ -169,6 +176,8 @@ export interface ResourceSearchQuery {
   perPage?: number;
   resourceType?: string;
   category?: string;
+  resourceTypes?: ResourceTypeFilterType[] | string[];
+  categories?: ResourceCategoryType[] | string[];
   /** 关联教师编号列表（筛选） */
   teacherSns?: number[];
   /** 关联课程编号列表（筛选） */
@@ -215,7 +224,7 @@ export const ResourceTypeLabels: Record<ResourceTypeType, string> = {
   [ResourceType.Other]: '其他',
 };
 
-// 资源类型筛选显示名称映射（用于筛选下拉框，合并相关类型）
+// 资源类型筛选显示名称映射（合并相关类型）
 export const ResourceTypeFilterLabels: Record<ResourceTypeFilterType, string> = {
   ppt: 'PPT 演示文稿',
   doc: 'Word 文档',

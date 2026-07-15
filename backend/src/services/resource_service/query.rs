@@ -4,7 +4,64 @@ use crate::models::resource::*;
 use crate::services::resource_service::utils::{add_resource_type_condition, calc_avg};
 use crate::services::ResourceError;
 use sqlx::{PgPool, Row};
+use std::collections::HashMap;
 use uuid::Uuid;
+
+/// 添加资源分类多选筛选条件
+fn add_category_condition(
+    builder: &mut sqlx::QueryBuilder<'_, sqlx::Postgres>,
+    categories: &[String],
+) {
+    if categories.is_empty() {
+        return;
+    }
+
+    builder.push(" AND r.category = ANY(");
+    builder.push_bind(categories.to_vec());
+    builder.push(")");
+}
+
+/// 统计除分类选择外的当前筛选条件下，每个资源分类的数量
+async fn get_category_counts(
+    pool: &PgPool,
+    resource_types: &[String],
+    teacher_sns: &[i64],
+    course_sns: &[i64],
+    search_pattern: Option<&str>,
+) -> Result<HashMap<String, i64>, ResourceError> {
+    let mut builder = sqlx::QueryBuilder::new(
+        "SELECT r.category, COUNT(DISTINCT r.id) AS count FROM resources r WHERE r.audit_status = 'approved'",
+    );
+
+    if let Some(pattern) = search_pattern {
+        builder.push(" AND (r.title ILIKE ");
+        builder.push_bind(pattern.to_string());
+        builder.push(" OR r.course_name ILIKE ");
+        builder.push_bind(pattern.to_string());
+        builder.push(")");
+    }
+
+    if !teacher_sns.is_empty() {
+        builder.push(" AND EXISTS (SELECT 1 FROM resource_teachers rt WHERE rt.resource_id = r.id AND rt.teacher_sn = ANY(");
+        builder.push_bind(teacher_sns.to_vec());
+        builder.push("))");
+    }
+
+    if !course_sns.is_empty() {
+        builder.push(" AND EXISTS (SELECT 1 FROM resource_courses rc WHERE rc.resource_id = r.id AND rc.course_sn = ANY(");
+        builder.push_bind(course_sns.to_vec());
+        builder.push("))");
+    }
+
+    add_resource_type_condition(&mut builder, resource_types);
+    builder.push(" GROUP BY r.category");
+
+    let rows = builder.build().fetch_all(pool).await?;
+    rows.into_iter()
+        .map(|row| Ok((row.try_get("category")?, row.try_get("count")?)))
+        .collect::<Result<HashMap<_, _>, sqlx::Error>>()
+        .map_err(ResourceError::from)
+}
 
 /// 获取资源详情
 pub async fn get_resource_detail(
@@ -153,6 +210,8 @@ pub async fn get_resource_list(
     let page = query.get_page();
     let per_page = query.get_per_page();
     let offset = (page - 1) * per_page;
+    let resource_types = query.get_resource_types();
+    let categories = query.get_categories();
 
     // 构建排序
     let sort_by = match query.sort_by.as_deref() {
@@ -191,15 +250,20 @@ pub async fn get_resource_list(
     }
 
     // 处理资源类型筛选（支持合并类型）
-    add_resource_type_condition(&mut count_builder, query.resource_type.as_deref());
+    add_resource_type_condition(&mut count_builder, &resource_types);
 
     // 处理分类筛选
-    if let Some(ref category) = query.category {
-        count_builder.push(" AND r.category = ");
-        count_builder.push_bind(category);
-    }
+    add_category_condition(&mut count_builder, &categories);
 
     let total: i64 = count_builder.build_query_scalar().fetch_one(pool).await?;
+    let category_counts = get_category_counts(
+        pool,
+        &resource_types,
+        &query.teacher_sns,
+        &query.course_sns,
+        None,
+    )
+    .await?;
 
     // 使用 QueryBuilder 构建列表查询
     let mut list_builder = sqlx::QueryBuilder::new(
@@ -232,13 +296,10 @@ pub async fn get_resource_list(
     }
 
     // 处理资源类型筛选
-    add_resource_type_condition(&mut list_builder, query.resource_type.as_deref());
+    add_resource_type_condition(&mut list_builder, &resource_types);
 
     // 处理分类筛选
-    if let Some(ref category) = query.category {
-        list_builder.push(" AND r.category = ");
-        list_builder.push_bind(category);
-    }
+    add_category_condition(&mut list_builder, &categories);
 
     // 添加排序和分页
     list_builder.push(format!(" ORDER BY {} {}", sort_by, sort_order));
@@ -256,6 +317,7 @@ pub async fn get_resource_list(
         total,
         page,
         per_page,
+        category_counts,
     })
 }
 
@@ -268,6 +330,8 @@ pub async fn search_resources(
     let page = query.get_page();
     let per_page = query.get_per_page();
     let offset = (page - 1) * per_page;
+    let resource_types = query.get_resource_types();
+    let categories = query.get_categories();
 
     let search_pattern = format!("%{}%", query.q);
 
@@ -298,15 +362,20 @@ pub async fn search_resources(
     }
 
     // 处理资源类型筛选（支持合并类型）
-    add_resource_type_condition(&mut count_builder, query.resource_type.as_deref());
+    add_resource_type_condition(&mut count_builder, &resource_types);
 
     // 处理分类筛选
-    if let Some(ref category) = query.category {
-        count_builder.push(" AND r.category = ");
-        count_builder.push_bind(category);
-    }
+    add_category_condition(&mut count_builder, &categories);
 
     let total: i64 = count_builder.build_query_scalar().fetch_one(pool).await?;
+    let category_counts = get_category_counts(
+        pool,
+        &resource_types,
+        &query.teacher_sns,
+        &query.course_sns,
+        Some(&search_pattern),
+    )
+    .await?;
 
     // 使用 QueryBuilder 构建搜索查询
     let mut search_builder = sqlx::QueryBuilder::new(
@@ -343,13 +412,10 @@ pub async fn search_resources(
     }
 
     // 处理资源类型筛选
-    add_resource_type_condition(&mut search_builder, query.resource_type.as_deref());
+    add_resource_type_condition(&mut search_builder, &resource_types);
 
     // 处理分类筛选
-    if let Some(ref category) = query.category {
-        search_builder.push(" AND r.category = ");
-        search_builder.push_bind(category);
-    }
+    add_category_condition(&mut search_builder, &categories);
 
     // 添加排序和分页
     search_builder.push(" ORDER BY r.created_at DESC LIMIT ");
@@ -366,6 +432,7 @@ pub async fn search_resources(
         total,
         page,
         per_page,
+        category_counts,
     })
 }
 
@@ -415,6 +482,7 @@ pub async fn get_user_resources(
         total,
         page,
         per_page,
+        category_counts: HashMap::new(),
     })
 }
 
