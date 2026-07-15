@@ -119,7 +119,7 @@
                   {{ formatResourceType(row.resourceType) }}
                 </el-tag>
                 <el-tag size="small" effect="plain" class="category-tag">
-                  {{ formatCategory(row.category) }}
+                  {{ ResourceCategoryLabels[row.category as ResourceCategoryType] || row.category }}
                 </el-tag>
               </div>
             </template>
@@ -211,6 +211,7 @@ import {
   deleteAllFavoriteResources,
 } from '@/api/admin';
 import type { AdminResource, AdminFavorite } from '@/types/admin';
+import { ResourceCategoryLabels, type ResourceCategoryType } from '@/types/resource';
 import { getErrorMessage, isHandledError } from '@/api/request';
 import logger from '@/utils/logger';
 
@@ -451,17 +452,6 @@ const getResourceTypeType = (type: string) => {
     zip: 'success',
   };
   return typeMap[type] || '';
-};
-
-// 格式化分类
-const formatCategory = (category: string) => {
-  const categoryMap: Record<string, string> = {
-    exam: '试题',
-    note: '笔记',
-    slides: '课件',
-    other: '其他',
-  };
-  return categoryMap[category] || category;
 };
 
 // 格式化审核状态
